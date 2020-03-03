@@ -1,7 +1,8 @@
 from cartpole import CartPole
 import numpy as np
 import matplotlib.pyplot as plt
-import time
+import time, random
+from copy import deepcopy
 
 def show_policy(env, parameters):
     env.reset()
@@ -67,6 +68,29 @@ def ask_oracle_advice(env, parameters, proposed_action):
     else:
         return -1
 
+def visualize_policy(env, parameters, num_traj = 1):
+    env.reset()
+    observation = env.last_observation
+
+    action_0 = []
+    action_1 = []
+
+    for i in range(0, 20):
+        print ("Original " + str(observation))
+        s_tmp = deepcopy(observation)
+        s_tmp[2] = random.gauss(s_tmp[2], 0.05)
+        print ("New " + str(s_tmp))
+
+        action = 0 if np.dot(parameters,s_tmp) < 0 else 1
+
+        if action == 0:
+            action_0.append(s_tmp)
+        elif action == 1:
+            action_1.append(s_tmp)
+
+    print (action_0)
+    print (action_1)
+
 if __name__ == "__main__":
     domain = CartPole()
     trained_params = train(domain)
@@ -79,3 +103,4 @@ if __name__ == "__main__":
             domain.env.close()
             break
         show_policy(domain, trained_params)
+        visualize_policy(domain, trained_params)
