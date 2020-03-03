@@ -69,27 +69,37 @@ def ask_oracle_advice(env, parameters, proposed_action):
         return -1
 
 def visualize_policy(env, parameters, num_traj = 1):
-    env.reset()
-    observation = env.last_observation
+    for traj in range(num_traj):
+        done = False 
 
-    action_0 = []
-    action_1 = []
+        while not done: 
+            env.reset()
+            observation = env.last_observation
 
-    for i in range(0, 20):
-        print ("Original " + str(observation))
-        s_tmp = deepcopy(observation)
-        s_tmp[2] = random.gauss(s_tmp[2], 0.05)
-        print ("New " + str(s_tmp))
+            action_0 = []
+            action_1 = []
 
-        action = 0 if np.dot(parameters,s_tmp) < 0 else 1
+            # take a look at how other variations may have performed
+            for i in range(0, 5):
+                print ("Original " + str(observation))
+                s_tmp = deepcopy(observation)
+                s_tmp[2] = random.gauss(s_tmp[2], 0.05)
+                print ("New " + str(s_tmp))
 
-        if action == 0:
-            action_0.append(s_tmp)
-        elif action == 1:
-            action_1.append(s_tmp)
+                action = 0 if np.dot(parameters,s_tmp) < 0 else 1
 
-    print (action_0)
-    print (action_1)
+                if action == 0:
+                    action_0.append(s_tmp)
+                elif action == 1:
+                    action_1.append(s_tmp)
+
+            print (action_0)
+            print (action_1)
+
+            # take the next step 
+            action = 0 if np.dot(parameters,observation) < 0 else 1
+
+
 
 if __name__ == "__main__":
     domain = CartPole()
