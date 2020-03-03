@@ -5,6 +5,11 @@ import torch.nn as nn
 import numpy as np
 import gym
 import matplotlib.pyplot as plt
+import time, random
+from copy import deepcopy
+
+C = 0.01
+POSSIBLE_ACTIONS = []
 
 class PolicyNet(nn.Module):
 
@@ -46,6 +51,38 @@ class Agent:
         self.policy_net = policy_net
         self.baseline = baseline_net
 
+    # def train(self, env, num_traj, iterations, gamma, base_epochs):
+    #     iter_rewards = []
+    #     for iter in range(iterations):
+    #         trajectories = []
+    #         ITER_REW = 0
+    #         for _ in range(num_traj):
+    #             rewards, log_probs, states = [], [], []
+    #             s = env.reset()
+    #             done = False
+    #             while not done:
+    #                 s = torch.FloatTensor([s]).cuda()
+    #                 a = self.policy_net(s)
+    #                 states.append(s)
+    #                 del s
+    #                 a_cpu = a.detach().cpu().numpy()
+    #                 u = np.random.choice(POSSIBLE_ACTIONS, size=1, replace=False, p=a_cpu[0])[0]
+    #                 # u_idx = np.argmax(a_cpu[0])
+    #                 # u = POSSIBLE_ACTIONS[u_idx]
+    #                 log_probs.append(a[0][u])
+    #                 del a
+    #                 s, r, done, _ = env.step(u)
+    #                 if done and len(rewards) < 50:
+    #                     r = -200
+    #                 ITER_REW += r
+    #                 rewards.append(r)
+    #                 # env.render()
+    #             trajectories.append({'log_probs': log_probs, 'rewards': rewards, 'states': states})
+    #         self.update_parameters(trajectories, gamma)
+    #         print("ITERATION:", iter + 1, "AVG REWARD:", ITER_REW / num_traj)
+    #         iter_rewards.append(ITER_REW/num_traj)
+    #     return iter_rewards
+
     def train(self, env, num_traj, iterations, gamma, base_epochs):
         iter_rewards = []
         for iter in range(iterations):
@@ -85,7 +122,7 @@ class Agent:
     def update_parameters(self, trajectories, gamma):
         c = 0.01
         loss = torch.tensor([0]).float().cuda()
-        optim = torch.optim.Adam(list(self.policy_net.parameters()) + list(self.baseline.parameters()), lr=0.01)
+        optim = torch.optim.Adam(list(self.policy_net.parameters()) + list(self.baseline.parameters()), lr=0.005)
         for trajectory in trajectories:
             for t in range(len(trajectory['rewards'])):
                 r_t = torch.tensor([0]).float().cuda()
@@ -103,15 +140,70 @@ class Agent:
                     optim.step()
                     loss = torch.tensor([0]).float().cuda()
 
+    def play(self, env, num_games):
+        for game in range(num_games):
+            print ('Are you ready for a new game?')
+            new_game = input()
+
+            done = False
+            s = env.reset()
+            reward = 0
+            while not done:
+                s = torch.FloatTensor([s]).cuda()
+                a = self.policy_net(s).detach().cpu().numpy()
+                del s
+                # u = np.random.choice(POSSIBLE_ACTIONS, size=1, replace=False, p=a[0])
+                # u_idx = np.argmax(a[0])
+                # u = POSSIBLE_ACTIONS[u_idx]
+                u = np.random.choice(POSSIBLE_ACTIONS, size=1, replace=False, p=a[0])[0]
+
+                s, r, done, _ = env.step(u)
+                reward += r
+                if done:
+                    print ("Total reward: " + str(reward))
+                    break
+                env.render()
+                time.sleep(0.01)
+        env.close()
+
+    def visualize_policy(self, env):
+        s = env.reset()
+
+        action_1 = []
+        action_2 = []
+
+        for i in range(0, 20):
+            print ("Original " + str(s))
+            s_tmp = deepcopy(s)
+            s_tmp[2] = random.gauss(s_tmp[2], 0.05)
+            print ("New " + str(s_tmp))
+            s_tmp = torch.FloatTensor([s_tmp]).cuda()
+            a = self.policy_net(s_tmp).detach().cpu().numpy()
+            # u_idx = np.argmax(a[0])
+            # u = POSSIBLE_ACTIONS[u_idx]
+            u = np.random.choice(POSSIBLE_ACTIONS, size=1, replace=False, p=a[0])[0]
+
+            if u == 0:
+                action_1.append(s_tmp)
+            elif u == 1:
+                action_2.append(s_tmp)
+            else:
+                print (u)
+
+        print (action_1)
+        print (action_2)
 
 def main():
+    global POSSIBLE_ACTIONS
     env = gym.make('CartPole-v0')
+    POSSIBLE_ACTIONS = range(env.action_space.n)
     policy_net = PolicyNet(env.observation_space.shape, env.action_space.n).to(torch.device('cuda'))
     base_net = Baseline(env.observation_space.shape).to(torch.device('cuda'))
     agent = Agent(policy_net, base_net)
-    rews = agent.train(env, 32, 200, 0.99, 5)
-    plt.plot(rews)
-    plt.show()
-
+    reward_history = agent.train(env, num_traj=32, iterations=200, gamma=0.99, base_epochs=5)
+    # plt.plot(reward_history)
+    # plt.show()
+    agent.play(env, 10)
+    agent.visualize_policy(env)
 
 main()
