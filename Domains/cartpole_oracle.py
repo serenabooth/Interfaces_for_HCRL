@@ -3,6 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import time, random
 from copy import deepcopy
+from gym.wrappers.monitoring import stats_recorder, video_recorder
 
 def show_policy(env, parameters):
     env.reset()
