@@ -13,9 +13,12 @@ class CartPole(Domain):
     num_actions = None
     obs_size = None
 
-    def __init__(self):
+    def __init__(self, recording=False):
         # Use OpenAI Gym for CartPole environment
         self.env = gym.make('CartPole-v1')
+        if recording:
+            self.env = gym.wrappers.Monitor(self.env, "./vid", video_callable=lambda episode_id: True, force=True)
+
         obs = self.env.reset()
 
         self.last_observation = obs

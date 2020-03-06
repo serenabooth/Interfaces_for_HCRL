@@ -102,7 +102,7 @@ def visualize_policy(env, parameters, num_traj = 1):
 
 
 if __name__ == "__main__":
-    domain = CartPole()
+    domain = CartPole(recording=True)
     trained_params = train(domain)
     print (trained_params)
 
