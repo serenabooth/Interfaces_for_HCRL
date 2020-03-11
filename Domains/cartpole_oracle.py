@@ -115,7 +115,7 @@ def visualize_policy(env, parameters, num_traj = 1):
 
 
 if __name__ == "__main__":
-    domain = CartPole(recording=True)
+    domain = CartPole()
     trained_params = train(domain)
     print (trained_params)
 
@@ -125,5 +125,7 @@ if __name__ == "__main__":
         if show == "q":
             domain.env.close()
             break
+
+        domain.set_recording(recording=True)
+        
         show_policy(domain, trained_params)
-        visualize_policy(domain, trained_params)
