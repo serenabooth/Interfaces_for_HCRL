@@ -4,6 +4,10 @@ import matplotlib.pyplot as plt
 import time, random
 from copy import deepcopy
 from gym.wrappers.monitoring import stats_recorder, video_recorder
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument('-params', '--parameters', nargs='+', type=float, default=None)
 
 def show_policy(env, parameters):
     """
@@ -162,8 +166,14 @@ def visualize_policy(env, parameters, num_traj = 1):
             exit()
 
 if __name__ == "__main__":
+    args = parser.parse_args()
+
     domain = CartPole()
-    trained_params = train(domain)
+    if args.parameters == None:
+        trained_params = train(domain)
+    else:
+        trained_params = args.parameters
+
     print (trained_params)
 
     while True:

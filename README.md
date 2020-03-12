@@ -13,6 +13,9 @@ This is implemented in `Domains/cartpole_oracle.py`
 If you would like to create a GIF, run:
 `python3 Domains/cartpole_oracle.py`
 
+If you prefer to specify the linear policy parameters, run:
+`python3 Domains/cartpole_oracle.py -params <a> <b> <c> <d>`, where a, b, c, and d are numeric values.
+
 This will save videos of the runs you play to a `vid/` directory.
 To turn these videos into GIFs, use software of your choice
 
