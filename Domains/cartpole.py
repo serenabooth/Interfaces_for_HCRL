@@ -16,22 +16,19 @@ class CartPole(Domain):
     def __init__(self):
         # Use OpenAI Gym for CartPole environment
         self.env = gym.make('CartPole-v1')
-        obs = self.env.reset()
-
-        self.last_observation = obs
+        self.last_observation = self.env.reset()
         self.num_actions = self.env.action_space.n
-
         self.obs_size = self.env.observation_space.high.size
 
     def set_recording(self, recording=True):
         """
         Start recording videos of episodes.
-        Force overwrites previously written videos. 
+        Force overwrites previously written videos.
 
         Params
         ------
-            self : CartPole 
-            recording : Boolean 
+            self : CartPole
+            recording : Boolean
                 Sets whether to record or not
         """
         if recording:
@@ -43,6 +40,13 @@ class CartPole(Domain):
     def reset(self):
         """
         Reset to starting state
+
+        Params
+        ------
+            env : a cartpole instance
+
+        Returns:
+            None
         """
         obs = self.env.reset()
         self.last_observation = obs
@@ -63,17 +67,28 @@ class CartPole(Domain):
         return deepcopy(self.env.observation_space)
 
     def get_current_features(self):
-        return self.last_observation
-
-    def get_future_features(self, action):
         """
-        Lookahead as if action was performed.
+        Return the current features.
+        At present, this is just the current state (but is subject to change).
 
         Params
         ------
             self : a cartpole instance
-            state :
-            action :
+        Returns
+        -------
+            list : a state [x x' y y']
+
+        """
+        return self.last_observation
+
+    def get_future_features(self, action):
+        """
+        Lookahead as if action was performed; return that state.
+
+        Params
+        ------
+            self : a cartpole instance
+            action : int
 
         Returns
         -------
@@ -84,9 +99,37 @@ class CartPole(Domain):
         return obs
 
     def get_possible_actions(self):
+        """
+        Return the possible actions
+
+        Params
+        ------
+            self : a cartpole instance
+
+        Returns
+        -------
+            list : a list of possible actions
+                For CartPole, this is [0, 1]
+        """
         return range(self.env.action_space.n)
 
     def take_action(self, action):
+        """
+        Take an action
+
+        Params
+        ------
+            self : a cartpole instance
+            action : int
+                the action to take (move left or move right)
+
+        Returns
+        -------
+            env_reward : int
+                How much reward did this action accrue?
+            done : Boolean
+                Is the episode finished?
+        """
         self.last_observation, env_reward, done, info = self.env.step(action)
 
         if done:
@@ -102,7 +145,7 @@ def human_direct_control():
     while str(move) != "quit":
         print ("If you move left: " + str(cartpole.get_future_features(0)))
         print ("If you move right: " + str(cartpole.get_future_features(1)))
-
+        print ("0 - move left; 1 - move right")
         move = input()
         env_reward, done = cartpole.take_action(int(move))
         if not done:

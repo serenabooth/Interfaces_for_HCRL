@@ -6,6 +6,16 @@ from copy import deepcopy
 from gym.wrappers.monitoring import stats_recorder, video_recorder
 
 def show_policy(env, parameters):
+    """
+    Render a full rollout of the policy, until loss.
+
+    Params
+    ------
+        env : CartPole
+        parameters : list
+            An array consisting of [a b c d].
+            The policy computes the dot product of [a b c d] and [x x' y y']
+    """
     env.reset()
     observation = env.last_observation
     totalreward = 0
@@ -22,6 +32,16 @@ def show_policy(env, parameters):
             break
 
 def run_episode(env, parameters):
+    """
+    Run a full rollout of the policy, until loss.
+
+    Params
+    ------
+        env : CartPole
+        parameters : list
+            An array consisting of [a b c d].
+            The policy computes the dot product of [a b c d] and [x x' y y']
+    """
     env.reset()
     observation = env.last_observation
     totalreward = 0
@@ -41,6 +61,10 @@ def run_episode(env, parameters):
 def train(env):
     """
     Randomly generate new parameters; see if they achieve a sufficiently high score.
+
+    Params
+    ------
+        env : CartPole
     """
     episodes_per_update = 5
     noise_scaling = 0.2
@@ -64,6 +88,18 @@ def train(env):
     return parameters
 
 def ask_oracle_advice(env, parameters, proposed_action):
+    """
+    Query the oracle to see how it would evaluate a given action
+
+    Params
+    ------
+        env : CartPole
+        parameters : list
+            An array consisting of [a b c d].
+            The policy computes the dot product of [a b c d] and [x x' y y']
+        proposed_action : int
+            0 or 1, meaning left or right
+    """
     observation = env.last_observation
     action = 0 if np.dot(parameters, observation) < 0 else 1
 
@@ -73,6 +109,18 @@ def ask_oracle_advice(env, parameters, proposed_action):
         return -1
 
 def visualize_policy(env, parameters, num_traj = 1):
+    """
+    Start exploring techniques for creating visual policy summaries.
+
+    Params
+    ------
+        env : CartPole
+        parameters : list
+            An array consisting of [a b c d].
+            The policy computes the dot product of [a b c d] and [x x' y y']
+        num_traj : int
+            The number of rollouts on which to assess policy
+    """
     done = False
 
     while not done:
@@ -113,7 +161,6 @@ def visualize_policy(env, parameters, num_traj = 1):
             print ("Done")
             exit()
 
-
 if __name__ == "__main__":
     domain = CartPole()
     trained_params = train(domain)
@@ -127,5 +174,5 @@ if __name__ == "__main__":
             break
 
         domain.set_recording(recording=True)
-        
+
         show_policy(domain, trained_params)
