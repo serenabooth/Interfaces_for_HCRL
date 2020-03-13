@@ -5,6 +5,7 @@ import time, random
 from copy import deepcopy
 from gym.wrappers.monitoring import stats_recorder, video_recorder
 import argparse
+import pyglet
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-params', '--parameters', nargs='+', type=float, default=None)
@@ -112,7 +113,7 @@ def ask_oracle_advice(env, parameters, proposed_action):
     else:
         return -1
 
-def visualize_policy(env, parameters, num_traj = 1):
+def visualize_policy(env, parameters, num_traj = 2):
     """
     Start exploring techniques for creating visual policy summaries.
 
@@ -125,45 +126,49 @@ def visualize_policy(env, parameters, num_traj = 1):
         num_traj : int
             The number of rollouts on which to assess policy
     """
-    done = False
-
-    while not done:
+    for trajectory in range(num_traj):
+        done = False
         env.reset()
-        observation = deepcopy(env.last_observation)
 
-        action_0 = []
-        action_1 = []
+        while not done:
+            observation = deepcopy(env.last_observation)
 
-        # take a look at how other variations may have performed
-        if random.random() < 0.05:
-            for i in range(0, 5):
-                s_tmp = deepcopy(observation)
-                s_tmp[2] = random.gauss(s_tmp[2], 0.001) #resample a single parameter
-                # print ("Original " + str(observation))
-                # print ("New " + str(s_tmp))
+            action_0 = []
+            action_1 = []
 
-                action = 0 if np.dot(parameters,s_tmp) < 0 else 1
+            # take a look at how other variations may have performed
+            if random.random() < 0.05:
+                for i in range(0, 5):
+                    s_tmp = deepcopy(observation)
+                    s_tmp[2] = random.gauss(s_tmp[2], 0.05) #resample a single parameter
+                    # print ("Original " + str(observation))
+                    # print ("New " + str(s_tmp))
 
-                env.observation_space = s_tmp
-                env.env.render()
+                    action = 0 if np.dot(parameters,s_tmp) < 0 else 1
 
-                if action == 0:
-                    action_0.append(s_tmp)
-                elif action == 1:
-                    action_1.append(s_tmp)
+                    env.observation_space = s_tmp
+                    time.sleep( 1 )
+                    env.env.render()
 
-            print ("I move left in: " + str(action_0))
-            print ("I move right in: " + str(action_1))
+                    env.save_screenshot("hello.png")
+                    exit()
 
-        env.observation_space = observation
+                    if action == 0:
+                        action_0.append(s_tmp)
+                    elif action == 1:
+                        action_1.append(s_tmp)
 
-        # take the next step
-        action = 0 if np.dot(parameters,observation) < 0 else 1
-        reward, done = env.take_action(action)
-        observation = deepcopy(env.last_observation)
-        if done:
-            print ("Done")
-            exit()
+                print ("I move left in: " + str(action_0))
+                print ("I move right in: " + str(action_1))
+
+            env.observation_space = observation
+
+            # take the next step
+            action = 0 if np.dot(parameters,observation) < 0 else 1
+            reward, done = env.take_action(action)
+            observation = deepcopy(env.last_observation)
+            if done:
+                print ("Done")
 
 if __name__ == "__main__":
     args = parser.parse_args()
@@ -183,6 +188,6 @@ if __name__ == "__main__":
             domain.env.close()
             break
 
+        # show_policy(domain, trained_params)
         domain.set_recording(recording=True)
-
-        show_policy(domain, trained_params)
+        visualize_policy(domain, trained_params)

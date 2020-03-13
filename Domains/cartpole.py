@@ -6,6 +6,7 @@ import numpy as np
 import random
 import gym
 import time
+import pyglet
 
 class CartPole(Domain):
     env = None
@@ -136,6 +137,20 @@ class CartPole(Domain):
             self.env.reset()
 
         return (env_reward, done)
+
+    def save_screenshot(self, filename):
+        """
+        This is a hack. Save a screenshot of the current state.
+
+        Params
+        ------
+            self : a cartpole instance
+            filename : string
+                a string for where the file should be saved
+        """
+        self.env.render()
+        pyglet.image.get_buffer_manager().get_color_buffer().save('Screenshots/' + filename)
+        self.env.render()
 
 def human_direct_control():
     cartpole = CartPole()
