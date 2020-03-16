@@ -1,6 +1,7 @@
 from domain import Domain
 from enum import Enum
 from copy import deepcopy
+from PIL import Image, ImageDraw
 import environment_helpers
 import numpy as np
 import random
@@ -152,6 +153,33 @@ class CartPole(Domain):
         pyglet.image.get_buffer_manager().get_color_buffer().save('Screenshots/' + filename)
         self.env.render()
 
+    def save_action_gif(self, action):
+        """
+        This is a hack. Save a gif showing the result of an action.
+
+        Params
+        ------
+            self : a cartpole instance
+            action : int
+                0 or 1, determines whether to move left or right
+        """
+        self.env.render()
+        pyglet.image.get_buffer_manager().get_color_buffer().save("Screenshots/tmp0.png")
+
+        env_reward, done = self.take_action(action)
+        self.env.render()
+
+        pyglet.image.get_buffer_manager().get_color_buffer().save("Screenshots/tmp1.png")
+        self.env.render()
+
+        pixels0 = Image.open("Screenshots/tmp0.png")
+        pixels1 = Image.open("Screenshots/tmp1.png")
+
+        pixels0.save('Screenshots/out.gif', save_all=True, append_images=[pixels1], duration=100, loop=1)
+
+        return (env_reward, done)
+
+
 def human_direct_control():
     cartpole = CartPole()
     cartpole.env.render()
@@ -167,7 +195,7 @@ def human_direct_control():
             cartpole.save_screenshot(str(screenshot_id) + ".png")
             screenshot_id += 1
             continue
-        env_reward, done = cartpole.take_action(int(move))
+        env_reward, done = cartpole.save_action_gif(int(move))
         if not done:
             reward += env_reward
         else:
