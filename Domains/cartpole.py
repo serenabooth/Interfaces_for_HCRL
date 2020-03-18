@@ -210,18 +210,22 @@ class CartPole(Domain):
         else:
             img_loc = 'Screenshots/' + filename
             Image.blend(pixels0, pixels1, 0.7).save(img_loc)
-        #
-        # if future_action != None:
-        #     composite_im = Image.open("Assets/right.png")
-        #
-        #     img = Image.open(img_loc)
-        #     # mask = Image.new("L", img.size, 0)
-        #     # draw = ImageDraw.Draw(mask)
-        #     # draw.rectangle([(0,0), (600,350)],fill=255)
-        #     # im = Image.composite(img, )
-        #
-        #     im = Image.alpha_composite(img, composite_im)
-        #     im.save(img_loc)
+
+        if future_action != None:
+            if future_action == 0:
+                composite_im = Image.open("Assets/left.png")
+            else:
+                composite_im = Image.open("Assets/right.png")
+
+            img = Image.open(img_loc)
+            mask = Image.new("L", img.size, 0)
+            draw = ImageDraw.Draw(mask)
+            draw.rectangle([(0,0), (600,320)],fill=255)
+            im = Image.composite(img, composite_im, mask)
+            print (im.size)
+            print (img.size)
+            print (composite_im.size)
+            im.save(img_loc)
 
         return (env_reward, done)
 
