@@ -183,9 +183,9 @@ class CartPole(Domain):
 
         return (env_reward, done)
 
-    def save_action_screenshot(self, action):
+    def save_action_screenshot(self, action, filename=None, future_action=None):
         """
-        This is a hack. Save a gif showing the result of an action.
+        This is a hack. Show a blended image showing the last action.
 
         Params
         ------
@@ -204,7 +204,24 @@ class CartPole(Domain):
 
         pixels0 = Image.open("Screenshots/tmp0.png")
         pixels1 = Image.open("Screenshots/tmp1.png")
-        Image.blend(pixels0, pixels1, 0.7).save('Screenshots/a.png')
+        if filename == None:
+            img_loc = 'Screenshots/out.png'
+            Image.blend(pixels0, pixels1, 0.7).save(img_loc)
+        else:
+            img_loc = 'Screenshots/' + filename
+            Image.blend(pixels0, pixels1, 0.7).save(img_loc)
+        #
+        # if future_action != None:
+        #     composite_im = Image.open("Assets/right.png")
+        #
+        #     img = Image.open(img_loc)
+        #     # mask = Image.new("L", img.size, 0)
+        #     # draw = ImageDraw.Draw(mask)
+        #     # draw.rectangle([(0,0), (600,350)],fill=255)
+        #     # im = Image.composite(img, )
+        #
+        #     im = Image.alpha_composite(img, composite_im)
+        #     im.save(img_loc)
 
         return (env_reward, done)
 

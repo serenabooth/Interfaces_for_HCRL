@@ -170,6 +170,33 @@ def visualize_policy(env, parameters, num_traj = 2):
             if done:
                 print ("Done")
 
+def save_trajectory(env, parameters):
+    env.reset()
+    done = False
+    filename = 0
+    totalreward = 0
+
+    while not done:
+        print (totalreward)
+        observation = env.last_observation
+        action = 0 if np.dot(parameters,observation) < 0 else 1
+
+        future_obs = env.get_future_features(action)
+        future_action = 0 if np.dot(parameters,future_obs) < 0 else 1
+
+        if random.random() < 0.5:
+            reward, done = env.save_action_screenshot(action, 'tmp/' + str(filename) + '.png', future_action=future_action)
+            filename += 1
+        else:
+            reward, done = env.take_action(action)
+
+        observation = env.last_observation
+
+        totalreward += reward
+        if done:
+            print ("Total reward " + str(totalreward))
+            break
+
 if __name__ == "__main__":
     args = parser.parse_args()
 
@@ -189,5 +216,7 @@ if __name__ == "__main__":
             break
 
         # show_policy(domain, trained_params)
-        domain.set_recording(recording=True)
-        visualize_policy(domain, trained_params)
+
+        save_trajectory(domain, trained_params)
+        # domain.set_recording(recording=True)
+        # visualize_policy(domain, trained_params)
