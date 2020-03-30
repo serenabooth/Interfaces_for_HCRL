@@ -51,38 +51,6 @@ class Agent:
         self.policy_net = policy_net
         self.baseline = baseline_net
 
-    # def train(self, env, num_traj, iterations, gamma, base_epochs):
-    #     iter_rewards = []
-    #     for iter in range(iterations):
-    #         trajectories = []
-    #         ITER_REW = 0
-    #         for _ in range(num_traj):
-    #             rewards, log_probs, states = [], [], []
-    #             s = env.reset()
-    #             done = False
-    #             while not done:
-    #                 s = torch.FloatTensor([s]).cuda()
-    #                 a = self.policy_net(s)
-    #                 states.append(s)
-    #                 del s
-    #                 a_cpu = a.detach().cpu().numpy()
-    #                 u = np.random.choice(POSSIBLE_ACTIONS, size=1, replace=False, p=a_cpu[0])[0]
-    #                 # u_idx = np.argmax(a_cpu[0])
-    #                 # u = POSSIBLE_ACTIONS[u_idx]
-    #                 log_probs.append(a[0][u])
-    #                 del a
-    #                 s, r, done, _ = env.step(u)
-    #                 if done and len(rewards) < 50:
-    #                     r = -200
-    #                 ITER_REW += r
-    #                 rewards.append(r)
-    #                 # env.render()
-    #             trajectories.append({'log_probs': log_probs, 'rewards': rewards, 'states': states})
-    #         self.update_parameters(trajectories, gamma)
-    #         print("ITERATION:", iter + 1, "AVG REWARD:", ITER_REW / num_traj)
-    #         iter_rewards.append(ITER_REW/num_traj)
-    #     return iter_rewards
-
     def train(self, env, num_traj, iterations, gamma, base_epochs):
         iter_rewards = []
         for iter in range(iterations):

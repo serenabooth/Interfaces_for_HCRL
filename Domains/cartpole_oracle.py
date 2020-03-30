@@ -78,7 +78,7 @@ def train(env):
     counter = 0
     avg_reward = 0
 
-    while bestreward < 1000:
+    while bestreward > 200:
         counter += 1
         newparams = parameters + (np.random.rand(4) * 2 - 1)*noise_scaling
         reward = 0
@@ -173,7 +173,6 @@ def visualize_policy(env, parameters, num_traj = 2):
 def save_trajectory(env, parameters):
     env.reset()
     done = False
-    filename = 0
     totalreward = 0
 
     while not done:
@@ -184,17 +183,33 @@ def save_trajectory(env, parameters):
         future_obs = env.get_future_features(action)
         future_action = 0 if np.dot(parameters,future_obs) < 0 else 1
 
-        if random.random() < 0.5:
-            reward, done = env.save_action_screenshot(action, 'tmp/' + str(filename) + '.png', future_action=future_action)
-            filename += 1
-        else:
-            reward, done = env.take_action(action)
-
-        observation = env.last_observation
+        reward, done = env.take_action(action, record=True)
 
         totalreward += reward
         if done:
             print ("Total reward " + str(totalreward))
+            break
+
+        if random.random() < 0.2:
+            print ("saving action screenshot")
+            env.save_action_screenshot(future_action=future_action)
+
+        observation = env.last_observation
+
+def show_policy_with_history_reel(env, parameters):
+    env.reset()
+    observation = env.last_observation
+    totalreward = 0
+    while True:
+        # env.env.render()
+        # time.sleep(0.01)
+
+        action = 0 if np.dot(parameters, observation) < 0 else 1
+        reward, done = env.take_action(action)
+        totalreward += reward
+        observation = env.last_observation
+        if done:
+            print (totalreward)
             break
 
 if __name__ == "__main__":

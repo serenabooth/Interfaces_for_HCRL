@@ -15,12 +15,15 @@ class CartPole(Domain):
     num_actions = None
     obs_size = None
 
+    screenshot_count = 0
+
     def __init__(self):
         # Use OpenAI Gym for CartPole environment
         self.env = gym.make('CartPole-v1')
         self.last_observation = self.env.reset()
         self.num_actions = self.env.action_space.n
         self.obs_size = self.env.observation_space.high.size
+
 
     def set_recording(self, recording=True):
         """
@@ -115,7 +118,7 @@ class CartPole(Domain):
         """
         return range(self.env.action_space.n)
 
-    def take_action(self, action):
+    def take_action(self, action, record=False):
         """
         Take an action
 
@@ -132,6 +135,10 @@ class CartPole(Domain):
             done : Boolean
                 Is the episode finished?
         """
+        if record:
+            self.screenshot_count += 1
+            self.save_screenshot("tmp/" + str(self.screenshot_count) + ".png")
+
         self.last_observation, env_reward, done, info = self.env.step(action)
 
         if done:
@@ -183,7 +190,7 @@ class CartPole(Domain):
 
         return (env_reward, done)
 
-    def save_action_screenshot(self, action, filename=None, future_action=None):
+    def save_action_screenshot(self, filename="tmp/out", future_action=None):
         """
         This is a hack. Show a blended image showing the last action.
 
@@ -193,41 +200,34 @@ class CartPole(Domain):
             action : int
                 0 or 1, determines whether to move left or right
         """
-        self.env.render()
-        pyglet.image.get_buffer_manager().get_color_buffer().save("Screenshots/tmp0.png")
+        tmp_filename = None
+        for i in range(max(1, self.screenshot_count - 5), self.screenshot_count):
 
-        env_reward, done = self.take_action(action)
-        self.env.render()
+            if tmp_filename == None:
+                pixels_a = Image.open("Screenshots/tmp/" + str(i) + ".png")
+                print (filename)
+                tmp_filename = filename + "_" + str(i) + ".png"
+                pixels_a.save("Screenshots/" + tmp_filename)
+            else:
+                pixels_a = Image.open("Screenshots/" + tmp_filename)
+                pixels_b = Image.open("Screenshots/tmp/" + str(i) + ".png")
+                Image.blend(pixels_a, pixels_b, 0.7).save("Screenshots/" + tmp_filename)
+                print ("This code execuded")
 
-        pyglet.image.get_buffer_manager().get_color_buffer().save("Screenshots/tmp1.png")
-        self.env.render()
 
-        pixels0 = Image.open("Screenshots/tmp0.png")
-        pixels1 = Image.open("Screenshots/tmp1.png")
-        if filename == None:
-            img_loc = 'Screenshots/out.png'
-            Image.blend(pixels0, pixels1, 0.7).save(img_loc)
-        else:
-            img_loc = 'Screenshots/' + filename
-            Image.blend(pixels0, pixels1, 0.7).save(img_loc)
-
-        if future_action != None:
+        if future_action != None and tmp_filename != None:
             if future_action == 0:
                 composite_im = Image.open("Assets/left.png")
             else:
                 composite_im = Image.open("Assets/right.png")
 
-            img = Image.open(img_loc)
+            img = Image.open("Screenshots/" + tmp_filename)
             mask = Image.new("L", img.size, 0)
             draw = ImageDraw.Draw(mask)
             draw.rectangle([(0,0), (600,320)],fill=255)
             im = Image.composite(img, composite_im, mask)
-            print (im.size)
-            print (img.size)
-            print (composite_im.size)
-            im.save(img_loc)
+            im.save("Screenshots/" + tmp_filename)
 
-        return (env_reward, done)
 
 def human_direct_control():
     cartpole = CartPole()
@@ -244,7 +244,10 @@ def human_direct_control():
             cartpole.save_screenshot(str(screenshot_id) + ".png")
             screenshot_id += 1
             continue
-        env_reward, done = cartpole.save_action_screenshot(int(move))
+        action = int(move)
+        cartpole.save_action_screenshot(future_action=action)
+        env_reward, done = cartpole.take_action(action, record=True)
+
         if not done:
             reward += env_reward
         else:

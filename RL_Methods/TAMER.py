@@ -17,15 +17,10 @@ from TAMER_creditor import Creditor
 
 HUMAN_RESPONSE_TIME_MINIMUM = 0.2
 
-def undo_last_action():
-    """
-    """
-    #TODO(Serena)
-
 def tamer_with_credit_assignment (domain,
                                   stepSize = 0.05,
                                   windowSize = 0.2,
-                                  creditHistoryLen = 5):
+                                  creditHistoryLen = 1):
     """
     http://www.cs.utexas.edu/~sniekum/classes/RLFD-F16/papers/Knox09.pdf
     Implementation of Algorithm 2, TAMER with credit assignment
@@ -60,7 +55,13 @@ def tamer_with_credit_assignment (domain,
 
     while True:
         print ("Reward? ")
-        h = int(input())
+        h = input()
+        if h == "":
+            h = 0
+        elif h == "-":
+            h = -1
+        else:
+            h = int(h)
 
         # if human reinforcement is not 0, update weights
         if h != 0:
@@ -82,24 +83,12 @@ def tamer_with_credit_assignment (domain,
             print ("FEEDBACK INCORPORATED")
 
         # What state are we in?
-        state = domain.get_state_vec()
+        state = domain.get_current_features()
         print ("Starting state " + str(state))
+        print ("Weights: " + str(weights))
 
-        # Determine how each action will affect the state
-        tmp_action_effects = []
-        possible_actions = domain.get_possible_actions()
-        for action in possible_actions:
-            tmp_features = domain.get_future_features(action)
+        action = 0 if np.dot(weights, state) < 0 else 1
 
-            print ("For action " + str(action) + " future features: " + str(tmp_features))
-            action_score = np.dot(weights, tmp_features)
-            print ("For action " + str(action) + " score is " + str(action_score))
-            tmp_action_effects.append(action_score)
-
-        # Randomly select action from best potential choices
-        action_choice = np.argwhere(tmp_action_effects == np.amax(tmp_action_effects))
-        action_choice = action_choice.flatten().tolist()
-        action = possible_actions[np.random.choice(action_choice)]
         print ("Last action: " + str(action))
 
         env_reward, done = domain.take_action(action)
