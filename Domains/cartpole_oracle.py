@@ -78,7 +78,7 @@ def train(env):
     counter = 0
     avg_reward = 0
 
-    while bestreward > 200:
+    while bestreward < 200:
         counter += 1
         newparams = parameters + (np.random.rand(4) * 2 - 1)*noise_scaling
         reward = 0
