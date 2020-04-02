@@ -190,7 +190,7 @@ def save_trajectory(env, parameters):
             print ("Total reward " + str(totalreward))
             break
 
-        if random.random() < 0.2:
+        if random.random() < 1:
             print ("saving action screenshot")
             env.save_action_screenshot(future_action=future_action)
 
