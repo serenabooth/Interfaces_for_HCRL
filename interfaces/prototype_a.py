@@ -54,10 +54,11 @@ class Interface():
         img_good_robot_btn = ImageTk.PhotoImage(good_button_image)
 
 
-        for i in range(1,5):
+        for i in range(0,5):
             (bad,good) = self.add_button(canvas, x=20+290*i, good_button=img_good_robot_btn, bad_button=img_bad_robot_btn, button_id = i)
             self.button_array.append((bad,good))
-            img = self.add_image(canvas, "Screenshots/tmp/" + str(i) + ".png", x=20+290*i)
+            img = self.add_image(canvas, "Screenshots/tmp/out_" + str(i+1) + ".png", x=20+290*i)
+            self.img_array.append(img)
 
 
 
@@ -66,29 +67,21 @@ class Interface():
 
         count = 1
         while 1:
-
             img1 = tk.PhotoImage(file="Screenshots/tmp/" + str(count + 5) + ".png")
             canvas.create_image(WIDTH/2, HEIGHT-int(img1.height()/2), image=img1)
 
             # there is some strange bug when putting this in a loop...
             # all button_ids become the same
-            callback_array = []
-            for i in range(0,4):
-                callback_array.append(self.callback)
-            print (callback_array)
-            # for i in range(0, 4):
-            #     self.button_array[i][0].configure(command=lambda: self.callback(str(i)+"", "bad", count))
-            #     self.button_array[i][1].configure(command=lambda: self.callback(str(i)+"", "good", count))
-            #
-            # print (self.button_array)
-            # self.button_array[0][0].configure(command=lambda: self.callback(str(0), "bad", count))
-            # self.button_array[0][1].configure(command=lambda: self.callback(str(0), "good", count))
-            # self.button_array[1][0].configure(command=lambda: self.callback(str(1), "bad", count))
-            # self.button_array[1][1].configure(command=lambda: self.callback(str(1), "good", count))
-            # self.button_array[2][0].configure(command=lambda: self.callback(str(2), "bad", count))
-            # self.button_array[2][1].configure(command=lambda: self.callback(str(2), "good", count))
-            # self.button_array[3][0].configure(command=lambda: self.callback(str(3), "bad", count))
-            # self.button_array[3][1].configure(command=lambda: self.callback(str(3), "good", count))
+            self.button_array[0][0].configure(command=lambda: self.callback(str(0), "bad", count))
+            self.button_array[0][1].configure(command=lambda: self.callback(str(0), "good", count))
+            self.button_array[1][0].configure(command=lambda: self.callback(str(1), "bad", count))
+            self.button_array[1][1].configure(command=lambda: self.callback(str(1), "good", count))
+            self.button_array[2][0].configure(command=lambda: self.callback(str(2), "bad", count))
+            self.button_array[2][1].configure(command=lambda: self.callback(str(2), "good", count))
+            self.button_array[3][0].configure(command=lambda: self.callback(str(3), "bad", count))
+            self.button_array[3][1].configure(command=lambda: self.callback(str(3), "good", count))
+            self.button_array[4][0].configure(command=lambda: self.callback(str(3), "bad", count))
+            self.button_array[4][1].configure(command=lambda: self.callback(str(3), "good", count))
 
 
             self.GUI.update()
