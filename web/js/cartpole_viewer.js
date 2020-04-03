@@ -119,7 +119,7 @@ class Cartpole_Viewer {
         cart_est_last_track.stroke({ color: 'rgba(96,175,255,0.5)', width: 7 })
 
         //est position of cart at last timestep
-        var cart_est_last_pt =  draw.circle(polewidth).fill('#666')
+        var cart_est_last_pt =  draw.circle(polewidth).fill('rgb(127,127,204)')
         cart_est_last_pt.center(cart_est_last_x,carty)
 
         //draw & rotate pole
