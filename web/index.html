@@ -1,0 +1,60 @@
+<HTML>
+  <HEAD>
+    <meta charset="UTF-8">
+    <script src="./offline_lib/svgjs/svg.js"></script>
+    <script src="./offline_lib/jquery-3.4.1.js"></script>
+
+    <script src="./js/cartpole_viewer.js"></script>
+
+    <style>
+        /* TODO: put in separate CSS file */
+        .grid-container {
+          display: grid;
+          /* # of 'auto' determines # columns in the grid */
+          grid-template-columns: auto auto auto auto;
+          grid-gap: 10px;
+        }
+
+        .grid-container > div {
+          border:1px solid #AAA;
+          text-align: center;
+          padding: 20px 0;
+        }
+
+    </style>
+  </HEAD>
+  <BODY>
+      <div class="grid-container">
+      </div>
+
+      <script>
+
+          $(document).ready(function() {
+            //thesholds for x & theta (radians)
+            //goes from (-val, +val)
+            var cartpole_thresholds = { x : 2.4,
+                                        theta : 12 * 2 * Math.PI / 360}
+
+            //single instance can populate multiple svg grid cells
+            var viewer = new Cartpole_Viewer(cartpole_thresholds)
+
+            var numRows = 4;
+            var numCols = 4; //this is set up in the CSS... TODO - try to make dynamic
+            var img_width = 300, img_height = 100
+
+            for(let i = 0; i < numRows*numCols; i++) {
+
+              //create new div for the grid cell
+              let domId = "drawing-"+i;
+              $(".grid-container").append(`<div id="${domId}">${i}</div>`)
+
+              //populate grid cell with random state
+              viewer.set_random_state()
+              viewer.gen_svg("#"+domId, img_width, img_height)
+            }
+
+          });
+
+      </script>
+  </BODY>
+</HTML>
