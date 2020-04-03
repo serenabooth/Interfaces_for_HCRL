@@ -10,6 +10,7 @@ from copy import deepcopy
 
 C = 0.01
 POSSIBLE_ACTIONS = []
+DEVICE = None
 
 class PolicyNet(nn.Module):
 
@@ -63,7 +64,8 @@ class Agent:
                 s = env.reset()
                 done = False
                 while not done:
-                    s = torch.FloatTensor([s]).cuda()
+                    s = torch.FloatTensor([s]).to(DEVICE)
+                   
                     a = self.policy_net(s)
                     states.append(s)
                     del s
@@ -89,11 +91,12 @@ class Agent:
 
     def update_parameters(self, trajectories, gamma):
         c = 0.01
-        loss = torch.tensor([0]).float().cuda()
+        loss = torch.tensor([0]).float().to(DEVICE)
+
         optim = torch.optim.Adam(list(self.policy_net.parameters()) + list(self.baseline.parameters()), lr=0.005)
         for trajectory in trajectories:
             for t in range(len(trajectory['rewards'])):
-                r_t = torch.tensor([0]).float().cuda()
+                r_t = torch.tensor([0]).float().to(DEVICE)
                 log_prob = trajectory['log_probs'][t]
                 temp = trajectory['rewards'][t:t + 20]
                 for i, reward in enumerate(temp[:-1]):
@@ -106,7 +109,7 @@ class Agent:
                     optim.zero_grad()
                     loss.backward()
                     optim.step()
-                    loss = torch.tensor([0]).float().cuda()
+                    loss = torch.tensor([0]).float().to(DEVICE)
 
     def play(self, env, num_games):
         for game in range(num_games):
@@ -117,7 +120,7 @@ class Agent:
             s = env.reset()
             reward = 0
             while not done:
-                s = torch.FloatTensor([s]).cuda()
+                s = torch.FloatTensor([s]).to(DEVICE)
                 a = self.policy_net(s).detach().cpu().numpy()
                 del s
                 # u = np.random.choice(POSSIBLE_ACTIONS, size=1, replace=False, p=a[0])
@@ -145,7 +148,7 @@ class Agent:
             s_tmp = deepcopy(s)
             s_tmp[2] = random.gauss(s_tmp[2], 0.05)
             print ("New " + str(s_tmp))
-            s_tmp = torch.FloatTensor([s_tmp]).cuda()
+            s_tmp = torch.FloatTensor([s_tmp]).to(DEVICE)
             a = self.policy_net(s_tmp).detach().cpu().numpy()
             # u_idx = np.argmax(a[0])
             # u = POSSIBLE_ACTIONS[u_idx]
@@ -162,11 +165,13 @@ class Agent:
         print (action_2)
 
 def main():
-    global POSSIBLE_ACTIONS
+    global POSSIBLE_ACTIONS, DEVICE
+    DEVICE = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
     env = gym.make('CartPole-v0')
     POSSIBLE_ACTIONS = range(env.action_space.n)
-    policy_net = PolicyNet(env.observation_space.shape, env.action_space.n).to(torch.device('cuda'))
-    base_net = Baseline(env.observation_space.shape).to(torch.device('cuda'))
+    policy_net = PolicyNet(env.observation_space.shape, env.action_space.n).to(DEVICE)
+    base_net = Baseline(env.observation_space.shape).to(DEVICE)
     agent = Agent(policy_net, base_net)
     reward_history = agent.train(env, num_traj=32, iterations=200, gamma=0.99, base_epochs=5)
     # plt.plot(reward_history)
