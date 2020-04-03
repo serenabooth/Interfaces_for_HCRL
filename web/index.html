@@ -1,27 +1,14 @@
 <HTML>
   <HEAD>
     <meta charset="UTF-8">
-    <script src="./offline_lib/svgjs/svg.js"></script>
     <script src="./offline_lib/jquery-3.4.1.js"></script>
+
+    <script src="./offline_lib/svgjs/svg.js"></script>
+    <script src="./offline_lib/svgjs/svg.filter.js"></script>
 
     <script src="./js/cartpole_viewer.js"></script>
 
-    <style>
-        /* TODO: put in separate CSS file */
-        .grid-container {
-          display: grid;
-          /* # of 'auto' determines # columns in the grid */
-          grid-template-columns: auto auto auto auto;
-          grid-gap: 10px;
-        }
-
-        .grid-container > div {
-          border:1px solid #AAA;
-          text-align: center;
-          padding: 20px 0;
-        }
-
-    </style>
+    <link rel="stylesheet" href="./css/cartpole.css">
   </HEAD>
   <BODY>
       <div class="grid-container">
@@ -30,10 +17,20 @@
       <script>
 
           $(document).ready(function() {
+
             //thesholds for x & theta (radians)
             //goes from (-val, +val)
-            var cartpole_thresholds = { x : 2.4,
-                                        theta : 12 * 2 * Math.PI / 360}
+            var cartpole_thresholds = { x : 4.8,
+                                        theta : 24 * Math.PI / 180,
+                                        //max velocity would span world in 1 timestep
+                                        x_dot : 2 * 4.8,
+                                        theta_dot : 2* 24 * Math.PI / 180
+                                      }
+
+            //use directionary in case actions are multi-dimensional?
+            var cartpole_user_actions = {
+              "push_cart" : ["on_left", "on_right"]
+            }
 
             //single instance can populate multiple svg grid cells
             var viewer = new Cartpole_Viewer(cartpole_thresholds)
@@ -44,13 +41,16 @@
 
             for(let i = 0; i < numRows*numCols; i++) {
 
+              //populate grid cell with random state
+              var random_state = viewer.set_random_state()
+              //select a random action for the gridcell
+              var random_actions = viewer.gen_random_actions(cartpole_user_actions)
+
               //create new div for the grid cell
               let domId = "drawing-"+i;
-              $(".grid-container").append(`<div id="${domId}">${i}</div>`)
+              $(".grid-container").append(`<div id="${domId}" class="tooltip">${i}</div>`)
 
-              //populate grid cell with random state
-              viewer.set_random_state()
-              viewer.gen_svg("#"+domId, img_width, img_height)
+              viewer.gen_svg("#"+domId, random_actions, img_width, img_height)
             }
 
           });
