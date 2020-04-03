@@ -93,7 +93,7 @@ class Agent:
         c = 0.01
         loss = torch.tensor([0]).float().to(DEVICE)
 
-        optim = torch.optim.Adam(list(self.policy_net.parameters()) + list(self.baseline.parameters()), lr=0.005)
+        optim = torch.optim.Adam(list(self.policy_net.parameters()) + list(self.baseline.parameters()), lr=0.05)
         for trajectory in trajectories:
             for t in range(len(trajectory['rewards'])):
                 r_t = torch.tensor([0]).float().to(DEVICE)
@@ -173,7 +173,7 @@ def main():
     policy_net = PolicyNet(env.observation_space.shape, env.action_space.n).to(DEVICE)
     base_net = Baseline(env.observation_space.shape).to(DEVICE)
     agent = Agent(policy_net, base_net)
-    reward_history = agent.train(env, num_traj=32, iterations=200, gamma=0.99, base_epochs=5)
+    reward_history = agent.train(env, num_traj=32, iterations=50, gamma=0.99, base_epochs=5)
     # plt.plot(reward_history)
     # plt.show()
     agent.play(env, 10)
