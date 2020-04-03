@@ -116,7 +116,7 @@ class Cartpole_Viewer {
         //draw est. amt cart traveled since last timetep
         //var cartEdgeCorrectSide =
         var cart_est_last_track = draw.line(cartx-cartwidth/2, carty, cart_est_last_x, carty)
-        cart_est_last_track.stroke({ color: 'rgba(96,175,255,0.25)', width: 10 })
+        cart_est_last_track.stroke({ color: 'rgba(96,175,255,0.5)', width: 7 })
 
         //est position of cart at last timestep
         var cart_est_last_pt =  draw.circle(polewidth).fill('#666')
@@ -154,7 +154,7 @@ class Cartpole_Viewer {
         var arrow_y_bottom = carty + img_height*(0.32)
 
         var arrow_triangle = draw.polygon(`${arrow_x},${arrow_y_top},${arrow_x},${arrow_y_bottom}, ${arrow_point_x},${arrow_y_mid}`)
-        arrow_triangle.fill('rgb(127,127,204)')//.stroke({ color:"green", width: 2 })
+        arrow_triangle.fill('#999')//.stroke({ color:"green", width: 2 })
 
       }
 
