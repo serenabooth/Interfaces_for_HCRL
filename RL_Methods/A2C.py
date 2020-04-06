@@ -146,7 +146,7 @@ class Agent:
         for i in range(0, 20):
             print ("Original " + str(s))
             s_tmp = deepcopy(s)
-            s_tmp[2] = random.gauss(s_tmp[2], 0.05)
+            s_tmp[2] = random.gauss(s_tmp[2], 0.2)
             print ("New " + str(s_tmp))
             s_tmp = torch.FloatTensor([s_tmp]).to(DEVICE)
             a = self.policy_net(s_tmp).detach().cpu().numpy()
@@ -173,7 +173,7 @@ def main():
     policy_net = PolicyNet(env.observation_space.shape, env.action_space.n).to(DEVICE)
     base_net = Baseline(env.observation_space.shape).to(DEVICE)
     agent = Agent(policy_net, base_net)
-    reward_history = agent.train(env, num_traj=32, iterations=50, gamma=0.99, base_epochs=5)
+    reward_history = agent.train(env, num_traj=5, iterations=1000, gamma=0.99, base_epochs=5)
     # plt.plot(reward_history)
     # plt.show()
     agent.play(env, 10)
