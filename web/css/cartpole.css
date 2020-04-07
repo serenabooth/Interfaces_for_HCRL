@@ -1,7 +1,12 @@
+body {
+  text-align:center
+}
+/*
+https://www.w3schools.com/css/css_grid_container.asp
+*/
+
 .grid-container {
   display: grid;
-  /* # of 'auto' determines # columns in the grid */
-  grid-template-columns: auto auto auto auto;
   grid-gap: 10px;
 }
 
@@ -10,6 +15,59 @@
   text-align: center;
   padding: 20px 0;
 }
+
+.row4 {
+  /* # of 'auto' determines # columns in the grid */
+  grid-template-columns: auto auto auto auto;
+}
+
+.row5 {
+  /* # of 'auto' determines # columns in the grid */
+  grid-template-columns: auto auto auto auto auto;
+}
+
+
+
+/* https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_js_rangeslider_round */
+
+.slidecontainer {
+  width: 100%;
+}
+
+.slider {
+  -webkit-appearance: none;
+  width: 100%;
+  height: 15px;
+  border-radius: 5px;
+  background: #d3d3d3;
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+}
+
+.slider:hover {
+  opacity: 1;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: #4CAF50;
+  cursor: pointer;
+}
+
 
 /**
 https://www.w3schools.com/css/css_tooltip.asp
@@ -25,7 +83,7 @@ https://www.w3schools.com/css/css_tooltip.asp
 /* Tooltip text */
 .tooltip .tooltiptext {
   visibility: hidden;
-  width: 200px;
+  width: 100px;
   background-color: black;
   color: #fff;
   text-align: left;
@@ -41,4 +99,7 @@ https://www.w3schools.com/css/css_tooltip.asp
 /* Show the tooltip text when you mouse over the tooltip container */
 .tooltip:hover .tooltiptext {
   visibility: visible;
+  top: 90%;
+  left: 50%;
+  margin-left: -50px;
 }

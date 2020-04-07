@@ -3,6 +3,11 @@ class Cartpole_Viewer {
     constructor(thresholds, state_vals = null) {
       this.state_var_list = ["x", "x_dot", "theta", "theta_dot"]
 
+      //use directionary in case actions are multi-dimensional?
+      this.cartpole_user_actions = {
+        "push_cart" : [0,1]
+      }
+
       //max/mins of the cartpole state vals
       this.state_var_thresholds = {}
       Object.assign(this.state_var_thresholds, thresholds)
@@ -10,16 +15,19 @@ class Cartpole_Viewer {
       //state variables for cartpole
       this.state = {}
       if(state_vals == null)
-        this.set_random_state(this.state)
+        this.set_random_state()
       else
-        this.updateState(this.cartpole_vars, state_vals);
+        this.update_state(state_vals);
     }
 
     /**
     test method to generate random actions
     for each possible action dimension, choose an action
     **/
-    gen_random_actions(cartpole_user_actions) {
+    gen_random_actions(cartpole_user_actions = null) {
+
+      if (!cartpole_user_actions)
+        cartpole_user_actions = this.cartpole_user_actions
 
       var random_actions = {}
 
@@ -84,7 +92,7 @@ class Cartpole_Viewer {
         var pole_est_last_theta = this.state.theta - this.state.theta_dot
         var pole_est_last_theta_degrees = pole_est_last_theta * 180 / Math.PI
 
-        //========= Create tooltop ===============//
+        //========= Create tooltip ===============//
 
         //an on-click event to the svg. TODO: make it a mouse-over & format text
         var tooltip_txt = ""
@@ -146,7 +154,7 @@ class Cartpole_Viewer {
         axle.center(cartx,carty)
 
         //quick arrow triangle to indicate user action
-        var arrow_x_direction = actions["push_cart"] == "on_left" ? -1 : 1
+        var arrow_x_direction = actions["push_cart"] == 0 ? -1 : 1
         var arrow_x = cartx - arrow_x_direction*cartwidth/2
         var arrow_point_x = arrow_x + cartwidth * arrow_x_direction
         var arrow_y_top = carty + img_height*(0.20)
@@ -161,19 +169,27 @@ class Cartpole_Viewer {
       //set state to random vals
       set_random_state() {
           var state_vals = this.gen_random_state();
-          this.updateState(this.cartpole_vars, state_vals)
+          this.update_state(state_vals)
           return state_vals
       }
 
       //
-      updateState(var_list, state_vals) {
+      update_state(state_vals) {
         //TODO: err check whether all required state vars are set
         //(lazy way = sort keys, "::".join, compare strings)
 
         //TODO: err check whether thresholds are exceeded
 
+        //if it's an array, the param ordering must match  this.state_var_list
+        if(Array.isArray(state_vals)) {
+            for(let i = 0; i < this.state_var_list.length; i++) {
+              let state_var_name = this.state_var_list[i]
+              this.state[state_var_name] = state_vals[i]
+            }
+        }
         //copy all keys to this.state
-        Object.assign(this.state, state_vals)
+        else
+          Object.assign(this.state, state_vals)
 
       }
 
