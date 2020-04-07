@@ -1,108 +1,78 @@
 import sys
 sys.path.append("../Domains")
 from cartpole import CartPole
+import cartpole_oracle
 
 import numpy as np
 import datetime, time
 
-from multiprocessing import Queue
 from copy import deepcopy
-from collections import namedtuple
 
+import random
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
-import torch.optim as optim
-from torch.distributions import Categorical
 
-class Policy(nn.Module):
-    def __init__(self):
-        super(Policy, self).__init__()
-        # actor's layer
-        self.action_head = nn.Linear(4, 2)
-        self.saved_actions = []
+def COACH(domain, weights, trace_set = [0.95, 0.35], delay = 6, learning_rate = 1e-3, oracle_parameters = None):
+    state = domain.reset()
+    grads = []
+    total_reward = 0
+    done = False
+    num_steps = 0
 
-    def forward(self, x):
-        # actor: choses action to take from state s_t
-        # by returning probability of each action
-        action_prob = F.softmax(self.action_head(x), dim=-1)
-
-        # return values for both actor and critic as a tuple of 2 values:
-        # 1. a list with the probability of each action over the action space
-        # 2. the value from state s_t
-        return action_prob
-
-
-model = Policy() # init policy
-optimizer = optim.SGD(model.parameters(), lr=5e-3)
-
-
-def select_action(state):
-    state = torch.from_numpy(state).float()
-    action_probs = model(state)
-
-    action = np.argmax(action_probs.detach().numpy())
-
-    # TODO not sure I need to make this categorical
-    m = Categorical(action_probs)
-    print (m.log_prob(torch.tensor(action)))
-    model.saved_actions.append(m.log_prob(torch.tensor(action)))
-
-    # the action to take (left or right)
-    return (action, action_probs)
-
-def COACH(domain,
-               trace_set = [0.95],
-               delay = 6,
-               learning_rate = 2.5e-4):
-
-    prob_histories = []
-    state = domain.get_current_features()
     eligibility_traces = {}
     for trace_value in trace_set:
         eligibility_traces[trace_value] = torch.zeros(2, requires_grad=False)
-        print (eligibility_traces[trace_value])
-    first_episode = True
 
-    while True:
-        action, action_probs = select_action(state)
+    while not done:
+        human_reward = 0
+        state = torch.from_numpy(state).float()
+        z = torch.matmul(state, weights)
+        probs = torch.nn.Softmax(dim=0)(z)
+        print (probs)
+        action = np.argmax(probs.detach().numpy())
+        #action = int(torch.bernoulli(max(probs[1])).item())
+
+        d_softmax = torch.diag(probs) - probs.view(-1, 1) * probs
+        d_log = d_softmax[action] / probs[action]
+        grad = state.view(-1, 1) * d_log
+        grads.append(grad)
+
+
+        if random.random() < 0.2:
+            human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
+            print ('human reward' + str(human_reward))
+
+
         reward, done = domain.take_action(action)
-        new_state = domain.get_current_features()
-        prob_histories.append((state, action, reward, action_probs))
-
-        advantage = reward
-        loss = -1 * model.saved_actions[-1] * advantage
-        model.zero_grad()
-        loss.backward()
-
-        print ("success")
-        print (  1 / prob_histories[-1][3] )
-
-        for trace_gamma in trace_set:
-            for p in model.parameters():
-                eligibility_traces[trace_gamma] = trace_gamma * eligibility_traces[trace_gamma] + 1 / prob_histories[-1][3]
-
-        print ('made it here')
-        exit()
-
-        for p in model.parameters():
-            print (p.grad)
-        with torch.no_grad():
-
-            for p in model.parameters():
-                new_val = p.grad * 0.1
-                p.copy_(new_val)
-                print (p.grad)
-
-        print ("success 2")
-
-        # print(eligibility_traces)
+        state = domain.last_observation
 
 
 
+        total_reward += reward
+        num_steps += 1
 
-        state = new_state
+        # for num_steps, grad in enumerate(grads):
+        if human_reward > 0:
+            for trace_value in trace_set:
+                eligibility_traces[trace_value] = trace_value * eligibility_traces[trace_value] + 1 / probs * grad
+
+            weights += learning_rate * human_reward * eligibility_traces[0.95]
+
+    return (total_reward, grads)
+    # todo
+
 if __name__ == "__main__":
     domain = CartPole()
 
-    COACH(domain)
+    print ("training oracle")
+    oracle_parameters = cartpole_oracle.train(domain)
+    print ("oracle trained")
+
+    n_state = domain.obs_size
+    n_action = domain.num_actions
+    weights = torch.rand(n_state, n_action)
+
+    for i in range(0, 1000):
+        total_reward, grads = COACH(domain, weights, oracle_parameters=oracle_parameters)
+        print (total_reward)
+        # for j, grad in enumerate(grads):
+        #     weights += 0.001 * grad * (total_reward - j)
