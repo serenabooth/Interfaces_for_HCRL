@@ -55,6 +55,7 @@ class CartPole(Domain):
         """
         obs = self.env.reset()
         self.last_observation = obs
+        return obs
 
     def get_state_vec(self):
         """
