@@ -2,7 +2,6 @@ import sys
 sys.path.append("../Domains")
 from cartpole import CartPole
 from gridworld import Gridworld
-from torchvision import transforms
 
 import cartpole_oracle
 
@@ -23,27 +22,29 @@ def COACH(domain, weights, trace_set = [0], delay = 6, learning_rate = 5e-4, ora
 
     eligibility_traces = {}
     for trace_value in trace_set:
-        eligibility_traces[trace_value] = torch.zeros(domain.num_actions, requires_grad=True)
+        eligibility_traces[trace_value] = torch.zeros(domain.num_actions, requires_grad=False)
 
     for _ in range(0, 1000):
 
         human_reward = 0
-        state = torch.from_numpy(state).float()
+        state = torch.from_numpy(np.array(state)).float()
         z = torch.matmul(state, weights)
         probs = torch.nn.Softmax(dim=0)(z)
-        action = np.argmax(probs.detach().numpy())
-        # m = torch.distributions.Categorical(probs)
-        # action = m.sample().item()
-
+        # stochastic action selection
+        m = torch.distributions.Categorical(probs)
+        action = m.sample().item()
         # compute gradient
         d_softmax = torch.diag(probs) - probs.view(-1, 1) * probs
         d_log = d_softmax[action] / probs[action]
         grad = state.view(-1, 1) * d_log
+        print (state.view(-1,1))
+        print (d_log)
         grads.append(grad)
+        print (grad)
 
         reward, done = domain.take_action(action)
         total_reward += reward
-        state = np.array(domain.last_observation)
+        state = np.array(domain.position)
         if done:
             break
 
@@ -54,7 +55,7 @@ def COACH(domain, weights, trace_set = [0], delay = 6, learning_rate = 5e-4, ora
 
 
         for trace_value in trace_set:
-            eligibility_traces[trace_value] = trace_value * eligibility_traces[trace_value] + (1 / probs[action]) * grad[action]
+            eligibility_traces[trace_value] =  (1 / probs[action]) * grad
 
         weights += learning_rate * human_reward * eligibility_traces[0]
 
@@ -62,7 +63,7 @@ def COACH(domain, weights, trace_set = [0], delay = 6, learning_rate = 5e-4, ora
     # todo
 
 if __name__ == "__main__":
-    domain = CartPole()
+    domain = Gridworld()
 
     # print ("training oracle")
     # oracle_parameters = cartpole_oracle.train(domain)
@@ -70,7 +71,9 @@ if __name__ == "__main__":
 
     n_state = domain.obs_size
     n_action = domain.num_actions
+
     weights = torch.zeros(n_state, n_action)
+    print (weights)
 
     for i in range(0, 1000):
         total_reward, grads = COACH(domain, weights)
