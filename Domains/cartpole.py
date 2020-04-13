@@ -55,6 +55,7 @@ class CartPole(Domain):
         """
         obs = self.env.reset()
         self.last_observation = obs
+        return obs
 
     def get_state_vec(self):
         """
@@ -118,7 +119,7 @@ class CartPole(Domain):
         """
         return range(self.env.action_space.n)
 
-    def take_action(self, action, record=False):
+    def take_action(self, action, record=False, reward_fn = 0):
         """
         Take an action
 
