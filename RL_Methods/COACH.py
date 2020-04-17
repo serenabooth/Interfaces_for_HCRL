@@ -12,6 +12,11 @@ from copy import deepcopy
 
 import random
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch.optim as optim
+from torch.distributions import Categorical
+
 import matplotlib.pyplot as plt
 
 def randargmax(b,**kw):
@@ -30,25 +35,40 @@ def softmax_grad(s):
     return jacobian
 
 def evaluate_COACH(domain, theta, reward_fn = 0):
+    """
+    Evaluates COACH. Should be called periodically during training,
+    to generate learning curves.
+
+    Params
+    ------
+        domain : Domain
+            Specifies the environment (e.g. CartPole)
+        theta : np matrix
+            Weights for decision-making
+        reward_fn : int
+            Optional; used to report environment reward.
+    Returns
+    -------
+        average_num_steps : list
+            A list of integers corresponding to the number of steps
+            taken in each episode
+    """
     average_num_steps = []
     for _ in range(0, 5):
         state = domain.reset()[:]
 
+        # limit the possible number of steps
         for num_steps in range(0, 2000):
 
+            # get the action weights
             pi = torch.nn.Softmax(dim=-1)(torch.tensor(theta))
             action_weights = pi[state[0]][state[1]]
 
+            # take an action
             if random.random() < 0.8:
                 action = randargmax(action_weights.numpy())
             else:
                 action = random.randint(0, domain.num_actions-1)
-
-
-            # compute gradient
-            jacobian = softmax_grad(pi)
-            jacobian = jacobian.reshape(40,4,40,4)
-
             reward, done = domain.take_action(action, reward_fn = reward_fn)
             state = np.array(domain.position)[:]
 
@@ -57,7 +77,144 @@ def evaluate_COACH(domain, theta, reward_fn = 0):
         average_num_steps.append(num_steps)
     return average_num_steps
 
-def COACH(domain, num_episodes = 100, trace_set = [0], delay = 0, learning_rate = 0.05, reward_fn = 0):
+
+def evaluate_COACH_CARTPOLE(domain, theta, reward_fn = 0):
+    """
+    Evaluates COACH. Should be called periodically during training,
+    to generate learning curves.
+
+    Params
+    ------
+        domain : Domain
+            Specifies the environment (e.g. CartPole)
+        theta : np matrix
+            Weights for decision-making
+        reward_fn : int
+            Optional; used to report environment reward.
+    Returns
+    -------
+
+    """
+    average_reward = []
+    n_action = domain.num_actions
+
+    for _ in range(0, 5):
+        episode_reward = 0
+        state = domain.reset()
+
+        # limit the possible number of steps
+        for num_steps in range(0, 500):
+
+            # get the action weights
+            action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(theta)))
+            action = np.random.choice(n_action, p=action_weights)
+
+            reward, done = domain.take_action(action, reward_fn = reward_fn)
+            state = np.array(domain.last_observation)
+            episode_reward += reward
+            if done:
+                break
+        average_reward.append(episode_reward)
+    return average_reward
+
+
+
+def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, learning_rate = 0.1, reward_fn = 0, oracle_parameters = None):
+    """
+    Implements COACH, a method for human-centered RL
+
+    MacGlashan, James, et al. "Interactive learning from policy-dependent human feedback."
+    International Conference on Machine Learning. 2017.
+    https://medium.com/samkirkiles/reinforce-policy-gradients-from-scratch-in-numpy-6a09ae0dfe12
+
+    Params
+    ------
+        num_episodes : int
+            The number of episodes to train for
+        trace_set : list
+            A list containing all eligibility trace values - e.g. [0.3, 0.9]
+        delay : int
+            An int telling us how many timesteps human feedback is delayed
+        learning_rate : float
+            A hyperparameter which determines how rapidly to incorporate feedback
+        reward_fn : int
+            A parameter passed to the domain to specify which reward function to use
+
+    Returns
+    -------
+        rewards_all_episodes : list of lists of ints
+            Every x episodes, we run our model y times and record the scores
+        evaluated_episodes : list of ints
+            A list of which episodes were evaluated. Used for plotting.
+    """
+    #TODO - implement delay
+
+    n_state = domain.obs_size
+    n_action = domain.num_actions
+
+    theta = np.zeros((n_state, n_action))
+
+    rewards_all_episodes = []
+    evaluated_episodes = []
+
+    for episode_id in range(0, num_episodes):
+        print ("STARTING NEW EPISODE: " + str(episode_id))
+
+        state = domain.reset()
+
+        grads = []
+        rewards = []
+        episode_reward = 0
+
+        eligibility_traces = {}
+        for trace_val in trace_set:
+            eligibility_traces[trace_val] = np.zeros(theta.shape)
+
+        for num_steps in range(0, 1000):
+
+            # determine which action to take (probabilistic)
+            action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(theta)))
+            action = np.random.choice(n_action, p=action_weights)
+
+            # compute gradient
+            dsoftmax = softmax_grad(action_weights)[action]
+            dlog = dsoftmax / action_weights[action]
+            grad = state[None,:].T.dot(dlog[None,:])
+            grads.append(grad)
+
+            if random.random() < 0.5:
+                human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
+            else:
+                human_reward = 0
+            # domain.env.render()
+            # take action, update reward tracking
+            reward, done = domain.take_action(action, reward_fn = reward_fn)
+
+            rewards.append(reward)
+            episode_reward += reward
+
+            if done:
+                break
+
+            for trace_val in trace_set:
+                eligibility_traces[trace_val] = trace_val * eligibility_traces[trace_val]
+                eligibility_traces[trace_val] += grad
+
+            selected_trace = domain.select_trace(trace_set, human_reward)
+            theta_delta = learning_rate * human_reward * eligibility_traces[selected_trace]
+            theta = theta + theta_delta
+
+            state = domain.last_observation
+
+        if episode_id % 3 == 0:
+            rewards_all_episodes.append(evaluate_COACH_CARTPOLE(domain, theta))
+            evaluated_episodes.append(episode_id)
+
+        print ("Episode score: " + str(episode_reward))
+    return rewards_all_episodes, evaluated_episodes
+
+
+def COACH(domain, num_episodes = 100, trace_set = [0.1], delay = 0, learning_rate = 0.05, reward_fn = 0):
     """
     Implements COACH, a method for human-centered RL
 
@@ -78,16 +235,18 @@ def COACH(domain, num_episodes = 100, trace_set = [0], delay = 0, learning_rate 
             A parameter passed to the domain to specify which reward function to use
     Returns
     -------
-        rewards_all_episodes: list of ints
-            A list of rewards obtained from each episode
-        num_steps_all_episodes: list of ints
-            A list of step counts from each episode
+        total_steps : list
+            a list of how many steps were taken on each evaluation
+        evaluated_episodes : list
+            a list of which episodes were evaluated (e.g. 0, 3, 6, ...)
     """
+    #TODO - implement delay
 
     n_state = domain.num_states
+    assert (type(n_state) == tuple)
     n_action = domain.num_actions
 
-    theta = np.zeros((n_state[0], n_state[1], n_action))
+    theta = np.zeros(n_state + (n_action,))
 
     evaluated_episodes = []
     total_steps = []
@@ -105,7 +264,6 @@ def COACH(domain, num_episodes = 100, trace_set = [0], delay = 0, learning_rate 
         for num_steps in range(0, 2000):
             human_reward = 0
 
-            # print(torch.tensor(theta).shape)
             pi = torch.nn.Softmax(dim=-1)(torch.tensor(theta))
 
             action_weights = pi[state[0]][state[1]]
@@ -117,7 +275,7 @@ def COACH(domain, num_episodes = 100, trace_set = [0], delay = 0, learning_rate 
 
             # compute gradient
             jacobian = softmax_grad(pi)
-            jacobian = jacobian.reshape(8,5,4,8,5,4)
+            jacobian = jacobian.reshape(theta.shape + theta.shape)
 
             reward, done = domain.take_action(action, reward_fn = reward_fn)
             human_reward = reward
@@ -130,7 +288,8 @@ def COACH(domain, num_episodes = 100, trace_set = [0], delay = 0, learning_rate 
 
             for trace_val in trace_set:
                 eligibility_traces[trace_val] = trace_val * eligibility_traces[trace_val]
-                eligibility_traces[trace_val] += 1.0 / action_weights[action].numpy() * jacobian[state[0]][state[1]][action].numpy()
+                eligibility_traces[trace_val] += 1.0 / action_weights[action].numpy() * \
+                                                 jacobian[state[0]][state[1]][action].numpy()
 
             theta_delta = learning_rate * human_reward * eligibility_traces[selected_trace]
             theta = theta + theta_delta
@@ -142,7 +301,6 @@ def COACH(domain, num_episodes = 100, trace_set = [0], delay = 0, learning_rate 
             total_steps.append(evaluated_num_steps)
 
     return total_steps, evaluated_episodes
-    # todo
 
 def gridworld_test():
     domain = Gridworld()
@@ -166,5 +324,36 @@ def gridworld_test():
     plt.ylim((0,8))
     plt.show()
 
+def cartpole_test():
+    domain = CartPole()
+
+    print ("training oracle")
+    oracle_parameters = [-0.06410089, 0.18941857, 0.43170927, 0.30863926]#cartpole_oracle.train(domain)
+    print ("oracle trained")
+
+
+    total_rewards = []
+    for _ in range(0,10):
+        episode_total_rewards, eval_episodes = COACH_CARTPOLE(domain, num_episodes=100, trace_set = [0.99], reward_fn = 0, oracle_parameters = oracle_parameters)
+
+        if total_rewards == []:
+            total_rewards = episode_total_rewards
+            continue
+
+        for j in range(0, len(eval_episodes)):
+            total_rewards[j] = total_rewards[j] + episode_total_rewards[j]
+
+
+    mean_rewards = np.mean(total_rewards, axis = 1)
+    rewards_std = np.std(total_rewards, axis=1)
+
+    plt.plot(eval_episodes, mean_rewards)
+    plt.fill_between(eval_episodes, mean_rewards - rewards_std,
+                                mean_rewards + rewards_std, alpha=0.2)
+
+    # plt.legend()
+    plt.ylim((0,500))
+    plt.show()
+
 if __name__ == "__main__":
-    gridworld_test()
+    cartpole_test()

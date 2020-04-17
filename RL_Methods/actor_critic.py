@@ -40,13 +40,13 @@ class Policy(nn.Module):
     """
     def __init__(self):
         super(Policy, self).__init__()
-        self.affine1 = nn.Linear(4, 128)
+        self.affine1 = nn.Linear(4, 16)
 
         # actor's layer
-        self.action_head = nn.Linear(128, 2)
+        self.action_head = nn.Linear(16, 2)
 
         # critic's layer
-        self.value_head = nn.Linear(128, 1)
+        self.value_head = nn.Linear(16, 1)
 
         # action & reward buffer
         self.saved_actions = []
@@ -72,7 +72,7 @@ class Policy(nn.Module):
 
 
 model = Policy()
-optimizer = optim.Adam(model.parameters(), lr=5e-3)
+optimizer = optim.Adam(model.parameters(), lr=5e-2)
 eps = np.finfo(np.float32).eps.item()
 
 
