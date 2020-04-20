@@ -147,6 +147,23 @@ class CartPole(Domain):
 
         return (env_reward, done)
 
+    def select_trace(self, trace_set, reward):
+        """
+        Select a trace.
+        This could be done cleverly (high reward -> high trace value, low reward -> low trace value)
+        Here we just always return the max.
+
+        Params
+        ------
+            trace_set : list
+            reward : int
+        Returns
+        -------
+            float
+                corresponds to picked trace value (e.g. 0.9)
+        """
+        return np.max(trace_set)
+
     def save_screenshot(self, filename):
         """
         This is a hack. Save a screenshot of the current state.

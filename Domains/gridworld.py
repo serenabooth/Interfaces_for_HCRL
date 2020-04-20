@@ -22,7 +22,7 @@ class Gridworld(Domain):
     def __init__(self):
         self.position = [0,0]
 
-        self.num_states = 8 * 5
+        self.num_states = (8, 5)
         self.num_actions = 4
 
     def reset(self):
@@ -42,6 +42,22 @@ class Gridworld(Domain):
     def get_possible_actions(self, constraint=None):
         return len(Actions)
 
+    def select_trace(self, trace_set, reward):
+        """
+        Select a trace.
+        This could be done cleverly (high reward -> high trace value, low reward -> low trace value)
+        Here we just always return the max.
+
+        Params
+        ------
+            trace_set : list
+            reward : int
+        Returns
+        -------
+            float
+                corresponds to picked trace value (e.g. 0.9)
+        """
+        return np.max(trace_set)
 
     def task_based_reward(self, initial_position, done):
         if done:
@@ -58,6 +74,8 @@ class Gridworld(Domain):
             reward = 5
         elif initial_position[0] == 0 and initial_position[1] == 0 and action == Actions.DOWN:
             reward = 1
+        # elif initial_position[0] == 7 and initial_position[1] == 1 and action == Actions.UP:
+        #     reward = 1
         elif initial_position[0] >= 0 and initial_position[1] == 1 and action == Actions.RIGHT:
             reward = 1
         elif initial_position[0] >= 0 and initial_position[1] > 1 and action == Actions.UP:

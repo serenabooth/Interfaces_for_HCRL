@@ -119,7 +119,7 @@ def evaluate_COACH_CARTPOLE(domain, theta, reward_fn = 0):
 
 
 
-def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, learning_rate = 0.1, reward_fn = 0, oracle_parameters = None):
+def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, learning_rate = 0.05, reward_fn = 0, oracle_parameters = None):
     """
     Implements COACH, a method for human-centered RL
 
@@ -182,7 +182,7 @@ def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, le
             grad = state[None,:].T.dot(dlog[None,:])
             grads.append(grad)
 
-            if random.random() < 0.5:
+            if random.random() < 1:
                 human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
             else:
                 human_reward = 0
