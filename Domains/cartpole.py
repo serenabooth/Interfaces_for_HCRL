@@ -253,18 +253,27 @@ def human_direct_control():
     move = 0
     reward = 0
     screenshot_id = 0
+
+    states = []
+
     while str(move) != "quit":
         print ("If you move left: " + str(cartpole.get_future_features(0)))
         print ("If you move right: " + str(cartpole.get_future_features(1)))
-        print ("0 - move left; 1 - move right; s - save screenshot")
+        print ("0 - move left; 1 - move right; s - save screenshot; q - quit")
         move = input()
+        if move == "q":
+            print(states)
+            continue
+        if move == "a":
+            states.append(cartpole.get_current_features())
+            continue
         if move == "s":
             cartpole.save_screenshot(str(screenshot_id) + ".png")
             screenshot_id += 1
             continue
         action = int(move)
-        cartpole.save_action_screenshot(future_action=action)
-        env_reward, done = cartpole.take_action(action, record=True)
+        # cartpole.save_action_screenshot(future_action=action)
+        env_reward, done = cartpole.take_action(action, record=False)
 
         if not done:
             reward += env_reward

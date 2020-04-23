@@ -60,8 +60,8 @@ def evaluate_TAMER_CARTPOLE(domain, weights, reward_fn = 0):
 def tamer_with_credit_assignment (domain,
                                   num_episodes = 100,
                                   stepSize = 0.01,
-                                  windowSize = 0.2,
-                                  creditHistoryLen = 1,
+                                  windowSize = 0.6,
+                                  creditHistoryLen = 5,
                                   oracle_parameters = None):
     """
     http://www.cs.utexas.edu/~sniekum/classes/RLFD-F16/papers/Knox09.pdf
@@ -109,10 +109,12 @@ def tamer_with_credit_assignment (domain,
 
                 for (featureVec_t , time_t) in creditor.getHistoryWindow():
                     creditVal_t = creditor.assignCredit(time_t)
+
                     # print ("Time: " + str(time_t))
                     # print ("Credit Value: " + str(creditVal_t))
                     featureVec_t = np.multiply(creditVal_t, featureVec_t)
                     creditedFeatures = creditedFeatures + featureVec_t
+                    # print ("Credited Features: " + str(creditedFeatures))
 
                 error = human_reward - np.dot(weights, creditedFeatures)
                 # print ("Error " + str(error))
@@ -123,16 +125,8 @@ def tamer_with_credit_assignment (domain,
 
             action = 0 if np.dot(weights, state) < 0 else 1
 
-            if random.random() < 0.3:
+            if random.random() < 1:
                 human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
-                # print ("Reward?")
-                # try:
-                #     human_reward = int(input())
-                # except KeyboardInterrupt:
-                #     sys.exit(0)
-                # except:
-                #     print ("exception")
-                #     human_reward = 0
             else:
                 human_reward = 0
 
