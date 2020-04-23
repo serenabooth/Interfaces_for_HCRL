@@ -2,16 +2,16 @@ import sys
 sys.path.append("../Domains")
 from cartpole import CartPole
 from gridworld import Gridworld
-
+from mountaincar import MountainCar
 import cartpole_oracle
 
 import numpy as np
+import random
 
 def rand_argmax(b):
   return np.argmax(np.random.random(b.shape) * (b==b.max()))
 
-
-def Q_LEARNING(domain, q_table, learning_rate = 0.05, discount_factor = 0.99):
+def Q_LEARNING_train(domain, q_table, learning_rate = 0.05, discount_factor = 0.99):
     state = domain.reset()
     total_reward = 0
     num_steps = 0
@@ -20,7 +20,10 @@ def Q_LEARNING(domain, q_table, learning_rate = 0.05, discount_factor = 0.99):
     action_history = []
 
     for _ in range(0, 1000):
-        action = rand_argmax(q_table[state[0]][state[1]])
+        if random.random() < 0.8:
+            action = rand_argmax(q_table[state[0]][state[1]])
+        else:
+            action = random.randint(0,domain.num_actions-1)
 
         action_history.append(action)
 
@@ -38,8 +41,7 @@ def Q_LEARNING(domain, q_table, learning_rate = 0.05, discount_factor = 0.99):
         q_table[state[0]][state[1]][action] = new_value
         state = new_state
 
-    print (action_history[0:10])
-    return (total_reward, done, q_table)
+    return q_table
 
 if __name__ == "__main__":
     domain = Gridworld()
@@ -47,5 +49,5 @@ if __name__ == "__main__":
 
     for _ in range(0, 100):
 
-        total_reward, done, q_table = Q_LEARNING(domain, q_table)
+        q_table = Q_LEARNING_train(domain, q_table)
         print (total_reward)

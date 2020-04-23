@@ -1,91 +1,69 @@
-
-import gym
+import TAMER
+import COACH
+from cartpole import CartPole
 import numpy as np
 import matplotlib.pyplot as plt
-import copy
 
-#Hyperparameters
-NUM_EPISODES = 10000
-LEARNING_RATE = 0.000025
-GAMMA = 0.99
+def test_cartpole_TAMER(oracle_parameters):
+    # Run environment
+    domain = CartPole()
 
-# Create gym and seed numpy
-env = gym.make('CartPole-v0')
-nA = env.action_space.n
-np.random.seed(1)
+    total_rewards = []
+    for _ in range(0,5):
+        episode_total_rewards, eval_episodes = TAMER.tamer_with_credit_assignment(domain, oracle_parameters = oracle_parameters)
+        if total_rewards == []:
+            total_rewards = episode_total_rewards
 
-# Init weight
-w = np.random.rand(4, 2)
+        for j in range(0, len(eval_episodes)):
+            total_rewards[j] = total_rewards[j] + episode_total_rewards[j]
 
-# Keep stats for final print of graph
-episode_rewards = []
+    print (total_rewards)
 
-# Our policy that maps state to action parameterized by w
-def policy(state,w):
-    z = state.dot(w)
-    exp = np.exp(z)
-    return exp/np.sum(exp)
+    mean_rewards = np.mean(total_rewards, axis = 1)
+    rewards_std = np.std(total_rewards, axis=1)
 
-# Vectorized softmax Jacobian
-def softmax_grad(softmax):
-    s = softmax.reshape(-1,1)
-    return np.diagflat(s) - np.dot(s, s.T)
+    return eval_episodes, mean_rewards, rewards_std
 
-# Main loop
-# Make sure you update your weights AFTER each episode
-for e in range(NUM_EPISODES):
 
-    state = env.reset()[None,:]
 
-    grads = []
-    rewards = []
+def test_cartpole_COACH(oracle_parameters):
+    domain = CartPole()
 
-    # Keep track of game score to print
-    score = 0
+    total_rewards = []
+    for _ in range(0,5):
+        episode_total_rewards, eval_episodes = COACH.COACH_CARTPOLE(domain, num_episodes=100, trace_set = [0], reward_fn = 0, oracle_parameters = oracle_parameters)
+        if total_rewards == []:
+            total_rewards = episode_total_rewards
 
-    while True:
+        for j in range(0, len(eval_episodes)):
+            total_rewards[j] = total_rewards[j] + episode_total_rewards[j]
 
-        # Uncomment to see your model train in real time (slower)
-        #env.render()
+    print (total_rewards)
 
-        # Sample from policy and take action in environment
-        probs = policy(state,w)
-        action = np.random.choice(nA,p=probs[0])
-        next_state,reward,done,_ = env.step(action)
-        next_state = next_state[None,:]
+    mean_rewards = np.mean(total_rewards, axis = 1)
+    rewards_std = np.std(total_rewards, axis=1)
 
-        # Compute gradient and save with reward in memory for our weight updates
-        dsoftmax = softmax_grad(probs)[action,:]
+    return eval_episodes, mean_rewards, rewards_std
 
-        print (dsoftmax.shape)
-        dlog = dsoftmax / probs[0,action]
-        print (dlog)
-        print (dlog[None,:])
-        print (state.T)
-        exit()
-        grad = state.T.dot(dlog[None,:])
 
-        grads.append(grad)
-        rewards.append(reward)
 
-        score+=reward
+if __name__ == "__main__":
 
-        # Dont forget to update your old state to the new state
-        state = next_state
+    oracle_parameters =  [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
 
-        if done:
-            break
+    tamer_eval_episodes, tamer_mean_rewards, tamer_rewards_std = test_cartpole_TAMER(oracle_parameters)
+    coach_eval_episodes, coach_mean_rewards, coach_rewards_std = test_cartpole_COACH(oracle_parameters)
 
-    # Weight update
-    for i in range(len(grads)):
 
-        # Loop through everything that happend in the episode and update towards the log policy gradient times **FUTURE** reward
-        w += LEARNING_RATE * grads[i] * sum([ r * (GAMMA ** r) for t,r in enumerate(rewards[i:])])
+    plt.plot(tamer_eval_episodes, tamer_mean_rewards, label="tamer")
+    plt.fill_between(tamer_eval_episodes, tamer_mean_rewards - tamer_rewards_std,
+                                tamer_mean_rewards + tamer_rewards_std, alpha=0.2)
 
-    # Append for logging and print
-    episode_rewards.append(score)
-    print("EP: " + str(e) + " Score: " + str(score) + "         ",end="\r", flush=False)
+    plt.plot(coach_eval_episodes, coach_mean_rewards, label="coach")
+    plt.fill_between(coach_eval_episodes, coach_mean_rewards - coach_rewards_std,
+                                coach_mean_rewards + coach_rewards_std, alpha=0.2)
 
-plt.plot(np.arange(num_episodes),episode_rewards)
-plt.show()
-env.close()
+
+    plt.legend()
+    plt.ylim((0,500))
+    plt.show()

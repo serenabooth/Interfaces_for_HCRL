@@ -190,6 +190,8 @@ def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, le
             # take action, update reward tracking
             reward, done = domain.take_action(action, reward_fn = reward_fn)
 
+
+
             rewards.append(reward)
             episode_reward += reward
 
@@ -324,36 +326,5 @@ def gridworld_test():
     plt.ylim((0,8))
     plt.show()
 
-def cartpole_test():
-    domain = CartPole()
-
-    print ("training oracle")
-    oracle_parameters = [-0.06410089, 0.18941857, 0.43170927, 0.30863926]#cartpole_oracle.train(domain)
-    print ("oracle trained")
-
-
-    total_rewards = []
-    for _ in range(0,10):
-        episode_total_rewards, eval_episodes = COACH_CARTPOLE(domain, num_episodes=100, trace_set = [0.99], reward_fn = 0, oracle_parameters = oracle_parameters)
-
-        if total_rewards == []:
-            total_rewards = episode_total_rewards
-            continue
-
-        for j in range(0, len(eval_episodes)):
-            total_rewards[j] = total_rewards[j] + episode_total_rewards[j]
-
-
-    mean_rewards = np.mean(total_rewards, axis = 1)
-    rewards_std = np.std(total_rewards, axis=1)
-
-    plt.plot(eval_episodes, mean_rewards)
-    plt.fill_between(eval_episodes, mean_rewards - rewards_std,
-                                mean_rewards + rewards_std, alpha=0.2)
-
-    # plt.legend()
-    plt.ylim((0,500))
-    plt.show()
-
 if __name__ == "__main__":
-    cartpole_test()
+    gridworld_test()
