@@ -6,6 +6,8 @@ from copy import deepcopy
 from gym.wrappers.monitoring import stats_recorder, video_recorder
 import argparse
 import pyglet
+import csv
+import json
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-params', '--parameters', nargs='+', type=float, default=None)
@@ -55,6 +57,7 @@ def run_episode(env, parameters):
         action = 0 if np.dot(parameters,observation) < 0 else 1
         reward, done = env.take_action(action)
         observation = env.last_observation
+        print(observation)
 
         totalreward += reward
         counter += 1
@@ -170,13 +173,16 @@ def visualize_policy(env, parameters, num_traj = 2):
             if done:
                 print ("Done")
 
-def save_trajectory(env, parameters):
+
+def save_trajectory(env, parameters, outputFile = None):
     env.reset()
     done = False
     totalreward = 0
 
+    traj = [ ['x','xDot','theta','thetaDot','action'] ]
     while not done:
         print (totalreward)
+        print(parameters)
         observation = env.last_observation
         action = 0 if np.dot(parameters,observation) < 0 else 1
 
@@ -195,6 +201,28 @@ def save_trajectory(env, parameters):
             env.save_action_screenshot(future_action=future_action)
 
         observation = env.last_observation
+
+        #save the world state + action for later file output
+        if outputFile != None :
+            csvRow = list(observation)
+            csvRow.append(action)
+            traj.append(csvRow)
+
+    #write run data to file
+    if outputFile != None :
+        ''' write as CSV
+        with open(outputFile, 'w', newline='') as csvfile:
+            spamwriter = csv.writer(csvfile, delimiter=',',
+                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
+            for step in traj :
+                spamwriter.writerow(step)
+        '''
+
+        #very hacky way writing file data for an offline web-app
+        #output data as a js variable in a .js file
+        with open(outputFile, 'w') as outfile:
+            outfile.write("window.run_data = ")
+            json.dump(traj, outfile)
 
 def show_policy_with_history_reel(env, parameters):
     env.reset()
@@ -223,6 +251,7 @@ if __name__ == "__main__":
 
     print (trained_params)
 
+    i = 0
     while True:
         print ("p to play, q to quit")
         show = input()
@@ -231,7 +260,8 @@ if __name__ == "__main__":
             break
 
         # show_policy(domain, trained_params)
-
-        save_trajectory(domain, trained_params)
+        outputFile = "./Screenshots/data%d.js" % (i)
+        save_trajectory(domain, trained_params,outputFile)
+        i+=1
         # domain.set_recording(recording=True)
         # visualize_policy(domain, trained_params)
