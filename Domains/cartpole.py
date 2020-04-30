@@ -266,6 +266,7 @@ def human_direct_control():
             continue
         if move == "a":
             states.append(cartpole.get_current_features())
+            print ("states \n " + str(states))
             continue
         if move == "s":
             cartpole.save_screenshot(str(screenshot_id) + ".png")

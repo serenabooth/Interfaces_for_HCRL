@@ -183,7 +183,20 @@ def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, le
             grads.append(grad)
 
             if random.random() < 1:
-                human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
+                # human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
+                domain.env.render()
+                print ("Last action: " + str(action))
+                print ("Reward?")
+                try:
+                    human_reward = input()
+                except KeyboardInterrupt:
+                    sys.exit(0)
+
+                try:
+                    human_reward = int(human_reward)
+                except:
+                    human_reward = 0
+
             else:
                 human_reward = 0
             # domain.env.render()

@@ -60,7 +60,7 @@ def evaluate_TAMER_CARTPOLE(domain, weights, reward_fn = 0):
 def tamer_with_credit_assignment (domain,
                                   num_episodes = 100,
                                   stepSize = 0.01,
-                                  windowSize = 0.6,
+                                  windowSize = 0.2,
                                   creditHistoryLen = 5,
                                   oracle_parameters = None):
     """
@@ -86,6 +86,7 @@ def tamer_with_credit_assignment (domain,
     weights = np.zeros(domain.obs_size)
 
     for episode_id in range(0, num_episodes):
+        print ("New episode")
         state = domain.reset()
         timestamp = 0
         creditor = Creditor(windowSize, creditHistoryLen)
@@ -124,18 +125,32 @@ def tamer_with_credit_assignment (domain,
 
 
             action = 0 if np.dot(weights, state) < 0 else 1
-
-            if random.random() < 1:
-                human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
-            else:
-                human_reward = 0
-
-
             env_reward, done = domain.take_action(action)
             # print ("Last action: " + str(action))
             episode_reward += env_reward
+
             if done:
+                print ("Episode reward: " +str(episode_reward))
+
                 break
+
+
+            if random.random() < 1:
+                # human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
+                domain.env.render()
+                print ("Last action: " + str(action))
+                print ("Reward?")
+                try:
+                    human_reward = input()
+                except KeyboardInterrupt:
+                    sys.exit(0)
+
+                try:
+                    human_reward = int(human_reward)
+                except:
+                    human_reward = 0
+            else:
+                human_reward = 0
 
             state = domain.get_current_features()
             creditor.updateWindow(state, timestamp)
