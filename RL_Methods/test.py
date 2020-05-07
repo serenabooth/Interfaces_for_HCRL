@@ -31,7 +31,7 @@ def test_cartpole_COACH(oracle_parameters):
 
     total_rewards = []
     for _ in range(0,1):
-        episode_total_rewards, eval_episodes = COACH.COACH_CARTPOLE(domain, num_episodes=15, trace_set = [0.9], reward_fn = 0, oracle_parameters = oracle_parameters)
+        episode_total_rewards, eval_episodes = COACH.COACH_CARTPOLE(domain, num_episodes=5, trace_set = [0.9], reward_fn = 0, learning_rate = 0.1, oracle_parameters = oracle_parameters)
         if total_rewards == []:
             total_rewards = episode_total_rewards
 
@@ -51,18 +51,17 @@ if __name__ == "__main__":
 
     oracle_parameters =  [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
 
-    tamer_eval_episodes, tamer_mean_rewards, tamer_rewards_std = test_cartpole_TAMER(oracle_parameters)
-    # coach_eval_episodes, coach_mean_rewards, coach_rewards_std = test_cartpole_COACH(oracle_parameters)
+    # tamer_eval_episodes, tamer_mean_rewards, tamer_rewards_std = test_cartpole_TAMER(oracle_parameters)
+    # plt.plot(tamer_eval_episodes, tamer_mean_rewards, label="tamer")
+    # plt.fill_between(tamer_eval_episodes, tamer_mean_rewards - tamer_rewards_std,
+    #                             tamer_mean_rewards + tamer_rewards_std, alpha=0.2)
 
 
-    plt.plot(tamer_eval_episodes, tamer_mean_rewards, label="tamer")
-    plt.fill_between(tamer_eval_episodes, tamer_mean_rewards - tamer_rewards_std,
-                                tamer_mean_rewards + tamer_rewards_std, alpha=0.2)
 
-    # plt.plot(coach_eval_episodes, coach_mean_rewards, label="coach")
-    # plt.fill_between(coach_eval_episodes, coach_mean_rewards - coach_rewards_std,
-    #                             coach_mean_rewards + coach_rewards_std, alpha=0.2)
-    #
+    coach_eval_episodes, coach_mean_rewards, coach_rewards_std = test_cartpole_COACH(oracle_parameters = oracle_parameters)
+    plt.plot(coach_eval_episodes, coach_mean_rewards, label="coach")
+    plt.fill_between(coach_eval_episodes, coach_mean_rewards - coach_rewards_std,
+                                coach_mean_rewards + coach_rewards_std, alpha=0.2)
 
     plt.legend()
     plt.ylim((0,500))

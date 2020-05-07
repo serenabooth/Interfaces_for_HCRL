@@ -30,6 +30,7 @@ def softmax_grad(s):
     ------
         s : a numpy matrix
     """
+    s = np.array(s)
     SM = s.reshape((-1,1))
     jacobian = np.diagflat(s) - np.dot(SM, SM.T)
     return jacobian
@@ -176,12 +177,6 @@ def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, le
             action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(theta)))
             action = np.random.choice(n_action, p=action_weights)
 
-            # compute gradient
-            dsoftmax = softmax_grad(action_weights)[action]
-            dlog = dsoftmax / action_weights[action]
-            grad = state[None,:].T.dot(dlog[None,:])
-            grads.append(grad)
-
             if random.random() < 1:
                 # human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
                 domain.env.render()
@@ -192,18 +187,33 @@ def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, le
                 except KeyboardInterrupt:
                     sys.exit(0)
 
-                try:
-                    human_reward = int(human_reward)
-                except:
-                    human_reward = 0
+                if human_reward == "l":
+                    action = 0
+                    print ("New action: " + str(action))
+                    human_reward = 1
+                elif human_reward == "r":
+                    action = 1
+                    print ("New action: " + str(action))
+                    human_reward = 1
+                else:
+                    try:
+                        human_reward = int(human_reward)
+                    except:
+                        print ("no human reward")
+                        human_reward = 0
 
             else:
                 human_reward = 0
+
+            # compute gradient
+            dsoftmax = softmax_grad(action_weights)[action]
+            dlog = dsoftmax / action_weights[action].numpy()
+            grad = state[None,:].T.dot(dlog[None,:])
+            grads.append(grad)
+
             # domain.env.render()
             # take action, update reward tracking
             reward, done = domain.take_action(action, reward_fn = reward_fn)
-
-
 
             rewards.append(reward)
             episode_reward += reward
@@ -229,7 +239,7 @@ def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, le
     return rewards_all_episodes, evaluated_episodes
 
 
-def COACH(domain, num_episodes = 100, trace_set = [0.1], delay = 0, learning_rate = 0.05, reward_fn = 0):
+def COACH_GRIDWORLD(domain, num_episodes = 100, trace_set = [0.1], delay = 0, learning_rate = 0.05, reward_fn = 0):
     """
     Implements COACH, a method for human-centered RL
 
@@ -262,7 +272,6 @@ def COACH(domain, num_episodes = 100, trace_set = [0.1], delay = 0, learning_rat
     n_action = domain.num_actions
 
     theta = np.zeros(n_state + (n_action,))
-
     evaluated_episodes = []
     total_steps = []
 
@@ -280,7 +289,6 @@ def COACH(domain, num_episodes = 100, trace_set = [0.1], delay = 0, learning_rat
             human_reward = 0
 
             pi = torch.nn.Softmax(dim=-1)(torch.tensor(theta))
-
             action_weights = pi[state[0]][state[1]]
 
             if random.random() < 0.8:
@@ -304,7 +312,7 @@ def COACH(domain, num_episodes = 100, trace_set = [0.1], delay = 0, learning_rat
             for trace_val in trace_set:
                 eligibility_traces[trace_val] = trace_val * eligibility_traces[trace_val]
                 eligibility_traces[trace_val] += 1.0 / action_weights[action].numpy() * \
-                                                 jacobian[state[0]][state[1]][action].numpy()
+                                                 jacobian[state[0]][state[1]][action]
 
             theta_delta = learning_rate * human_reward * eligibility_traces[selected_trace]
             theta = theta + theta_delta
@@ -322,7 +330,7 @@ def gridworld_test():
 
     for reward_fn in [0,1]:
 
-        total_num_steps, eval_episodes = COACH(domain, trace_set = [0], reward_fn = reward_fn)
+        total_num_steps, eval_episodes = COACH_GRIDWORLD(domain, trace_set = [0], reward_fn = reward_fn)
         log_mean_steps = np.log(np.mean(total_num_steps, axis = 1))
         log_num_steps_std = np.std(np.log(total_num_steps), axis=1)
 
@@ -332,8 +340,10 @@ def gridworld_test():
         elif reward_fn == 1:
             label = "policy indepdendent"
         plt.plot(eval_episodes, log_mean_steps, label = label)
-        plt.fill_between(eval_episodes, log_mean_steps - log_num_steps_std,
-                                        log_mean_steps + log_num_steps_std, alpha=0.2)
+        plt.fill_between(eval_episodes, 
+                            log_mean_steps - log_num_steps_std,
+                            log_mean_steps + log_num_steps_std,
+                            alpha=0.2)
 
     plt.legend()
     plt.ylim((0,8))

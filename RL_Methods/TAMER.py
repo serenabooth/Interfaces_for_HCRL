@@ -59,7 +59,7 @@ def evaluate_TAMER_CARTPOLE(domain, weights, reward_fn = 0):
 
 def tamer_with_credit_assignment (domain,
                                   num_episodes = 100,
-                                  stepSize = 0.01,
+                                  stepSize = 0.005,
                                   windowSize = 0.2,
                                   creditHistoryLen = 5,
                                   oracle_parameters = None):
