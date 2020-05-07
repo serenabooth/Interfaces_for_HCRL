@@ -3,26 +3,34 @@ class UI_Blocks {
   /**
   populates a grid of random states
   **/
-  random_grid(viewer, domSelector) {
+  state_grid(viewer, domSelector, world_state_list = null, action_list = null) {
 
     var numRows = 4;
     var numCols = 4; //this is set up in the CSS... TODO - try to make dynamic
     var img_width = 300, img_height = 100
 
+
     for(let i = 0; i < numRows*numCols; i++) {
 
-      //populate grid cell with random state
-      var random_state = viewer.set_random_state()
-      //select a random action for the gridcell
-      var random_actions = viewer.gen_random_actions()
+      if(world_state_list != null) {
+          var world_state = world_state_list[i]
+          var curr_action = action_list[i]
+      } else {
+          //populate grid cell with random state
+          var world_state = viewer.gen_random_state()
+          //select a random action for the gridcell
+          var curr_action = viewer.gen_random_actions()
+      }
+
 
       //create new div for the grid cell
       let domId = "drawing-"+i;
       $(domSelector).append(`<div id="${domId}" class="tooltip">${i}</div>`)
 
-      viewer.gen_svg("#"+domId, random_actions, img_width, img_height)
+      viewer.gen_svg("#"+domId, world_state, curr_action, img_width, img_height)
     }
   }
+
 
   /**
   populates a timeline given run results
@@ -109,11 +117,10 @@ class UI_Blocks {
 
       //check to see whether we're displaying data that's different from timeslice
       if(changedData_t != null) {
-
         //highlight cells where it's display something different than sim state / action
         run_cell_state_different = !(changedData_t.join("::") === runData[t].join("::"))
         if( run_cell_state_different ) {
-          world_state =  changedData_t.slice(0,-1)
+          world_state = changedData_t.slice(0,-1)
           actions = {"push_cart" : changedData_t[index_action]}
           $("#"+divId).css("background","#EEE")
         }
@@ -127,10 +134,9 @@ class UI_Blocks {
 
       //add curr time
       $(divDomSelector).append(`<span>${t}</span>`)
+      console.log("timeline")
       //add the SVG
-      viewer.update_state(world_state)
-      viewer.gen_svg(divDomSelector, actions, img_width, img_height)
-
+      viewer.gen_svg(divDomSelector, world_state, actions, img_width, img_height)
     }
   }
 

@@ -73,6 +73,7 @@ export class CartPole {
     this.thetaDot =  (Math.random() - 0.5) * 0.5;
   }
 
+
   /**
    * Get current state as a tf.Tensor of shape [1, 4].
   getStateTensor() {
