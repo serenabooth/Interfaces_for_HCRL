@@ -6,6 +6,7 @@
 
     <script src="./offline_lib/svgjs/svg.js"></script>
 
+    <script src="./js/cart_pole.js"></script>
     <script src="./js/cartpole_viewer.js"></script>
     <script src="./js/ui_blocks.js"></script>
 
@@ -26,7 +27,7 @@
       Same as above except w/ 5 grid cells
       <hr/>
 
-      <h2>Random Grid</h2>
+      <h2>Hacky Ordered Grid</h2>
       <div class="grid-container row4" id="randomgrid"></div>
 
       <script>
@@ -35,12 +36,14 @@
 
             //thesholds for x & theta (radians)
             //goes from (-val, +val)
-            var cartpole_thresholds = { x : 4.8,
+            var cartpole_thresholds = { x : 2.4,
                                         theta : 24 * Math.PI / 180,
                                         //max velocity would span world in 1 timestep
-                                        x_dot : 2 * 4.8,
+                                        x_dot : 2 * 2.4,
                                         theta_dot : 2* 24 * Math.PI / 180
                                       }
+
+            var cartpoleSim  = new CartPole(cartpole_thresholds)
 
             //single instance can populate multiple svg grid cells
             var viewer = new Cartpole_Viewer(cartpole_thresholds)
@@ -50,7 +53,8 @@
 
             ui_blocks.timeline(viewer,"#timeline",window.run_data)
 
-            ui_blocks.state_grid(viewer,"#randomgrid")
+            let orderedStates = cartpoleSim.getOrderedStates("x",4,"theta",4);
+            ui_blocks.state_grid(viewer,"#randomgrid",orderedStates)
 
           });
 

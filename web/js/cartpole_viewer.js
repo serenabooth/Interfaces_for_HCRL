@@ -66,7 +66,8 @@ class Cartpole_Viewer {
     gen_svg(domSelector, world_state, actions, img_width, img_height) {
 
         if(world_state == null) {
-          world_state = gen_random_state()
+          //world_state = this.gen_random_state()
+          world_state = [0,0,0,0]
         }
 
         //if we get data as array, then convert to obj
@@ -80,8 +81,10 @@ class Cartpole_Viewer {
         }
 
         //scale of world to image
-        var world_width = this.state_var_thresholds.x*2 // ( 2.4 , 2.4)
+        var world_width = this.state_var_thresholds.x*4 // ( 2.4 , 2.4)
         var scale = img_width/world_width
+
+        var est_last_timesteps = 1
 
         //dimensions of cart
         var cartx = world_state.x *scale+img_width/2.0
@@ -89,14 +92,14 @@ class Cartpole_Viewer {
         var cartwidth = 0.1*img_width
         var cartheight = 0.1*img_height
         //the est. x of the cart at previous timestep
-        var cart_est_last_x = (world_state.x - world_state.x_dot)*scale+img_width/2.0
+        var cart_est_last_x = (world_state.x - est_last_timesteps*world_state.x_dot)*scale+img_width/2.0
 
         //dimensions & angle of pole
         var polewidth = 0.025*img_width
         var polelen = cartwidth*2;
         var theta_degrees = world_state.theta * 180 / Math.PI
         //the est theta of the pole in the prev timestep
-        var pole_est_last_theta = world_state.theta - world_state.theta_dot
+        var pole_est_last_theta = world_state.theta - est_last_timesteps*world_state.theta_dot
         var pole_est_last_theta_degrees = pole_est_last_theta * 180 / Math.PI
 
         //========= Create tooltip ===============//

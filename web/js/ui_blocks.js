@@ -1,5 +1,9 @@
 class UI_Blocks {
 
+  ordered_state_grid(viewer, domSelector) {
+
+  }
+
   /**
   populates a grid of random states
   **/
@@ -11,17 +15,18 @@ class UI_Blocks {
 
 
     for(let i = 0; i < numRows*numCols; i++) {
-
       if(world_state_list != null) {
           var world_state = world_state_list[i]
-          var curr_action = action_list[i]
       } else {
           //populate grid cell with random state
           var world_state = viewer.gen_random_state()
-          //select a random action for the gridcell
-          var curr_action = viewer.gen_random_actions()
       }
 
+      if(action_list != null)
+        var curr_action = action_list[i]
+      else
+        //select a random action for the gridcell
+        var curr_action = viewer.gen_random_actions()
 
       //create new div for the grid cell
       let domId = "drawing-"+i;

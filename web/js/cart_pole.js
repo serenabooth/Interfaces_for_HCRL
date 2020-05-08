@@ -34,11 +34,11 @@
  *
  *   - leftward or rightward force.
  */
-export class CartPole {
+class CartPole {
   /**
    * Constructor of CartPole.
    */
-  constructor() {
+  constructor(cartpole_thresholds) {
     // Constants that characterize the system.
     this.gravity = 9.8;
     this.massCart = 1.0;
@@ -52,10 +52,46 @@ export class CartPole {
     this.tau = 0.02;  // Seconds between state updates.
 
     // Threshold values, beyond which a simulation will be marked as failed.
-    this.xThreshold = 2.4;
-    this.thetaThreshold = 12 / 360 * 2 * Math.PI;
+    this.xThreshold = cartpole_thresholds["x"]  //2.4;
+    this.thetaThreshold = cartpole_thresholds["theta"]//12 / 360 * 2 * Math.PI;
+    this.xdotThreshold = cartpole_thresholds["x_dot"]
+    this.thetaDotThreshold = cartpole_thresholds["theta_dot"]
 
     this.setRandomState();
+  }
+
+  getMinMax(stateVar) {
+      switch(stateVar) {
+        case "x" : return [-this.xThreshold, this.xThreshold]
+        case "xDot" : return [-this.thetaThreshold, this.thetaThreshold]
+        case "theta" : return [-this.thetaThreshold, this.thetaThreshold]
+        case "thetaDot" : return [-this.thetaDotThreshold, this.thetaDotThreshold]
+      }
+  }
+
+/**
+TODO: fix and make better
+**/
+  //x, xDot, theta, thetaDot
+  getOrderedStates(stateVar1, stateVar1NumIncs, stateVar2, stateVar2NumIncs) {//, stateVar1Range = null, stateVar2Range = null) {
+    var orderedStates = []
+
+    this.state_var_list = ["x", "x_dot", "theta", "theta_dot"]
+    let state1Range = this.getMinMax(stateVar1)
+    let state2Range = this.getMinMax(stateVar2)
+
+    let state1Inc = (state1Range[1] - state1Range[0])/(stateVar1NumIncs)
+    let state2Inc = (state2Range[1] - state2Range[0])/(stateVar2NumIncs)
+    let xDotThreshold = this.xdotThreshold/4
+    let thetaDotThreshold = this.thetaDotThreshold/4
+
+    for(var i = state1Range[0]; i < state1Range[1]; i+=state1Inc)
+      for(var j = state2Range[0]; j < state2Range[1]; j+=state2Inc) {
+        orderedStates.push([i,xDotThreshold,j,thetaDotThreshold])
+      }
+
+      console.log(orderedStates)
+    return orderedStates
   }
 
   /**
