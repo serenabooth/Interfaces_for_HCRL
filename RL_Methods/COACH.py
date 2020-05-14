@@ -19,6 +19,8 @@ from torch.distributions import Categorical
 
 import matplotlib.pyplot as plt
 
+state_histories = []
+
 def randargmax(b,**kw):
   """ a random tie-breaking argmax """
   return np.argmax(np.random.random(b.shape) * (b==b.max()), **kw)
@@ -118,7 +120,21 @@ def evaluate_COACH_CARTPOLE(domain, theta, reward_fn = 0):
         average_reward.append(episode_reward)
     return average_reward
 
+def append_state_history(state):
+    if len (state_histories) > 16:
+        idx = random.randint(0,16)
+        state_histories[idx] = state
+    else:
+        state_histories.append(state)
 
+
+def compute_expected_actions(theta):
+    expected_actions = []
+    for state in state_histories:
+        action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(theta)))
+        action = np.argmax(action_weights)
+        expected_actions.append(action)
+    return expected_actions
 
 def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, learning_rate = 0.05, reward_fn = 0, oracle_parameters = None):
     """
@@ -173,6 +189,11 @@ def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, le
 
         for num_steps in range(0, 1000):
 
+            if random.random() < 0.3:
+                print ("appending state")
+                append_state_history(state)
+
+
             # determine which action to take (probabilistic)
             action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(theta)))
             action = np.random.choice(n_action, p=action_weights)
@@ -186,6 +207,17 @@ def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, le
                     human_reward = input()
                 except KeyboardInterrupt:
                     sys.exit(0)
+
+                if human_reward == "v":
+                    print (state_histories)
+                    print (compute_expected_actions(theta))
+
+                    print ("Last action: " + str(action))
+                    print ("Reward?")
+                    try:
+                        human_reward = input()
+                    except KeyboardInterrupt:
+                        sys.exit(0)
 
                 if human_reward == "l":
                     action = 0
@@ -340,7 +372,7 @@ def gridworld_test():
         elif reward_fn == 1:
             label = "policy indepdendent"
         plt.plot(eval_episodes, log_mean_steps, label = label)
-        plt.fill_between(eval_episodes, 
+        plt.fill_between(eval_episodes,
                             log_mean_steps - log_num_steps_std,
                             log_mean_steps + log_num_steps_std,
                             alpha=0.2)
