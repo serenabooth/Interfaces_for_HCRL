@@ -123,8 +123,36 @@ def tamer_with_credit_assignment (domain,
                 # print ("Weights: " + str(weights))
                 # print ("FEEDBACK INCORPORATED")
 
-
             action = 0 if np.dot(weights, state) < 0 else 1
+
+            if random.random() < 1:
+                # human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
+                # human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
+                domain.env.render()
+                print ("Proposed action: " + str(action))
+                print ("Reward?")
+                try:
+                    human_reward = input()
+                except KeyboardInterrupt:
+                    sys.exit(0)
+
+                if human_reward == "l":
+                    action = 0
+                    print ("New action: " + str(action))
+                    human_reward = 1
+                elif human_reward == "r":
+                    action = 1
+                    print ("New action: " + str(action))
+                    human_reward = 1
+                else:
+                    try:
+                        human_reward = int(human_reward)
+                    except:
+                        print ("no human reward")
+                        human_reward = 0
+            else:
+                human_reward = 0
+
             env_reward, done = domain.take_action(action)
             # print ("Last action: " + str(action))
             episode_reward += env_reward
@@ -133,24 +161,6 @@ def tamer_with_credit_assignment (domain,
                 print ("Episode reward: " +str(episode_reward))
 
                 break
-
-
-            if random.random() < 1:
-                # human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
-                domain.env.render()
-                print ("Last action: " + str(action))
-                print ("Reward?")
-                try:
-                    human_reward = input()
-                except KeyboardInterrupt:
-                    sys.exit(0)
-
-                try:
-                    human_reward = int(human_reward)
-                except:
-                    human_reward = 0
-            else:
-                human_reward = 0
 
             state = domain.get_current_features()
             creditor.updateWindow(state, timestamp)

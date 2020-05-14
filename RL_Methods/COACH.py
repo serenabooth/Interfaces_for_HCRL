@@ -318,7 +318,7 @@ def COACH_GRIDWORLD(domain, num_episodes = 100, trace_set = [0.1], delay = 0, le
             theta = theta + theta_delta
             state = np.array(domain.position)[:]
 
-        if episode_id % 3 == 0:
+        if episode_id % 1 == 0:
             evaluated_episodes.append(episode_id)
             evaluated_num_steps = evaluate_COACH(domain, theta)
             total_steps.append(evaluated_num_steps)
