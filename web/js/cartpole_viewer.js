@@ -60,18 +60,16 @@ class Cartpole_Viewer {
 
     }
 
-    /**
-    Populates a div with an SVG represntation of the cartpole
-    **/
-    gen_svg(domSelector, world_state, actions, img_width, img_height) {
+    gen_svg(domSelector, world_state, actions, img_width, img_height, animation_args = null) {
+      //scale of world to image
+      var world_width = this.state_var_thresholds.x*4 // ( 2.4 , 2.4)
+      var scale = img_width/world_width
 
-        if(world_state == null) {
-          //world_state = this.gen_random_state()
+      //convert state data to usable form
+        if(world_state == null)
           world_state = [0,0,0,0]
-        }
-
         //if we get data as array, then convert to obj
-        if(Array.isArray(world_state)) {
+        else if(Array.isArray(world_state)) {
           let stateAsObj = {}
           for(let i = 0; i < this.state_var_list.length; i++) {
             let state_var_name = this.state_var_list[i]
@@ -80,27 +78,23 @@ class Cartpole_Viewer {
           world_state = stateAsObj
         }
 
-        //scale of world to image
-        var world_width = this.state_var_thresholds.x*4 // ( 2.4 , 2.4)
-        var scale = img_width/world_width
 
-        var est_last_timesteps = 1
+        //the est x & theta the prev timestep
+        var est_next_timesteps = 1
+        var pole_est_next_theta = world_state.theta + (est_next_timesteps*world_state.theta_dot)
+        var pole_est_next_theta_degrees = pole_est_next_theta * 180 / Math.PI
+        var cart_est_next_x = (world_state.x + (est_next_timesteps*world_state.x_dot))*scale+img_width/2.0
 
         //dimensions of cart
         var cartx = world_state.x *scale+img_width/2.0
         var carty = img_height*0.66   // middle of cart
         var cartwidth = 0.1*img_width
         var cartheight = 0.1*img_height
-        //the est. x of the cart at previous timestep
-        var cart_est_last_x = (world_state.x - est_last_timesteps*world_state.x_dot)*scale+img_width/2.0
 
         //dimensions & angle of pole
         var polewidth = 0.025*img_width
         var polelen = cartwidth*2;
         var theta_degrees = world_state.theta * 180 / Math.PI
-        //the est theta of the pole in the prev timestep
-        var pole_est_last_theta = world_state.theta - est_last_timesteps*world_state.theta_dot
-        var pole_est_last_theta_degrees = pole_est_last_theta * 180 / Math.PI
 
         //========= Create tooltip ===============//
 
@@ -131,14 +125,14 @@ class Cartpole_Viewer {
         var cart = draw.rect(cartwidth, cartheight).fill('rgb(0,0,0)')
         cart.center(cartx,carty)
 
+
         //draw est. amt cart traveled since last timetep
-        //var cartEdgeCorrectSide =
-        var cart_est_last_track = draw.line(cartx-cartwidth/2, carty, cart_est_last_x, carty)
-        cart_est_last_track.stroke({ color: 'rgba(96,175,255,0.5)', width: 7 })
+        var cart_est_next_track = draw.line(cartx-cartwidth/2, carty, cart_est_next_x, carty)
+        cart_est_next_track.stroke({ color: 'rgba(96,175,255,0.25)', width: 7 })
 
         //est position of cart at last timestep
-        var cart_est_last_pt =  draw.circle(polewidth).fill('rgb(127,127,204)')
-        cart_est_last_pt.center(cart_est_last_x,carty)
+        var cart_est_next_pt =  draw.circle(polewidth).fill('rgb(127,127,204)')
+        cart_est_next_pt.center(cart_est_next_x,carty)
 
         //draw & rotate pole
         var pole = draw.rect(polewidth, polelen).fill('rgb(204,153,102)')
@@ -146,22 +140,20 @@ class Cartpole_Viewer {
         pole.rotate(theta_degrees,cartx,carty)
 
         //draw and show where pole would go on next timestep
-        var pole_est_last = draw.rect(polewidth, polelen).fill('rgba(204,153,102,0.5)')
-        pole_est_last.center(cartx,carty-polelen/2)
-        pole_est_last.rotate(pole_est_last_theta_degrees,cartx,carty)
-
-        /*
-        looking to create an orc or sector between old & new pole position
-        https://stackoverflow.com/questions/5736398/how-to-calculate-the-svg-path-for-an-arc-of-a-circle
-                var d = [
-                        "M", start.x, start.y,
-                        "A", radius, radius, 0, largeArcFlag, 0, end.x, end.y
-                ].join(" ");
-        */
+        var pole_est_next = draw.rect(polewidth, polelen).fill('rgba(204,153,102,0.5)')
+        pole_est_next.center(cart_est_next_x,carty-polelen/2)
+        pole_est_next.rotate(pole_est_next_theta_degrees,cartx,carty)
 
         //draw axle last so it's on top
         var axle = draw.circle(polewidth*0.66).fill('rgb(127,127,204)')
         axle.center(cartx,carty)
+
+        //include animations if args are inluded
+        if(animation_args != null) {
+          pole.animate(animation_args).center(cart_est_next_x,carty-polelen/2).rotate(pole_est_next_theta_degrees,cartx,carty)
+          cart.animate(animation_args).center(cart_est_next_x,carty)
+          axle.animate(animation_args).center(cart_est_next_x,carty)
+        }
 
         //quick arrow triangle to indicate user action
         var arrow_x_direction = actions["push_cart"] == 0 ? -1 : 1
@@ -174,6 +166,7 @@ class Cartpole_Viewer {
         var arrow_triangle = draw.polygon(`${arrow_x},${arrow_y_top},${arrow_x},${arrow_y_bottom}, ${arrow_point_x},${arrow_y_mid}`)
         arrow_triangle.fill('#999')//.stroke({ color:"green", width: 2 })
 
-      }
+    }
+
 
 }

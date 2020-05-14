@@ -57,6 +57,9 @@ class CartPole {
     this.xdotThreshold = cartpole_thresholds["x_dot"]
     this.thetaDotThreshold = cartpole_thresholds["theta_dot"]
 
+    this.MOVE_LEFT = 0
+    this.MOVE_RIGHT = 1
+
     this.setRandomState();
   }
 
@@ -67,6 +70,24 @@ class CartPole {
         case "theta" : return [-this.thetaThreshold, this.thetaThreshold]
         case "thetaDot" : return [-this.thetaDotThreshold, this.thetaDotThreshold]
       }
+  }
+
+  //calculate the action given the state & policy
+  getAction(state_as_arr,policy) {
+    if(math.dot(policy,state_as_arr) < 0)
+      return this.MOVE_LEFT
+    else
+      return this.MOVE_RIGHT
+  }
+
+  //calculate a list of actions given a list of states
+  getActions(stateArr, policy) {
+    var actions = []
+
+    for(let state of stateArr)
+      actions.push(this.getAction(state,policy))
+      
+    return actions
   }
 
 /**
@@ -94,19 +115,42 @@ TODO: fix and make better
     return orderedStates
   }
 
+  getRandomStates(numStates) {
+    var randomStates = []
+    for(let i = 0; i < numStates; i++) {
+      randomStates.push( this.getRandomState())
+    }
+    return randomStates
+  }
+
+  getRandomState() {
+    // The control-theory state variables of the cart-pole system.
+    // Cart position, meters.
+    let x = Math.random() - 0.5;
+    // Cart velocity.
+    let xDot = (Math.random() - 0.5) * 1;
+    // Pole angle, radians.
+    let theta = (Math.random() - 0.5) * 2 * (6 / 360 * 2 * Math.PI);
+    // Pole angle velocity.
+    let thetaDot =  (Math.random() - 0.5) * 0.5;
+
+    return [x,xDot, theta, thetaDot]
+  }
   /**
    * Set the state of the cart-pole system randomly.
    */
   setRandomState() {
+
+    let stateArr = this.getRandomState()
     // The control-theory state variables of the cart-pole system.
     // Cart position, meters.
-    this.x = Math.random() - 0.5;
+    this.x = stateArr[0]
     // Cart velocity.
-    this.xDot = (Math.random() - 0.5) * 1;
+    this.xDot = stateArr[1]
     // Pole angle, radians.
-    this.theta = (Math.random() - 0.5) * 2 * (6 / 360 * 2 * Math.PI);
+    this.theta = stateArr[2]
     // Pole angle velocity.
-    this.thetaDot =  (Math.random() - 0.5) * 0.5;
+    this.thetaDot =  stateArr[3]
   }
 
 

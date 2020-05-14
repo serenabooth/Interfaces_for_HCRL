@@ -3,6 +3,7 @@
     <meta charset="UTF-8">
     <script src="./offline_lib/jquery-3.4.1.js"></script>
     <script src="./offline_lib/jquery.csv.min.js"></script>
+    <script src="./offline_lib/math.min.js"></script>
 
     <script src="./offline_lib/svgjs/svg.js"></script>
 
@@ -15,6 +16,7 @@
     <link rel="stylesheet" href="./css/cartpole.css">
   </HEAD>
   <BODY>
+    <!--
       <h2>Animation</h2>
       <div id="animation"></div>
       <br/>
@@ -26,10 +28,14 @@
       <br/>
       Same as above except w/ 5 grid cells
       <hr/>
+-->
+      <h2>Random Grid</h2>
+      <h4 id="randomgrid_policy"></h4>
+      <b id="randomgrid_descript"></b>
 
-      <h2>Hacky Ordered Grid</h2>
-      <div class="grid-container row4" id="randomgrid"></div>
-
+      <div class="grid-container row5" id="randomgrid"></div>
+      <h5>State Data [x,xDot,theta,thetaDot]</h5>
+      <div id="randomgrid_states"></div>
       <script>
 
           $(document).ready(function() {
@@ -49,13 +55,30 @@
             var viewer = new Cartpole_Viewer(cartpole_thresholds)
             var ui_blocks = new UI_Blocks()
 
-            ui_blocks.timeline(viewer,"#animation",window.run_data,1,false)
+            //timelines
+            //ui_blocks.timeline(viewer,"#animation",window.run_data,1,false)
+            //ui_blocks.timeline(viewer,"#timeline",window.run_data)
 
-            ui_blocks.timeline(viewer,"#timeline",window.run_data)
+            //random grid
+            //undulating policy from the Dropbox Paper
+            let policy_undulating = [-0.28795545, 0.4220686, -0.55905958, 0.79609386]
+            let policy_descript = "Undulating Policy"
+            let policy_rigid = [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
+            //let policy_descript = "Rigid Policy"
 
-            let orderedStates = cartpoleSim.getOrderedStates("x",4,"theta",4);
-            ui_blocks.state_grid(viewer,"#randomgrid",orderedStates)
+            //let policy = policy_rigid
+            let policy = policy_undulating
 
+            //let states = cartpoleSim.getOrderedStates("x",4,"theta",4);
+
+            let states = cartpoleSim.getRandomStates(5*5)
+            let actions = cartpoleSim.getActions(states, policy)
+            ui_blocks.state_grid(viewer,"#randomgrid",5,5,states)
+
+            //fill in descriptive text
+            $("#randomgrid_policy").text(`${policy_descript}: [${policy}]`)
+            $("#randomgrid_descript").text("Faded elements: Where the cart *will* be in 1 timesteps at current velocity")
+            $("#randomgrid_states").text(ui_blocks.state_text(states))
           });
 
       </script>

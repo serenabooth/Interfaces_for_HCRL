@@ -1,18 +1,10 @@
 class UI_Blocks {
 
-  ordered_state_grid(viewer, domSelector) {
-
-  }
-
   /**
   populates a grid of random states
   **/
-  state_grid(viewer, domSelector, world_state_list = null, action_list = null) {
-
-    var numRows = 4;
-    var numCols = 4; //this is set up in the CSS... TODO - try to make dynamic
+  state_grid(viewer, domSelector, numRows, numCols, world_state_list = null, action_list = null) {
     var img_width = 300, img_height = 100
-
 
     for(let i = 0; i < numRows*numCols; i++) {
       if(world_state_list != null) {
@@ -30,10 +22,39 @@ class UI_Blocks {
 
       //create new div for the grid cell
       let domId = "drawing-"+i;
-      $(domSelector).append(`<div id="${domId}" class="tooltip">${i}</div>`)
+      //let gridTxt = i
+      let roundedState = this.roundElems(world_state,2)
+      let gridTxt = `x: (${roundedState[0]},${roundedState[1]}) , th: (${roundedState[2]},${roundedState[3]})`
+      $(domSelector).append(`<div id="${domId}" class="tooltip lightgrey">${gridTxt}</div>`)
 
-      viewer.gen_svg("#"+domId, world_state, curr_action, img_width, img_height)
+
+      var animation_args = {
+          duration: 1000,
+          delay : 0,
+          when : 'now',
+          swing: false,
+          times: 1000,
+          wait:1500
+      }
+
+      viewer.gen_svg("#"+domId, world_state, curr_action, img_width, img_height,animation_args)
+
     }
+  }
+
+  //return formatted text list of states
+  state_text(stateArr) {
+    let stateTxt = []
+    for(let s of stateArr)
+      stateTxt.push(`[${s}]`)
+    return stateTxt
+  }
+  //truncates each float in the array and returns  new array
+  roundElems(floatArr, numDecPlaces) {
+    let roundedArr = []
+    for(let f of floatArr)
+      roundedArr.push(f.toFixed(numDecPlaces))
+    return roundedArr
   }
 
 
