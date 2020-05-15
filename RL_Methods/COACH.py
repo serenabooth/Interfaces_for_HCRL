@@ -128,15 +128,30 @@ def append_state_history(state):
         state_histories.append(state)
 
 
-def compute_expected_actions(theta):
+def compute_expected_actions(domain, theta):
     expected_actions = []
     for state in state_histories:
+
+        current_state = domain.get_state_vec()
+
+        domain.env.observation_space = state
+
+        tmp_state = domain.get_fea
+
         action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(theta)))
         action = np.argmax(action_weights)
         expected_actions.append(action)
+        domain.env.observation_space = current_state
+
     return expected_actions
 
-def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, learning_rate = 0.05, reward_fn = 0, oracle_parameters = None):
+def COACH_CARTPOLE(domain, 
+                   num_episodes = 200,
+                   trace_set = [0.99],
+                   delay = 0,
+                   learning_rate = 0.05,
+                   reward_fn = 0,
+                   oracle_parameters = None):
     """
     Implements COACH, a method for human-centered RL
 
@@ -189,7 +204,7 @@ def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, le
 
         for num_steps in range(0, 1000):
 
-            if random.random() < 0.3:
+            if random.random() < 0.2:
                 print ("appending state")
                 append_state_history(state)
 
@@ -210,16 +225,9 @@ def COACH_CARTPOLE(domain, num_episodes = 200, trace_set = [0.99], delay = 0, le
 
                 if human_reward == "v":
                     print (state_histories)
-                    print (compute_expected_actions(theta))
-
-                    print ("Last action: " + str(action))
-                    print ("Reward?")
-                    try:
-                        human_reward = input()
-                    except KeyboardInterrupt:
-                        sys.exit(0)
-
-                if human_reward == "l":
+                    print (compute_expected_actions(domain, theta))
+                    # domain.save_imagined_action_screenshot(state=state_histories[:-1], planned_action = 0)
+                elif human_reward == "l":
                     action = 0
                     print ("New action: " + str(action))
                     human_reward = 1

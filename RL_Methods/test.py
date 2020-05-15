@@ -51,15 +51,15 @@ if __name__ == "__main__":
 
     oracle_parameters =  [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
 
-    tamer_eval_episodes, tamer_mean_rewards, tamer_rewards_std = test_cartpole_TAMER(oracle_parameters)
-    plt.plot(tamer_eval_episodes, tamer_mean_rewards, label="tamer")
-    plt.fill_between(tamer_eval_episodes, tamer_mean_rewards - tamer_rewards_std,
-                                tamer_mean_rewards + tamer_rewards_std, alpha=0.2)
+    # tamer_eval_episodes, tamer_mean_rewards, tamer_rewards_std = test_cartpole_TAMER(oracle_parameters)
+    # plt.plot(tamer_eval_episodes, tamer_mean_rewards, label="tamer")
+    # plt.fill_between(tamer_eval_episodes, tamer_mean_rewards - tamer_rewards_std,
+    #                             tamer_mean_rewards + tamer_rewards_std, alpha=0.2)
 
-    # coach_eval_episodes, coach_mean_rewards, coach_rewards_std = test_cartpole_COACH(oracle_parameters = oracle_parameters)
-    # plt.plot(coach_eval_episodes, coach_mean_rewards, label="coach")
-    # plt.fill_between(coach_eval_episodes, coach_mean_rewards - coach_rewards_std,
-    #                             coach_mean_rewards + coach_rewards_std, alpha=0.2)
+    coach_eval_episodes, coach_mean_rewards, coach_rewards_std = test_cartpole_COACH(oracle_parameters = oracle_parameters)
+    plt.plot(coach_eval_episodes, coach_mean_rewards, label="coach")
+    plt.fill_between(coach_eval_episodes, coach_mean_rewards - coach_rewards_std,
+                                coach_mean_rewards + coach_rewards_std, alpha=0.2)
 
     plt.legend()
     plt.ylim((0,500))

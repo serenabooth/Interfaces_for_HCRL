@@ -177,6 +177,7 @@ class CartPole(Domain):
         pyglet.image.get_buffer_manager().get_color_buffer().save('Screenshots/' + filename)
         self.env.render()
 
+
     def save_action_gif(self, action):
         """
         This is a hack. Save a gif showing the result of an action.
@@ -206,6 +207,33 @@ class CartPole(Domain):
                                             loop=0)
 
         return (env_reward, done)
+
+    def save_imagined_action_screenshot(self, state, planned_action):
+        # self.env.render()
+        current_state = self.get_state_vec()
+
+        self.env.observation_space = state
+        self.env.render()
+        pyglet.image.get_buffer_manager().get_color_buffer().save("Screenshots/histories/tmp0.png")    
+
+        saved_image = Image.open("Screenshots/histories/tmp0.png")
+
+        if future_action == 0:
+            composite_im = Image.open("Assets/left.png")
+        else:
+            composite_im = Image.open("Assets/right.png")
+
+        mask = Image.new("L", saved_image.size, 0)
+        draw = ImageDraw.Draw(mask)
+        draw.rectangle([(0,0), (600,320)],fill=255)
+        im = Image.composite(saved_image, composite_im, mask)
+        im.save("Screenshots/histories/output.png")
+        # self.env.render()
+        # input()
+
+        self.env.observation_space = current_state
+        # self.env.render()
+        # input()
 
     def save_action_screenshot(self, filename="tmp/out", future_action=None):
         """
@@ -254,6 +282,8 @@ def human_direct_control():
     screenshot_id = 0
 
     states = []
+
+    cartpole.save_imagined_action_screenshot(0)
 
     while str(move) != "quit":
         print ("If you move left: " + str(cartpole.get_future_features(0)))
