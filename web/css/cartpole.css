@@ -20,16 +20,6 @@ https://www.w3schools.com/css/css_grid_container.asp
   padding: 20px 0;
 }
 
-.row4 {
-  /* # of 'auto' determines # columns in the grid */
-  grid-template-columns: auto auto auto auto;
-}
-
-.row5 {
-  /* # of 'auto' determines # columns in the grid */
-  grid-template-columns: auto auto auto auto auto;
-}
-
 
 
 /* https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_js_rangeslider_round */

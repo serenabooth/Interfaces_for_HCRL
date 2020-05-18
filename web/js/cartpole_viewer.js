@@ -1,68 +1,45 @@
 class Cartpole_Viewer {
 
-    constructor(thresholds, state_vals = null) {
-      this.state_var_list = ["x", "x_dot", "theta", "theta_dot"]
 
-      //use directionary in case actions are multi-dimensional?
-      this.cartpole_user_actions = {
-        "push_cart" : [0,1]
-      }
+    constructor(cartpoleSim, thresholds) {
+      this.sim = cartpoleSim
 
       //max/mins of the cartpole state vals
       this.state_var_thresholds = {}
-      Object.assign(this.state_var_thresholds, thresholds)
+      Object.assign(this.state_var_thresholds, this.sim.cartpole_thresholds)
     }
 
     /**
     test method to generate random actions
     for each possible action dimension, choose an action
     **/
-    gen_random_actions(cartpole_user_actions = null) {
-
-      if (!cartpole_user_actions)
-        cartpole_user_actions = this.cartpole_user_actions
-
-      var random_actions = {}
-
-      for (let a in cartpole_user_actions) {
-        var possible_choices = cartpole_user_actions[a]
-        var i = Math.floor(Math.random() * possible_choices.length)
-        random_actions[a] = possible_choices[i]
-      }
-
-      return random_actions
+    gen_random_action() {
+      return this.sim.getRandomAction()
     }
 
     /**
     Generates dictionary w/ random values for state
     **/
     gen_random_state() {
-
-      var random_state = {}
-
-      for (let v of this.state_var_list) {
-
-          //generate random val within defined thresholds
-          if(v in this.state_var_thresholds) {
-              let max = this.state_var_thresholds[v]
-              let min = -this.state_var_thresholds[v]
-              //https://www.w3schools.com/js/js_random.asp
-              random_state[v] = Math.random() * (max - min) + min
-          //generate arbitrary random val
-          } else {
-              let min = -100, max = 100
-              //https://www.w3schools.com/js/js_random.asp
-              random_state[v] = Math.random() * (max - min)
-          }
-      }
-
-      return random_state;
-
+      return this.sim.getRandomState()
     }
 
-    gen_svg(domSelector, world_state, actions, img_width, img_height, animation_args = null) {
+    /**
+    Generates an SVG from a given world state
+
+    If animation is enabled, Faded cartpole representation represents orignal
+
+    @param {string} domSelector the div that'll contain the SVG
+    @param {array} world_state an array of float arrays
+    @param {number} action 0 or 1 for left vs right
+    @param {number} img_width
+    @param {number} img_height
+    @param {object} animation_args if null, then static image. Paramters as defined here: https://svgjs.com/docs/3.0/animating/
+    @param {number} num_timesteps_to_show
+    **/
+    gen_svg(domSelector, world_state, action, img_width, img_height, animation_args = null,  num_timesteps_to_show = 1) {
       //scale of world to image
-      var world_width = this.state_var_thresholds.x*4 // ( 2.4 , 2.4)
+      var world_width = this.state_var_thresholds.x*2 //put thresholds at edge of grid
       var scale = img_width/world_width
 
       //convert state data to usable form
@@ -71,19 +48,17 @@ class Cartpole_Viewer {
         //if we get data as array, then convert to obj
         else if(Array.isArray(world_state)) {
           let stateAsObj = {}
-          for(let i = 0; i < this.state_var_list.length; i++) {
-            let state_var_name = this.state_var_list[i]
+          for(let i = 0; i < this.sim.state_var_list.length; i++) {
+            let state_var_name = this.sim.state_var_list[i]
             stateAsObj[state_var_name] = world_state[i]
           }
           world_state = stateAsObj
         }
 
-
         //the est x & theta the prev timestep
-        var est_next_timesteps = 1
-        var pole_est_next_theta = world_state.theta + (est_next_timesteps*world_state.theta_dot)
+        var pole_est_next_theta = world_state.theta + (num_timesteps_to_show*world_state.theta_dot)
         var pole_est_next_theta_degrees = pole_est_next_theta * 180 / Math.PI
-        var cart_est_next_x = (world_state.x + (est_next_timesteps*world_state.x_dot))*scale+img_width/2.0
+        var cart_est_next_x = (world_state.x + (num_timesteps_to_show*world_state.x_dot))*scale+img_width/2.0
 
         //dimensions of cart
         var cartx = world_state.x *scale+img_width/2.0
@@ -105,8 +80,10 @@ class Cartpole_Viewer {
           tooltip_txt += `${v} : ${rounded_val}<br/>`
         }
         tooltip_txt+= "-----------------<br/>"
-        for(let a in actions)
-          tooltip_txt += `${a} : ${actions[a]}<br/>`
+        if(action == 0)
+          tooltip_txt += "pushTo: left"
+        else
+        tooltip_txt += "pushTo: right"
 
         $(domSelector).append(`<span class="tooltiptext">${tooltip_txt}</span>`);
 
@@ -124,39 +101,44 @@ class Cartpole_Viewer {
         //draw cart
         var cart = draw.rect(cartwidth, cartheight).fill('rgb(0,0,0)')
         cart.center(cartx,carty)
-
-
-        //draw est. amt cart traveled since last timetep
-        var cart_est_next_track = draw.line(cartx-cartwidth/2, carty, cart_est_next_x, carty)
-        cart_est_next_track.stroke({ color: 'rgba(96,175,255,0.25)', width: 7 })
-
-        //est position of cart at last timestep
-        var cart_est_next_pt =  draw.circle(polewidth).fill('rgb(127,127,204)')
-        cart_est_next_pt.center(cart_est_next_x,carty)
-
         //draw & rotate pole
         var pole = draw.rect(polewidth, polelen).fill('rgb(204,153,102)')
         pole.center(cartx,carty-polelen/2)
         pole.rotate(theta_degrees,cartx,carty)
-
-        //draw and show where pole would go on next timestep
-        var pole_est_next = draw.rect(polewidth, polelen).fill('rgba(204,153,102,0.5)')
-        pole_est_next.center(cart_est_next_x,carty-polelen/2)
-        pole_est_next.rotate(pole_est_next_theta_degrees,cartx,carty)
-
         //draw axle last so it's on top
         var axle = draw.circle(polewidth*0.66).fill('rgb(127,127,204)')
         axle.center(cartx,carty)
 
+        //draw faded cart -- if it's a static image, it's the next timestep
+        var faded_cart = draw.rect(cartwidth, cartheight*0.75).fill('rgba(0,0,0,0.33)')
+        faded_cart.center(cart_est_next_x,carty)
+        //orig position of cart
+        var faded_cart_axle =  draw.circle(polewidth*0.66).fill('rgb(127,127,204)')
+        faded_cart_axle.center(cart_est_next_x,carty)
+        //orig pole position
+        var faded_pole = draw.rect(polewidth, polelen).fill('rgba(204,153,102,0.5)')
+        faded_pole.center(cart_est_next_x,carty-polelen/2)
+        faded_pole.rotate(pole_est_next_theta_degrees,cartx,carty)
+        //draw est. amt cart traveled since last timetep
+        var cart_est_next_track = draw.line(cartx, carty, cart_est_next_x, carty)
+        cart_est_next_track.stroke({ color: 'rgba(96,175,255,0.25)', width: 7 })
+
         //include animations if args are inluded
         if(animation_args != null) {
-          pole.animate(animation_args).center(cart_est_next_x,carty-polelen/2).rotate(pole_est_next_theta_degrees,cartx,carty)
+          //switch faded cartpole to original position for animations
+          faded_pole.center(cartx,carty-polelen/2)
+          faded_pole.rotate(theta_degrees,cartx,carty)
+          faded_cart.center(cartx,carty)
+          faded_cart_axle.center(cartx,carty)
+
+          pole.animate(animation_args).rotate(pole_est_next_theta_degrees,cartx,carty).center(cart_est_next_x,carty-polelen/2)
           cart.animate(animation_args).center(cart_est_next_x,carty)
           axle.animate(animation_args).center(cart_est_next_x,carty)
         }
 
+
         //quick arrow triangle to indicate user action
-        var arrow_x_direction = actions["push_cart"] == 0 ? -1 : 1
+        var arrow_x_direction = action == 0 ? -1 : 1
         var arrow_x = cartx - arrow_x_direction*cartwidth/2
         var arrow_point_x = arrow_x + cartwidth * arrow_x_direction
         var arrow_y_top = carty + img_height*(0.20)

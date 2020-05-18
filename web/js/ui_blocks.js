@@ -3,7 +3,7 @@ class UI_Blocks {
   /**
   populates a grid of random states
   **/
-  state_grid(viewer, domSelector, numRows, numCols, world_state_list = null, action_list = null) {
+  state_grid(viewer, domSelector, numRows, numCols, world_state_list = null, action_list = null, animation_args = null, num_timesteps_to_show = 1) {
     var img_width = 300, img_height = 100
 
     for(let i = 0; i < numRows*numCols; i++) {
@@ -18,26 +18,16 @@ class UI_Blocks {
         var curr_action = action_list[i]
       else
         //select a random action for the gridcell
-        var curr_action = viewer.gen_random_actions()
+        var curr_action = viewer.gen_random_action()
 
       //create new div for the grid cell
       let domId = "drawing-"+i;
-      //let gridTxt = i
-      let roundedState = this.roundElems(world_state,2)
-      let gridTxt = `x: (${roundedState[0]},${roundedState[1]}) , th: (${roundedState[2]},${roundedState[3]})`
+      //round decimal places for display
+      let roundedStateVals = this.roundElems(world_state,2)
+      let gridTxt = `x: (${roundedStateVals[0]},${roundedStateVals[1]}) , th: (${roundedStateVals[2]},${roundedStateVals[3]})`
       $(domSelector).append(`<div id="${domId}" class="tooltip lightgrey">${gridTxt}</div>`)
 
-
-      var animation_args = {
-          duration: 1000,
-          delay : 0,
-          when : 'now',
-          swing: false,
-          times: 1000,
-          wait:1500
-      }
-
-      viewer.gen_svg("#"+domId, world_state, curr_action, img_width, img_height,animation_args)
+      viewer.gen_svg("#"+domId, world_state, curr_action, img_width, img_height,animation_args,num_timesteps_to_show)
 
     }
   }
