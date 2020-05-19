@@ -145,7 +145,39 @@ def compute_expected_actions(domain, theta):
 
     return expected_actions
 
-def COACH_CARTPOLE(domain, 
+def get_human_reward(domain, theta, oracle_parameters=None):
+    # human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
+    action = None
+    domain.env.render()
+    print ("Last action: " + str(action))
+    print ("Reward?")
+    try:
+        human_reward = input()
+    except KeyboardInterrupt:
+        sys.exit(0)
+
+    if human_reward == "v":
+        print (state_histories)
+        print (compute_expected_actions(domain, theta))
+        # domain.save_imagined_action_screenshot(state=state_histories[:-1], planned_action = 0)
+    elif human_reward == "l":
+        action = 0
+        print ("New action: " + str(action))
+        human_reward = 1
+    elif human_reward == "r":
+        action = 1
+        print ("New action: " + str(action))
+        human_reward = 1
+    else:
+        try:
+            human_reward = int(human_reward)
+        except:
+            print ("no human reward")
+            human_reward = 0
+
+    return human_reward, action
+
+def COACH_CARTPOLE(domain,
                    num_episodes = 200,
                    trace_set = [0.99],
                    delay = 0,
@@ -203,47 +235,20 @@ def COACH_CARTPOLE(domain,
             eligibility_traces[trace_val] = np.zeros(theta.shape)
 
         for num_steps in range(0, 1000):
-
+            # store state state_histories
+            # this should be replaced with k-means clustering!
             if random.random() < 0.2:
                 print ("appending state")
                 append_state_history(state)
-
 
             # determine which action to take (probabilistic)
             action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(theta)))
             action = np.random.choice(n_action, p=action_weights)
 
-            if random.random() < 1:
-                # human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
-                domain.env.render()
-                print ("Last action: " + str(action))
-                print ("Reward?")
-                try:
-                    human_reward = input()
-                except KeyboardInterrupt:
-                    sys.exit(0)
-
-                if human_reward == "v":
-                    print (state_histories)
-                    print (compute_expected_actions(domain, theta))
-                    # domain.save_imagined_action_screenshot(state=state_histories[:-1], planned_action = 0)
-                elif human_reward == "l":
-                    action = 0
-                    print ("New action: " + str(action))
-                    human_reward = 1
-                elif human_reward == "r":
-                    action = 1
-                    print ("New action: " + str(action))
-                    human_reward = 1
-                else:
-                    try:
-                        human_reward = int(human_reward)
-                    except:
-                        print ("no human reward")
-                        human_reward = 0
-
-            else:
-                human_reward = 0
+            # get human feedback
+            human_reward, suggested_action = get_human_reward(domain, theta, oracle_parameters)
+            if suggested_action != None:
+                action = suggested_action
 
             # compute gradient
             dsoftmax = softmax_grad(action_weights)[action]
@@ -251,7 +256,6 @@ def COACH_CARTPOLE(domain,
             grad = state[None,:].T.dot(dlog[None,:])
             grads.append(grad)
 
-            # domain.env.render()
             # take action, update reward tracking
             reward, done = domain.take_action(action, reward_fn = reward_fn)
 
