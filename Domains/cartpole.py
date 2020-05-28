@@ -8,6 +8,7 @@ import random
 import gym
 import time
 import pyglet
+from sklearn.cluster import KMeans
 
 class CartPole(Domain):
     env = None
@@ -145,6 +146,30 @@ class CartPole(Domain):
             self.env.reset()
 
         return (env_reward, done)
+
+    def create_initial_clusters(self, k = 5):
+        """
+        Take 300 random steps; create initial clusters.
+
+
+        """
+
+        observation_examples = []
+        for _ in range(300):
+            action = np.random.choice(self.get_possible_actions())
+            self.last_observation, env_reward, done, info = self.env.step(action)
+            observation_examples.append(self.last_observation)
+
+        self.env.reset()
+
+        kmeans = KMeans(n_clusters=k, random_state=0).fit(observation_examples)
+        print (kmeans.cluster_centers_)
+        # centroids = np.random.choice(observation_examples, k)
+
+
+    def clusters(self, observation_history, k = 25):
+        kmeans = KMeans(n_clusters=k, random_state=0).fit(observation_history)
+        print (kmeans.cluster_centers_)
 
     def select_trace(self, trace_set, reward):
         """
@@ -314,5 +339,11 @@ def human_direct_control():
 
     cartpole.env.close()
 
+
+def try_clustering():
+    cartpole = CartPole()
+    cartpole.create_initial_clusters()
+
+
 if __name__ == "__main__":
-    human_direct_control()
+    try_clustering()

@@ -1,0 +1,53 @@
+<HTML>
+  <HEAD>
+    <meta charset="UTF-8">
+    <script src="./offline_lib/jquery-3.4.1.js"></script>
+    <script src="./offline_lib/jquery.csv.min.js"></script>
+
+    <script src="./offline_lib/svgjs/svg.js"></script>
+    <script src="./offline_lib/svgjs/svg.filter.js"></script>
+
+    <script src="./js/cartpole_viewer.js"></script>
+    <script src="./js/ui_blocks.js"></script>
+
+    <script src="./sim_runs/data0.js"></script>
+
+    <link rel="stylesheet" href="./css/cartpole.css">
+  </HEAD>
+  <BODY>
+
+      <h2>Cluster Grid</h2>
+      <div class="grid-container row4" id="clustergrid"></div>
+
+      <script>
+
+          $(document).ready(function() {
+
+
+            var states = [
+                          [ 0.02194348,  0.91681667, -0.11428561, -1.51172946],
+                          [-0.03082184, -0.65299386,  0.06339038,  1.00519201],
+                          [ 0.04517748,  0.15221455, -0.03687216, -0.30696222],
+                          [-0.07693333, -0.91621549,  0.13531538,  1.49660452],
+                          [ 0.00729356, -0.16432529, -0.00187882,  0.25843267]]
+
+            //thesholds for x & theta (radians)
+            //goes from (-val, +val)
+            var cartpole_thresholds = { x : 4.8,
+                                        theta : 24 * Math.PI / 180,
+                                        //max velocity would span world in 1 timestep
+                                        x_dot : 2 * 4.8,
+                                        theta_dot : 2* 24 * Math.PI / 180
+                                      }
+
+            //single instance can populate multiple svg grid cells
+            var viewer = new Cartpole_Viewer(cartpole_thresholds)
+            var ui_blocks = new UI_Blocks()
+
+            ui_blocks.cluster_grid(viewer, "#clustergrid", states)
+
+          });
+
+      </script>
+  </BODY>
+</HTML>
