@@ -5,6 +5,10 @@ body {
 https://www.w3schools.com/css/css_grid_container.asp
 */
 
+.lightgrey {
+  color:#AAA
+}
+
 .grid-container {
   display: grid;
   grid-gap: 10px;
@@ -14,16 +18,6 @@ https://www.w3schools.com/css/css_grid_container.asp
   border:1px solid #AAA;
   text-align: center;
   padding: 20px 0;
-}
-
-.row4 {
-  /* # of 'auto' determines # columns in the grid */
-  grid-template-columns: auto auto auto auto;
-}
-
-.row5 {
-  /* # of 'auto' determines # columns in the grid */
-  grid-template-columns: auto auto auto auto auto;
 }
 
 
