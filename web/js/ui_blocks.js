@@ -3,31 +3,40 @@ class UI_Blocks {
   /**
   populates a grid of random states
   **/
-  state_grid(viewer, domSelector, numRows, numCols, world_state_list = null, action_list = null, animation_args = null, num_timesteps_to_show = 1) {
+  state_grid(domSelector, numRows, numCols, cartpole_array, policy = null, animation_args = null, num_timesteps_to_show = 1) {
     var img_width = 300, img_height = 100
 
     for(let i = 0; i < numRows*numCols; i++) {
-      if(world_state_list != null) {
-          var world_state = world_state_list[i]
-      } else {
-          //populate grid cell with random state
-          var world_state = viewer.gen_random_state()
-      }
 
-      if(action_list != null)
-        var curr_action = action_list[i]
-      else
-        //select a random action for the gridcell
-        var curr_action = viewer.gen_random_action()
+      let cartpole = cartpole_array[i]
+
+      //current world state
+      var world_state = cartpole.getState(false)
+      var curr_action = cartpole.getAction(policy)
+
+      var numTimesteps = 2//0.25/cartpole.tau //tau is the # seconds between state updates...
+      let sim_run = cartpole.simulate(curr_action,numTimesteps)
+      var next_state = sim_run["next"]
+      var future_state = sim_run["future"]
+
+      //counterfactuals
+      var cf_action = curr_action == cartpole.MOVE_LEFT ? cartpole.MOVE_RIGHT : cartpole.MOVE_LEFT
+      sim_run = cartpole.simulate(cf_action,numTimesteps)
+      var cf_next_state = sim_run["next"]
+      var cf_future_state = sim_run["future"]
 
       //create new div for the grid cell
       let domId = "drawing-"+i;
+      let cf_domId = `${domId}-counterfactual`
+
       //round decimal places for display
-      let roundedStateVals = this.roundElems(world_state,2)
+      let roundedStateVals = this.roundElems(cartpole.getState(),2)
       let gridTxt = `x: (${roundedStateVals[0]},${roundedStateVals[1]}) , th: (${roundedStateVals[2]},${roundedStateVals[3]})`
       $(domSelector).append(`<div id="${domId}" class="tooltip lightgrey">${gridTxt}</div>`)
+      $(domSelector).append(`<div id="${cf_domId}" class="tooltip lightgrey" style="background:#EEE">CF: ${gridTxt}</div>`);
 
-      viewer.gen_svg("#"+domId, world_state, curr_action, img_width, img_height,animation_args,num_timesteps_to_show)
+      cartpole.viewer.gen_svg("#"+domId, world_state, curr_action, next_state, future_state, img_width, img_height,animation_args,num_timesteps_to_show)
+      cartpole.viewer.gen_svg("#"+cf_domId, world_state, cf_action, cf_next_state, cf_future_state, img_width, img_height,animation_args,num_timesteps_to_show)
 
     }
   }
