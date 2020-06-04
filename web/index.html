@@ -52,9 +52,6 @@
 
 
             var cartpoleSim  = new CartPole(cartpole_thresholds)
-
-            //single instance can populate multiple svg grid cells
-            var viewer = new Cartpole_Viewer(cartpoleSim)
             var ui_blocks = new UI_Blocks()
 
             //timelines
@@ -68,14 +65,18 @@
             let whichPolicy = "Undulating"
 
             //policies from the dropbox paper
-            let policy = {
+            let policies = {
               "Undulating" : [-0.28795545, 0.4220686, -0.55905958, 0.79609386],
               "Rigid" : [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
             }
 
-            //let states = cartpoleSim.getOrderedStates("x",5,"theta",5);
-            let states = cartpoleSim.getRandomStates(gridSize*gridSize)
-            let actions = cartpoleSim.getActions(states, policy[whichPolicy])
+            cartpoles = []
+            for(let i = 0; i < gridSize*gridSize; i++) {
+              cp = new CartPole(cartpole_thresholds)
+              cartpoles.push(cp)
+              //let states = cartpoleSim.getOrderedStates("x",5,"theta",5);
+            }
+
 
             //===========< fill in HTML >====================//
 
@@ -91,17 +92,19 @@
             //the # of timesteps in the animation...
             //BUG: not working yet...pole floats into space
             var numTimestepsToShow = 1
+            ui_blocks.state_grid("#randomgrid",gridSize,gridSize,cartpoles, policies[whichPolicy], animation_args,numTimestepsToShow)
+
+            //let actions = cartpoleSim.getActions(states, policy[whichPolicy])
 
             //generate SVG's of states & fill in grid
             let cssVals = Array.from({length:gridSize}).map(x => "auto")
             $("#randomgrid").css("grid-template-columns", cssVals.join(" "))
 
-            ui_blocks.state_grid(viewer,"#randomgrid",gridSize,gridSize,states, actions, animation_args,numTimestepsToShow)
-            $("#randomgrid_states").text(ui_blocks.state_text(states))
+            //$("#randomgrid_states").text(ui_blocks.state_text(states))
 
             //fill in descriptive text
-            $("#randomgrid_policy").text(`${whichPolicy}: [${policy[whichPolicy]}]`)
-            $("#randomgrid_descript").text("Static Image Faded elements: Where the cart *will* be in 1 timesteps at current velocity")
+            $("#randomgrid_policy").text(`${whichPolicy}: [${policies[whichPolicy]}]`)
+            //$("#randomgrid_descript").text("Static Image Faded elements: Where the cart *will* be in 1 timesteps at current velocity")
 
           });
 
