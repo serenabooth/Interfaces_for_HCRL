@@ -78,7 +78,7 @@
 
             cartpoles = []
             for(let i = 0; i < gridSize; i++) {
-              cp = new CartPole(cartpole_thresholds, [0,0,0,0])
+              cp = new CartPole(cartpole_thresholds, states[i])
               cartpoles.push(cp)
               //let states = cartpoleSim.getOrderedStates("x",5,"theta",5);
             }
