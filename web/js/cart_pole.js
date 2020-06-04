@@ -38,7 +38,7 @@ class CartPole {
   /**
    * Constructor of CartPole.
    */
-  constructor(cartpole_thresholds) {
+  constructor(cartpole_thresholds, state = []) {
 
     // Constants that characterize the system.
     this.gravity = 9.8;
@@ -50,8 +50,8 @@ class CartPole {
     this.length = 0.5;
     this.poleMoment = this.massPole * this.length;
     this.forceMag = 10.0;
-    this.tau = 0.02;  // Seconds between state updates.
-
+    //this.tau = 0.02;  // Seconds between state updates.
+    this.tau = 0.1
 
     //list of states in this sim
     this.state_var_list = ["x", "x_dot", "theta", "theta_dot"]
@@ -62,16 +62,54 @@ class CartPole {
     this.MOVE_LEFT = 0
     this.MOVE_RIGHT = 1
 
-    this.setRandomState();
+    this.viewer = new Cartpole_Viewer(this)
+    console.log(state.length)
+    if (state.length == 0) {
+      this.setRandomState();
+    }
+    else {
+      this.setState(state);
+    }
   }
+
+  getState(asArr = true) {
+    //TODO: give option to return as object
+
+    let state = [this.x, this.x_dot,this.theta,this.theta_dot ]
+
+    if(!asArr)
+      state = this.stateArrToObj(state)
+
+    return state
+
+  }
+
+  /**
+  convert array representation of state into obj
+  **/
+  stateArrToObj(state_as_arr) {
+
+    let stateAsObj = {}
+
+    for(let i = 0; i < this.state_var_list.length; i++) {
+      let state_var_name = this.state_var_list[i]
+      stateAsObj[state_var_name] = state_as_arr[i]
+    }
+
+    return stateAsObj
+  }
+
 
   /**
   calculate the action given the state & policy
 
-  @state_as_arr: an array of numbers
   @policy: an array of floats. If null, the choose random action
+  @state_as_arr: an array of numbers. if null, then get own state
   **/
-  getAction(state_as_arr,policy = null) {
+  getAction(policy = null, state_as_arr = null) {
+
+    if(state_as_arr == null)
+      state_as_arr = this.getState()
 
     var bool = (policy == null) ? (Math.random() < 0.5) : (math.dot(policy,state_as_arr) < 0)
     if(bool)
@@ -133,7 +171,7 @@ class CartPole {
   /**
   generates an array random states
   **/
-  getRandomStates(numStates) {
+  genRandomStates(numStates) {
     var randomStates = []
     for(let i = 0; i < numStates; i++) {
       randomStates.push( this.getRandomState())
@@ -144,7 +182,7 @@ class CartPole {
   /**
   generates single random state
   **/
-  getRandomState() {
+  genRandomState() {
     // The control-theory state variables of the cart-pole system.
     // Cart position, meters.
     let x = Math.random() - 0.5;
@@ -162,7 +200,7 @@ class CartPole {
    */
   setRandomState() {
 
-    let stateArr = this.getRandomState()
+    let stateArr = this.genRandomState()
     // The control-theory state variables of the cart-pole system.
     // Cart position, meters.
     this.x = stateArr[0]
@@ -174,6 +212,20 @@ class CartPole {
     this.theta_dot =  stateArr[3]
   }
 
+  /**
+   * Set the state of the cart-pole system according to an argument.
+   */
+  setState(stateArr) {
+    // The control-theory state variables of the cart-pole system.
+    // Cart position, meters.
+    this.x = stateArr[0]
+    // Cart velocity.
+    this.x_dot = stateArr[1]
+    // Pole angle, radians.
+    this.theta = stateArr[2]
+    // Pole angle velocity.
+    this.theta_dot =  stateArr[3]
+  }
 
   /**
    * Get current state as a tf.Tensor of shape [1, 4].
@@ -182,14 +234,20 @@ class CartPole {
   }
   */
 
+
   /**
-   * Update the cart-pole system using an action.
-   * @param {number} action Only the sign of `action` matters.
-   *   A value > 0 leads to a rightward force of a fixed magnitude.
-   *   A value <= 0 leads to a leftward force of the same fixed magnitude.
-   */
-  update(action) {
-    const force = action > 0 ? this.forceMag : -this.forceMag;
+  simulates the next time step(s) of the cartpole
+  does not update internal state of the sim
+
+  @param {float} action if null, then no force applied. Else right-force for positive number and left-force for negative
+  @param {int} timesteps number of timesteps to simulate (# secs depends on this.tau)
+  **/
+  simulate(action, timesteps = 1) {
+
+    if(action == null)
+      var force = 0
+    else
+      var force = action > 0 ? this.forceMag : -this.forceMag;
 
     const cosTheta = Math.cos(this.theta);
     const sinTheta = Math.sin(this.theta);
@@ -202,11 +260,53 @@ class CartPole {
          (4 / 3 - this.massPole * cosTheta * cosTheta / this.totalMass));
     const xAcc = temp - this.poleMoment * thetaAcc * cosTheta / this.totalMass;
 
-    // Update the four state variables, using Euler's metohd.
-    this.x += this.tau * this.x_dot;
-    this.x_dot += this.tau * xAcc;
-    this.theta += this.tau * this.theta_dot;
-    this.theta_dot += this.tau * thetaAcc;
+    // Update the four state variables, using Euler's method.
+    //update for 1 timestep
+    let x = this.x + (this.tau * this.x_dot);
+    let theta = this.theta + (this.tau * this.theta_dot);
+    //update the velocity from the action
+    let x_dot = this.x_dot + (this.tau * xAcc);
+    let theta_dot = this.theta_dot + (this.tau * thetaAcc);
+
+    let next_timestep = {
+      "x" : x,
+      "x_dot" : x_dot,
+      "theta" : theta,
+      "theta_dot" : theta_dot
+    }
+
+    let beyond = {...next_timestep}
+
+    //simulate forward the rest of the steps
+    if(timesteps > 1) {
+      x += (timesteps-1)*(this.tau * x_dot);
+      theta += (timesteps-1)*(this.tau * theta_dot);
+      beyond.x = x
+      beyond.theta = theta
+    }
+
+    return {
+      "next" : next_timestep,
+      "future" : beyond
+    }
+
+  }
+
+  /**
+   * Update the cart-pole system using an action.
+
+   * @param {number} action Only the sign of `action` matters.
+   *   A value > 0 leads to a rightward force of a fixed magnitude.
+   *   A value <= 0 leads to a leftward force of the same fixed magnitude.
+   */
+  update(action) {
+
+    next = this.simulate(action)
+
+    this.x = next.x
+    this.x_dot = next.x_dot
+    this.theta = next.theta
+    this.theta_dot = next.theta_dot
 
     return this.isDone();
   }
