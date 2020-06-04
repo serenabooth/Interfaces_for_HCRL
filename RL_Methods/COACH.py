@@ -145,9 +145,8 @@ def compute_expected_actions(domain, theta):
 
     return expected_actions
 
-def get_human_reward(domain, theta, oracle_parameters=None):
+def get_human_reward(domain, theta, action, oracle_parameters=None):
     # human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
-    action = None
     domain.env.render()
     print ("Last action: " + str(action))
     print ("Reward?")
@@ -158,16 +157,9 @@ def get_human_reward(domain, theta, oracle_parameters=None):
 
     if human_reward == "v":
         print (state_histories)
-        print (compute_expected_actions(domain, theta))
+        print (domain.clusters(state_histories, k = 5))
+        # print (compute_expected_actions(domain, theta))
         # domain.save_imagined_action_screenshot(state=state_histories[:-1], planned_action = 0)
-    elif human_reward == "l":
-        action = 0
-        print ("New action: " + str(action))
-        human_reward = 1
-    elif human_reward == "r":
-        action = 1
-        print ("New action: " + str(action))
-        human_reward = 1
     else:
         try:
             human_reward = int(human_reward)
@@ -175,7 +167,7 @@ def get_human_reward(domain, theta, oracle_parameters=None):
             print ("no human reward")
             human_reward = 0
 
-    return human_reward, action
+    return human_reward
 
 def COACH_CARTPOLE(domain,
                    num_episodes = 200,
@@ -222,8 +214,6 @@ def COACH_CARTPOLE(domain,
     evaluated_episodes = []
 
     for episode_id in range(0, num_episodes):
-        print ("STARTING NEW EPISODE: " + str(episode_id))
-
         state = domain.reset()
 
         grads = []
@@ -245,11 +235,6 @@ def COACH_CARTPOLE(domain,
             action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(theta)))
             action = np.random.choice(n_action, p=action_weights)
 
-            # get human feedback
-            human_reward, suggested_action = get_human_reward(domain, theta, oracle_parameters)
-            if suggested_action != None:
-                action = suggested_action
-
             # compute gradient
             dsoftmax = softmax_grad(action_weights)[action]
             dlog = dsoftmax / action_weights[action].numpy()
@@ -258,12 +243,19 @@ def COACH_CARTPOLE(domain,
 
             # take action, update reward tracking
             reward, done = domain.take_action(action, reward_fn = reward_fn)
+            state = domain.last_observation
+            if done:
+                break
+
+            # get human feedback
+            human_reward = get_human_reward(domain, theta, action, oracle_parameters)
+            # if suggested_action != None:
+            #     action = suggested_action
+            #     reward, done = domain.take_action(action, reward_fn = reward_fn)
 
             rewards.append(reward)
             episode_reward += reward
 
-            if done:
-                break
 
             for trace_val in trace_set:
                 eligibility_traces[trace_val] = trace_val * eligibility_traces[trace_val]
@@ -273,13 +265,13 @@ def COACH_CARTPOLE(domain,
             theta_delta = learning_rate * human_reward * eligibility_traces[selected_trace]
             theta = theta + theta_delta
 
-            state = domain.last_observation
+        print ("STARTING NEW EPISODE: " + str(episode_id))
+        print ("Episode score: " + str(episode_reward))
 
-        if episode_id % 3 == 0:
+        if episode_id % 1 == 0:
             rewards_all_episodes.append(evaluate_COACH_CARTPOLE(domain, theta))
             evaluated_episodes.append(episode_id)
 
-        print ("Episode score: " + str(episode_reward))
     return rewards_all_episodes, evaluated_episodes
 
 

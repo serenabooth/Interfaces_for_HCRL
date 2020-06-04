@@ -32,6 +32,32 @@ class UI_Blocks {
     }
   }
 
+  cluster_grid(viewer, domSelector, states) {
+    console.log(states)
+    var numRows = 4;
+    var numCols = 4; //this is set up in the CSS... TODO - try to make dynamic
+    var img_width = 300, img_height = 100
+
+    for(let i = 0; i < states.length; i++) {
+
+      var pos = i % numCols
+      console.log(pos)
+      //populate grid cell with random state
+      var random_state = viewer.set_random_state()
+      viewer.update_state(states[i])
+      // random_state.update_state(states[i])
+      //select a random action for the gridcell
+      var random_actions = viewer.gen_random_actions()
+
+      //create new div for the grid cell
+      let domId = "drawing-"+i;
+      $(domSelector).append(`<div id="${domId}" class="tooltip">${i}</div>`)
+
+      viewer.gen_svg("#"+domId, random_actions, img_width, img_height)
+    }
+  }
+
+
   //return formatted text list of states
   state_text(stateArr) {
     let stateTxt = []
