@@ -38,7 +38,7 @@ class CartPole {
   /**
    * Constructor of CartPole.
    */
-  constructor(cartpole_thresholds) {
+  constructor(cartpole_thresholds, state = []) {
 
     // Constants that characterize the system.
     this.gravity = 9.8;
@@ -63,8 +63,13 @@ class CartPole {
     this.MOVE_RIGHT = 1
 
     this.viewer = new Cartpole_Viewer(this)
-
-    this.setRandomState();
+    console.log(state.length)
+    if (state.length == 0) {
+      this.setRandomState();
+    }
+    else {
+      this.setState(state);
+    }
   }
 
   getState(asArr = true) {
@@ -207,6 +212,20 @@ class CartPole {
     this.theta_dot =  stateArr[3]
   }
 
+  /**
+   * Set the state of the cart-pole system according to an argument.
+   */
+  setState(stateArr) {
+    // The control-theory state variables of the cart-pole system.
+    // Cart position, meters.
+    this.x = stateArr[0]
+    // Cart velocity.
+    this.x_dot = stateArr[1]
+    // Pole angle, radians.
+    this.theta = stateArr[2]
+    // Pole angle velocity.
+    this.theta_dot =  stateArr[3]
+  }
 
   /**
    * Get current state as a tf.Tensor of shape [1, 4].
