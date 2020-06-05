@@ -323,7 +323,7 @@ class CartPole {
     console.log(beyond_state_obj)
     console.log(beyond_needed_fixing)
     */
-    
+
     return {
       "next" : next_needed_fixing == null ? next_timestep_state_obj : next_needed_fixing,
       "future" : beyond_needed_fixing == null ? beyond_state_obj : beyond_needed_fixing,
@@ -337,7 +337,7 @@ class CartPole {
    * @param {array or obj} state any cartpole state. If null, then use own state
    * @return string version of state
    */
-  toString(state = null) {
+  toString(state = null, asTableRow=false, additionalColVals = []) {
 
     if (state == null) {
       state = this.getState()
@@ -348,7 +348,15 @@ class CartPole {
 
     //round decimal places for display
     let roundedStateVals = Util.roundElems(state,2)
-    return `x: (${roundedStateVals[0]},${roundedStateVals[1]}), th: (${roundedStateVals[2]},${roundedStateVals[3]})`
+
+    if(asTableRow) {
+      let cols = `<td>${roundedStateVals[0]}</td><td>${roundedStateVals[1]}</td><td>${roundedStateVals[2]}</td><td>${roundedStateVals[3]}</td>`
+      for (let colVal of additionalColVals)
+        cols+=`<td>${colVal}</td>`
+      return `<tr>${cols}<tr>`
+    }
+    else
+      return `x: (${roundedStateVals[0]},${roundedStateVals[1]}), th: (${roundedStateVals[2]},${roundedStateVals[3]})`
   }
 
   /**

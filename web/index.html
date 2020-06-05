@@ -93,7 +93,7 @@
                 wait:1500
             }
             //the # of timesteps in the animation...
-            var numTimestepsToShow = 50
+            var numTimestepsToShow = 25 //half a second when cartpole.tau=0.02
             ui_blocks.state_grid("#randomgrid",numRows,numCols,cartpoles, policies[whichPolicy], animation_args,numTimestepsToShow)
 
             //generate SVG's of states & fill in grid

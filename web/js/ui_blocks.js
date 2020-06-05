@@ -19,28 +19,32 @@ class UI_Blocks {
       let sim_run = cartpole.simulate(curr_action,num_timesteps_to_show)
       var next_state = sim_run["next"]
       var future_state = sim_run["future"]
-      var degenerate_state_label = sim_run["degenerate"] ? "** Degenerate **" : ""
+      var degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
 
       //simulate counterfactuals
       var cf_action = cartpole.getCounterFactualAction(curr_action)
       sim_run = cartpole.simulate(cf_action,num_timesteps_to_show)
       var cf_next_state = sim_run["next"]
       var cf_future_state = sim_run["future"]
-      var cf_degenerate_state_label = sim_run["degenerate"] ? "** Degenerate **" : ""
+      var cf_degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
 
       //create new div for the grid cell
       let domId = "drawing-"+i;
       let cf_domId = `${domId}-counterfactual`
 
       //create SVG of original action w/ text labels
-      let orig_state_txt = cartpole.toString()
-      let future_state_txt = cartpole.toString(future_state)
-      $(domSelector).append(`<div id="${domId}" class="tooltip lightgrey">${orig_state_txt} => <br/>${future_state_txt}${degenerate_state_label}<br/></div>`)
+      let table_header = "<tr><th>x</th><th>x_dot</th><th>theta</th><th>theta_dot</th><th>Degen.</th></tr>"
+      let orig_state_txt = cartpole.toString(null,true,[])
+      let future_state_txt = cartpole.toString(future_state,true,[degenerate_state_label])
+      //$(domSelector).append(`<div id="${domId}" class="tooltip lightgrey">${orig_state_txt} => <br/>${future_state_txt}${degenerate_state_label}<br/></div>`)
+      $(domSelector).append(`<div id="${domId}"><table class="lightgrey" style="margin:auto;text-align:center">${table_header}${orig_state_txt}${future_state_txt}</table></div>`)
+
       cartpole.viewer.gen_svg("#"+domId, world_state, curr_action, next_state, future_state, img_width, img_height,animation_args,num_timesteps_to_show)
 
       //create SVG of CF action
-      let cf_future_state_txt = cartpole.toString(cf_future_state)
-      $(domSelector).append(`<div id="${cf_domId}" class="tooltip lightgrey" style="background:#EEE">CF: ${cf_future_state_txt}${cf_degenerate_state_label}<br/><br/></div>`);
+      let cf_future_state_txt = cartpole.toString(cf_future_state,true,cf_degenerate_state_label)
+      //$(domSelector).append(`<div id="${cf_domId}" class="tooltip lightgrey" style="background:#EEE">CF: ${cf_future_state_txt}${cf_degenerate_state_label}<br/><br/></div>`);
+      $(domSelector).append(`<div id="${cf_domId}"><table class="lightgrey" style="margin:auto;text-align:center">${table_header}${orig_state_txt}${cf_future_state_txt}</table></div>`)
       cartpole.viewer.gen_svg("#"+cf_domId, world_state, cf_action, cf_next_state, cf_future_state, img_width, img_height,animation_args,num_timesteps_to_show)
     }
   }
