@@ -8,7 +8,6 @@ class Cartpole_Viewer {
       Object.assign(this.state_var_thresholds, this.sim.cartpole_thresholds)
     }
 
-
     /**
     Generates an SVG from a given world state
 
@@ -121,28 +120,32 @@ class Cartpole_Viewer {
           faded_pole.rotate(theta_degrees,cartx,carty)
 
           //animate opaque cart
-          pole.animate(animation_args).rotate(pole_est_next_theta_degrees,cartx,carty).center(cart_est_next_x,carty-polelen/2)
-              .animate(animation_args).rotate(pole_est_future_theta_degrees,cartx,carty).center(cart_est_future_x,carty-polelen/2)
+          //the lines commented above each animation is a vestiage of trying to animate the
+          //  immediate next step and following timsteps separately
+          //pole.animate(animation_args).rotate(pole_est_next_theta_degrees-theta_degrees,cartx,carty).center(cart_est_next_x,carty-polelen/2)
+          pole.animate(animation_args).center(cart_est_future_x,carty-polelen/2).rotate(pole_est_future_theta_degrees-theta_degrees,cartx,carty)
+          //console.log("theta1"+ (theta_degrees))
+          //console.log("theta2"+ (pole_est_future_theta_degrees-theta_degrees))
+          //cart.animate(animation_args).center(cart_est_next_x,carty)
+          cart.animate(animation_args).center(cart_est_future_x,carty)
 
-          cart.animate(animation_args).center(cart_est_next_x,carty)
-              .animate(animation_args).center(cart_est_future_x,carty)
-
-          axle.animate(animation_args).center(cart_est_next_x,carty)
-              .animate(animation_args).center(cart_est_future_x,carty)
+          //axle.animate(animation_args).center(cart_est_next_x,carty)
+          axle.animate(animation_args).center(cart_est_future_x,carty)
 
 
-              /*
+          /*
+          an attempt at making the red triangle visible between the "next" and "future" timestep
 
-              arrow_triangle.animate(animation_args).attr({ fill:"red"})
-                            .animate(animation_args).attr({ fill:"red"})
+          arrow_triangle.animate(animation_args).attr({ fill:"red"})
+                        .animate(animation_args).attr({ fill:"red"})
 
-              arrow_triangle.animate(animation_args).stroke({ color: 'rgba(255,0,0,0)'})
-                    .animate(animation_args).stroke({ color: 'rgba(255,0,0,1)'})
+          arrow_triangle.animate(animation_args).stroke({ color: 'rgba(255,0,0,0)'})
+                .animate(animation_args).stroke({ color: 'rgba(255,0,0,1)'})
 
-                              arrow_triangle.animate(animation_args).fill('rgba(255,0,0,0)')
-                                            .animate(animation_args).fill('rgba(255,0,0,1)')
+                          arrow_triangle.animate(animation_args).fill('rgba(255,0,0,0)')
+                                        .animate(animation_args).fill('rgba(255,0,0,1)')
 
-                        */
+                    */
 
         //if static image, it's the next timestep
         } else {
