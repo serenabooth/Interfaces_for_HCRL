@@ -6,6 +6,8 @@ import datetime, time
 import socket
 import threading
 import pickle
+import random
+import matplotlib.pyplot as plt
 
 from scipy import integrate, stats
 from multiprocessing import Queue
@@ -17,10 +19,50 @@ from TAMER_creditor import Creditor
 
 HUMAN_RESPONSE_TIME_MINIMUM = 0.2
 
+def evaluate_TAMER_CARTPOLE(domain, weights, reward_fn = 0):
+    """
+    Evaluates TAMER. Should be called periodically during training,
+    to generate learning curves.
+
+    Params
+    ------
+        domain : Domain
+            Specifies the environment (e.g. CartPole)
+        theta : np matrix
+            Weights for decision-making
+        reward_fn : int
+            Optional; used to report environment reward.
+    Returns
+    -------
+
+    """
+    average_reward = []
+    n_action = domain.num_actions
+
+    for _ in range(0, 5):
+        episode_reward = 0
+        state = domain.reset()
+
+        # limit the possible number of steps
+        for num_steps in range(0, 500):
+
+            # get the action weights
+            action = 0 if np.dot(weights, state) < 0 else 1
+            reward, done = domain.take_action(action, reward_fn = reward_fn)
+
+            state = np.array(domain.get_current_features())
+            episode_reward += reward
+            if done:
+                break
+        average_reward.append(episode_reward)
+    return average_reward
+
 def tamer_with_credit_assignment (domain,
-                                  stepSize = 0.05,
+                                  num_episodes = 100,
+                                  stepSize = 0.005,
                                   windowSize = 0.2,
-                                  creditHistoryLen = 1):
+                                  creditHistoryLen = 5,
+                                  oracle_parameters = None):
     """
     http://www.cs.utexas.edu/~sniekum/classes/RLFD-F16/papers/Knox09.pdf
     Implementation of Algorithm 2, TAMER with credit assignment
@@ -38,75 +80,131 @@ def tamer_with_credit_assignment (domain,
     -------
         None
     """
-    # oracle_parameters = cartpole_oracle.train(domain)
-    domain.env.render()
+    rewards_all_episodes = []
+    evaluated_episodes = []
 
-    creditor = Creditor(windowSize, creditHistoryLen)
-    state = domain.get_state_vec()
-    features = domain.get_current_features()
-    num_features = len(features)
-    weights = np.zeros(num_features)
+    weights = np.zeros(domain.obs_size)
 
-    timestamp = 0
-    h = 0
-    action = None
-    stepsTaken = 0
-    reward = 0
+    for episode_id in range(0, num_episodes):
+        print ("New episode")
+        state = domain.reset()
+        timestamp = 0
+        creditor = Creditor(windowSize, creditHistoryLen)
 
-    while True:
-        print ("Reward? ")
-        h = input()
-        if h == "":
-            h = 0
-        elif h == "-":
-            h = -1
-        else:
-            h = int(h)
 
-        # if human reinforcement is not 0, update weights
-        if h != 0:
-            # # Update weights
-            print ("Nonzero feedback received!")
-            print ("Feedback: " + str(h))
-            creditedFeatures = np.zeros(num_features)
-            for (featureVec_t , time_t) in creditor.getHistoryWindow():
-                creditVal_t = creditor.assignCredit(time_t)
-                print ("Time: " + str(time_t))
-                print ("Credit Value: " + str(creditVal_t))
-                featureVec_t = np.multiply(creditVal_t, featureVec_t)
-                creditedFeatures = creditedFeatures + featureVec_t
+        human_reward = 0
+        action = None
+        stepsTaken = 0
+        episode_reward = 0
 
-            error = h - np.dot(weights, creditedFeatures)
-            print ("Error " + str(error))
-            weights = np.add(weights, np.multiply(stepSize * error, creditedFeatures))
-            print ("Weights: " + str(weights))
-            print ("FEEDBACK INCORPORATED")
+        for num_steps in range(0, 1000):
+            # domain.env.render()
 
-        # What state are we in?
-        state = domain.get_current_features()
-        print ("Starting state " + str(state))
-        print ("Weights: " + str(weights))
+            # if human reinforcement is not 0, update weights
+            if human_reward != 0:
+                # # Update weights
+                # print ("Nonzero feedback received!")
+                # print ("Feedback: " + str(human_reward))
+                creditedFeatures = np.zeros(domain.obs_size)
 
-        action = 0 if np.dot(weights, state) < 0 else 1
 
-        print ("Last action: " + str(action))
+                for (featureVec_t , time_t) in creditor.getHistoryWindow():
+                    creditVal_t = creditor.assignCredit(time_t)
 
-        env_reward, done = domain.take_action(action)
-        if not done: reward += env_reward
-        else: reward = 0
-        state = domain.get_state_vec()
-        features = domain.get_current_features()
-        creditor.updateWindow(features, timestamp)
-        timestamp += 1
+                    # print ("Time: " + str(time_t))
+                    # print ("Credit Value: " + str(creditVal_t))
+                    featureVec_t = np.multiply(creditVal_t, featureVec_t)
+                    creditedFeatures = creditedFeatures + featureVec_t
+                    # print ("Credited Features: " + str(creditedFeatures))
 
-        print ("Episode reward: " + str(reward) + "\n")
+                error = human_reward - np.dot(weights, creditedFeatures)
+                # print ("Error " + str(error))
+                weights = np.add(weights, np.multiply(stepSize * error, creditedFeatures))
+                # print ("Weights: " + str(weights))
+                # print ("FEEDBACK INCORPORATED")
 
-        domain.env.render()
-        time.sleep(0.1)
+            action = 0 if np.dot(weights, state) < 0 else 1
 
-def main():
+            if random.random() < 1:
+                # human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
+                # human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
+                domain.env.render()
+                print ("Proposed action: " + str(action))
+                print ("Reward?")
+                try:
+                    human_reward = input()
+                except KeyboardInterrupt:
+                    sys.exit(0)
+
+                if human_reward == "l":
+                    action = 0
+                    print ("New action: " + str(action))
+                    human_reward = 1
+                elif human_reward == "r":
+                    action = 1
+                    print ("New action: " + str(action))
+                    human_reward = 1
+                else:
+                    try:
+                        human_reward = int(human_reward)
+                    except:
+                        print ("no human reward")
+                        human_reward = 0
+            else:
+                human_reward = 0
+
+            env_reward, done = domain.take_action(action)
+            # print ("Last action: " + str(action))
+            episode_reward += env_reward
+
+            if done:
+                print ("Episode reward: " +str(episode_reward))
+
+                break
+
+            state = domain.get_current_features()
+            creditor.updateWindow(state, timestamp)
+            timestamp += 1
+
+        if episode_id % 3 == 0:
+            rewards_all_episodes.append(evaluate_TAMER_CARTPOLE(domain, weights))
+            evaluated_episodes.append(episode_id)
+        # print ("Episode score: " + str(episode_reward))
+    return rewards_all_episodes, evaluated_episodes
+
+
+def test_cartpole():
     # Run environment
     domain = CartPole()
-    tamer_with_credit_assignment(domain)
 
-main()
+    print ("training oracle")
+    # oracle_parameters = cartpole_oracle.train(domain)
+    oracle_parameters =  [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
+    print (oracle_parameters)
+    print ("oracle trained")
+
+    total_rewards = []
+    for _ in range(0,5):
+        episode_total_rewards, eval_episodes = tamer_with_credit_assignment(domain, oracle_parameters = oracle_parameters)
+        if total_rewards == []:
+            total_rewards = episode_total_rewards
+
+        for j in range(0, len(eval_episodes)):
+            total_rewards[j] = total_rewards[j] + episode_total_rewards[j]
+
+    print (total_rewards)
+
+    mean_rewards = np.mean(total_rewards, axis = 1)
+    rewards_std = np.std(total_rewards, axis=1)
+
+    plt.plot(eval_episodes, mean_rewards)
+    plt.fill_between(eval_episodes, mean_rewards - rewards_std,
+                                mean_rewards + rewards_std, alpha=0.2)
+
+    # plt.legend()
+    plt.ylim((0,500))
+    plt.show()
+
+
+if __name__ == "__main__":
+    test_cartpole()

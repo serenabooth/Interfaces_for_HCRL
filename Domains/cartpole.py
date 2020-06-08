@@ -8,6 +8,7 @@ import random
 import gym
 import time
 import pyglet
+from sklearn.cluster import KMeans
 
 class CartPole(Domain):
     env = None
@@ -53,8 +54,8 @@ class CartPole(Domain):
         Returns:
             None
         """
-        obs = self.env.reset()
-        self.last_observation = obs
+        self.last_observation = self.env.reset()
+        return self.last_observation
 
     def get_state_vec(self):
         """
@@ -118,7 +119,7 @@ class CartPole(Domain):
         """
         return range(self.env.action_space.n)
 
-    def take_action(self, action, record=False):
+    def take_action(self, action, record=False, reward_fn = 0):
         """
         Take an action
 
@@ -146,6 +147,47 @@ class CartPole(Domain):
 
         return (env_reward, done)
 
+    def create_initial_clusters(self, k = 5):
+        """
+        Take 300 random steps; create initial clusters.
+
+
+        """
+
+        observation_examples = []
+        for _ in range(300):
+            action = np.random.choice(self.get_possible_actions())
+            self.last_observation, env_reward, done, info = self.env.step(action)
+            observation_examples.append(self.last_observation)
+
+        self.env.reset()
+
+        kmeans = KMeans(n_clusters=k, random_state=0).fit(observation_examples)
+        print (kmeans.cluster_centers_)
+        # centroids = np.random.choice(observation_examples, k)
+
+
+    def clusters(self, observation_history, k = 25):
+        kmeans = KMeans(n_clusters=k, random_state=0).fit(observation_history)
+        print (kmeans.cluster_centers_)
+
+    def select_trace(self, trace_set, reward):
+        """
+        Select a trace.
+        This could be done cleverly (high reward -> high trace value, low reward -> low trace value)
+        Here we just always return the max.
+
+        Params
+        ------
+            trace_set : list
+            reward : int
+        Returns
+        -------
+            float
+                corresponds to picked trace value (e.g. 0.9)
+        """
+        return np.max(trace_set)
+
     def save_screenshot(self, filename):
         """
         This is a hack. Save a screenshot of the current state.
@@ -159,6 +201,7 @@ class CartPole(Domain):
         self.env.render()
         pyglet.image.get_buffer_manager().get_color_buffer().save('Screenshots/' + filename)
         self.env.render()
+
 
     def save_action_gif(self, action):
         """
@@ -189,6 +232,33 @@ class CartPole(Domain):
                                             loop=0)
 
         return (env_reward, done)
+
+    def save_imagined_action_screenshot(self, state, planned_action):
+        # self.env.render()
+        current_state = self.get_state_vec()
+
+        self.env.observation_space = state
+        self.env.render()
+        pyglet.image.get_buffer_manager().get_color_buffer().save("Screenshots/histories/tmp0.png")    
+
+        saved_image = Image.open("Screenshots/histories/tmp0.png")
+
+        if future_action == 0:
+            composite_im = Image.open("Assets/left.png")
+        else:
+            composite_im = Image.open("Assets/right.png")
+
+        mask = Image.new("L", saved_image.size, 0)
+        draw = ImageDraw.Draw(mask)
+        draw.rectangle([(0,0), (600,320)],fill=255)
+        im = Image.composite(saved_image, composite_im, mask)
+        im.save("Screenshots/histories/output.png")
+        # self.env.render()
+        # input()
+
+        self.env.observation_space = current_state
+        # self.env.render()
+        # input()
 
     def save_action_screenshot(self, filename="tmp/out", future_action=None):
         """
@@ -235,18 +305,30 @@ def human_direct_control():
     move = 0
     reward = 0
     screenshot_id = 0
+
+    states = []
+
+    cartpole.save_imagined_action_screenshot(0)
+
     while str(move) != "quit":
         print ("If you move left: " + str(cartpole.get_future_features(0)))
         print ("If you move right: " + str(cartpole.get_future_features(1)))
-        print ("0 - move left; 1 - move right; s - save screenshot")
+        print ("0 - move left; 1 - move right; s - save screenshot; q - quit")
         move = input()
+        if move == "q":
+            print(states)
+            continue
+        if move == "a":
+            states.append(cartpole.get_current_features())
+            print ("states \n " + str(states))
+            continue
         if move == "s":
             cartpole.save_screenshot(str(screenshot_id) + ".png")
             screenshot_id += 1
             continue
         action = int(move)
-        cartpole.save_action_screenshot(future_action=action)
-        env_reward, done = cartpole.take_action(action, record=True)
+        # cartpole.save_action_screenshot(future_action=action)
+        env_reward, done = cartpole.take_action(action, record=False)
 
         if not done:
             reward += env_reward
@@ -257,5 +339,11 @@ def human_direct_control():
 
     cartpole.env.close()
 
+
+def try_clustering():
+    cartpole = CartPole()
+    cartpole.create_initial_clusters()
+
+
 if __name__ == "__main__":
-    human_direct_control()
+    try_clustering()
