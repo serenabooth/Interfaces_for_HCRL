@@ -1,31 +1,69 @@
+
 class UI_Blocks {
 
   /**
   populates a grid of random states
   **/
-  random_grid(viewer, domSelector) {
-
-    var numRows = 4;
-    var numCols = 4; //this is set up in the CSS... TODO - try to make dynamic
+  state_grid(domSelector, numRows, numCols, cartpole_array, policy = null, animation_args = null, num_timesteps_to_show = 1) {
     var img_width = 300, img_height = 100
 
     for(let i = 0; i < numRows*numCols; i++) {
 
-      //populate grid cell with random state
-      var random_state = viewer.set_random_state()
-      //select a random action for the gridcell
-      var random_actions = viewer.gen_random_actions()
+      let cartpole = cartpole_array[i]
+
+      //current world state
+      var world_state = cartpole.getState(false)
+      var curr_action = cartpole.getAction(policy)
+
+      //simulate future w/ chosen action
+      let sim_run = cartpole.simulate(curr_action,num_timesteps_to_show)
+      var next_state = sim_run["next"]
+      var future_state = sim_run["future"]
+      var degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
+
+      //simulate counterfactuals
+      var cf_action = cartpole.getCounterFactualAction(curr_action)
+      sim_run = cartpole.simulate(cf_action,num_timesteps_to_show)
+      var cf_next_state = sim_run["next"]
+      var cf_future_state = sim_run["future"]
+      var cf_degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
 
       //create new div for the grid cell
       let domId = "drawing-"+i;
-      $(domSelector).append(`<div id="${domId}" class="tooltip">${i}</div>`)
+      let cf_domId = `${domId}-counterfactual`
 
-      viewer.gen_svg("#"+domId, random_actions, img_width, img_height)
+      //create SVG of original action w/ text labels
+      let table_header = "<tr><th>x</th><th>x_dot</th><th>theta</th><th>theta_dot</th><th>Degen.</th></tr>"
+      let orig_state_txt = cartpole.toString(null,true,[])
+      let future_state_txt = cartpole.toString(future_state,true,[degenerate_state_label])
+      //$(domSelector).append(`<div id="${domId}" class="tooltip lightgrey">${orig_state_txt} => <br/>${future_state_txt}${degenerate_state_label}<br/></div>`)
+      $(domSelector).append(`<div id="${domId}"><table class="lightgrey" style="margin:auto;text-align:center">${table_header}${orig_state_txt}${future_state_txt}</table></div>`)
+
+      cartpole.viewer.gen_svg("#"+domId, world_state, curr_action, next_state, future_state, img_width, img_height,animation_args,num_timesteps_to_show)
+
+      //create SVG of CF action
+      let cf_future_state_txt = cartpole.toString(cf_future_state,true,cf_degenerate_state_label)
+      //$(domSelector).append(`<div id="${cf_domId}" class="tooltip lightgrey" style="background:#EEE">CF: ${cf_future_state_txt}${cf_degenerate_state_label}<br/><br/></div>`);
+      $(domSelector).append(`<div id="${cf_domId}"><table class="lightgrey" style="margin:auto;text-align:center">${table_header}${orig_state_txt}${cf_future_state_txt}</table></div>`)
+      cartpole.viewer.gen_svg("#"+cf_domId, world_state, cf_action, cf_next_state, cf_future_state, img_width, img_height,animation_args,num_timesteps_to_show)
     }
   }
 
+  /*
+
+  //return formatted text list of states
+  state_text(stateArr) {
+    let stateTxt = []
+    for(let s of stateArr)
+      stateTxt.push(`[${s}]`)
+    return stateTxt
+  }
+  */
+
   /**
   populates a timeline given run results
+
+  TODO: may not be working anymore after all the animation updates
   **/
   timeline(viewer, domSelector, runData, numCells = 5, allowActionChange = true) {
 
@@ -90,6 +128,8 @@ class UI_Blocks {
     });
 
     //update specified gridcell with world state + action at time t
+    //TODO: may not be working anymore after all the animation updates
+
     function updateTimelineGrid(t, runData, divId, changedData_t = null) {
 
       let divDomSelector = `#${divId}`
@@ -109,11 +149,10 @@ class UI_Blocks {
 
       //check to see whether we're displaying data that's different from timeslice
       if(changedData_t != null) {
-
         //highlight cells where it's display something different than sim state / action
         run_cell_state_different = !(changedData_t.join("::") === runData[t].join("::"))
         if( run_cell_state_different ) {
-          world_state =  changedData_t.slice(0,-1)
+          world_state = changedData_t.slice(0,-1)
           actions = {"push_cart" : changedData_t[index_action]}
           $("#"+divId).css("background","#EEE")
         }
@@ -127,10 +166,9 @@ class UI_Blocks {
 
       //add curr time
       $(divDomSelector).append(`<span>${t}</span>`)
+      console.log("timeline")
       //add the SVG
-      viewer.update_state(world_state)
-      viewer.gen_svg(divDomSelector, actions, img_width, img_height)
-
+      viewer.gen_svg(divDomSelector, world_state, actions, img_width, img_height)
     }
   }
 
