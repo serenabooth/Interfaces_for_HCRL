@@ -1,0 +1,114 @@
+<HTML>
+  <HEAD>
+    <meta charset="UTF-8">
+    <script src="./offline_lib/jquery-3.4.1.js"></script>
+    <script src="./offline_lib/jquery.csv.min.js"></script>
+    <script src="./offline_lib/math.min.js"></script>
+
+    <script src="./offline_lib/svgjs/svg.js"></script>
+
+    <script src="./js/cart_pole.js"></script>
+    <script src="./js/cartpole_viewer.js"></script>
+    <script src="./js/ui_blocks.js"></script>
+
+    <script src="./sim_runs/data0.js"></script>
+
+    <link rel="stylesheet" href="./css/cartpole.css">
+  </HEAD>
+  <BODY>
+    <!--
+      <h2>Animation</h2>
+      <div id="animation"></div>
+      <br/>
+      Click & drag mouse. Or click slider & use keyboard 'right' or 'left' arrow keys. Todo: play & stop buttons, label slider
+      <hr/>
+
+      <h2>Click to toggle actions</h2>
+      <div id="timeline"></div>
+      <br/>
+      Same as above except w/ 5 grid cells
+      <hr/>
+-->
+      <h2>Random Grid</h2>
+      <h4 id="randomgrid_policy"></h4>
+      <b id="randomgrid_descript"></b>
+
+      <div class="grid-container" id="randomgrid"></div>
+      <h5>State Data [x,xDot,theta,thetaDot]</h5>
+      <div id="randomgrid_states"></div>
+      <script>
+
+          $(document).ready(function() {
+
+            //===========< init sim & viewer thresholds >====================//
+            //thesholds for x & theta (radians)
+            //goes from (-val, +val)
+            var cartpole_thresholds = { x : 2.4,
+                                        theta : 24 * Math.PI / 180,
+                                        //max velocity would span world in 1 timestep
+                                        x_dot : 2 * 2.4,
+                                        theta_dot : 2* 24 * Math.PI / 180
+                                      }
+
+
+            var cartpoleSim  = new CartPole(cartpole_thresholds)
+
+            //single instance can populate multiple svg grid cells
+            var viewer = new Cartpole_Viewer(cartpoleSim)
+            var ui_blocks = new UI_Blocks()
+
+            //timelines
+            //ui_blocks.timeline(viewer,"#animation",window.run_data,1,false)
+            //ui_blocks.timeline(viewer,"#timeline",window.run_data)
+
+
+            //===========< choose policy & generate states for grid>====================//
+
+            let gridSize = 5
+            let whichPolicy = "Undulating"
+
+            //policies from the dropbox paper
+            let policy = {
+              "Undulating" : [-0.28795545, 0.4220686, -0.55905958, 0.79609386],
+              "Rigid" : [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
+            }
+
+            //let states = cartpoleSim.getOrderedStates("x",5,"theta",5);
+            //let states = cartpoleSim.getRandomStates(gridSize*gridSize)
+            let states = cartpoleSim.getSpecificState("center","still","upright","still");
+            console.log('states',states)
+            console.log('cartpoleSim.cartpole_thresholds',cartpoleSim.cartpole_thresholds)
+            let actions = cartpoleSim.getActions(states, policy[whichPolicy])
+            console.log('actions',actions)
+
+            //===========< fill in HTML >====================//
+
+            //enable SVG animations
+            var animation_args = {
+                duration: 1000,
+                delay : 0,
+                when : 'now',
+                swing: false,
+                times: Number.MAX_SAFE_INTEGER,
+                wait:1500
+            }
+            //the # of timesteps in the animation...
+            //BUG: not working yet...pole floats into space
+            var numTimestepsToShow = 1
+
+            //generate SVG's of states & fill in grid
+            let cssVals = Array.from({length:gridSize}).map(x => "auto")
+            $("#randomgrid").css("grid-template-columns", cssVals.join(" "))
+
+            ui_blocks.state_grid(viewer,"#randomgrid",gridSize,gridSize,states, actions, animation_args,numTimestepsToShow)
+            $("#randomgrid_states").text(ui_blocks.state_text(states))
+
+            //fill in descriptive text
+            $("#randomgrid_policy").text(`${whichPolicy}: [${policy[whichPolicy]}]`)
+            $("#randomgrid_descript").text("Static Image Faded elements: Where the cart *will* be in 1 timesteps at current velocity")
+
+          });
+
+      </script>
+  </BODY>
+</HTML>
