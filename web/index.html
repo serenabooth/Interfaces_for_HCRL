@@ -7,11 +7,14 @@
 
     <script src="./offline_lib/svgjs/svg.js"></script>
 
+    <script src="./js/util.js"></script>
     <script src="./js/cart_pole.js"></script>
     <script src="./js/cartpole_viewer.js"></script>
     <script src="./js/ui_blocks.js"></script>
 
     <script src="./sim_runs/data0.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
 
     <link rel="stylesheet" href="./css/cartpole.css">
   </HEAD>
@@ -29,6 +32,7 @@
       Same as above except w/ 5 grid cells
       <hr/>
 -->
+
       <h2>Random Grid</h2>
       <h4 id="randomgrid_policy"></h4>
       <b id="randomgrid_descript"></b>
@@ -36,6 +40,7 @@
       <div class="grid-container" id="randomgrid"></div>
       <h5>State Data [x,xDot,theta,thetaDot]</h5>
       <div id="randomgrid_states"></div>
+
       <script>
 
           $(document).ready(function() {
@@ -44,17 +49,13 @@
             //thesholds for x & theta (radians)
             //goes from (-val, +val)
             var cartpole_thresholds = { x : 2.4,
-                                        theta : 24 * Math.PI / 180,
+                                        theta : 24 * Math.PI / 180, // = 0.41887902047863906
+
                                         //max velocity would span world in 1 timestep
-                                        x_dot : 2 * 2.4,
-                                        theta_dot : 2* 24 * Math.PI / 180
+                                        //x_dot : 2.4,
+                                        //theta_dot : 2* 24 * Math.PI / 180
                                       }
-
-
             var cartpoleSim  = new CartPole(cartpole_thresholds)
-
-            //single instance can populate multiple svg grid cells
-            var viewer = new Cartpole_Viewer(cartpoleSim)
             var ui_blocks = new UI_Blocks()
 
             //timelines
@@ -64,18 +65,23 @@
 
             //===========< choose policy & generate states for grid>====================//
 
-            let gridSize = 5
+            let numCols = 2
+            let numRows = 7
             let whichPolicy = "Undulating"
 
             //policies from the dropbox paper
-            let policy = {
+            //NOTE: likely assumes tau of 0.02, which we changed...
+            let policies = {
               "Undulating" : [-0.28795545, 0.4220686, -0.55905958, 0.79609386],
               "Rigid" : [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
             }
 
-            //let states = cartpoleSim.getOrderedStates("x",5,"theta",5);
-            let states = cartpoleSim.getRandomStates(gridSize*gridSize)
-            let actions = cartpoleSim.getActions(states, policy[whichPolicy])
+            cartpoles = []
+            for(let i = 0; i < numRows*numCols; i++) {
+              //create random state cartpoles
+              cp = new CartPole(cartpole_thresholds)
+              cartpoles.push(cp)
+            }
 
             //===========< fill in HTML >====================//
 
@@ -89,19 +95,18 @@
                 wait:1500
             }
             //the # of timesteps in the animation...
-            //BUG: not working yet...pole floats into space
-            var numTimestepsToShow = 1
+            var numTimestepsToShow = 25 //half a second when cartpole.tau=0.02
+            ui_blocks.state_grid("#randomgrid",numRows,numCols,cartpoles, policies[whichPolicy], animation_args,numTimestepsToShow)
 
             //generate SVG's of states & fill in grid
-            let cssVals = Array.from({length:gridSize}).map(x => "auto")
+            let cssVals = Array.from({length:numCols}).map(x => "auto")
             $("#randomgrid").css("grid-template-columns", cssVals.join(" "))
 
-            ui_blocks.state_grid(viewer,"#randomgrid",gridSize,gridSize,states, actions, animation_args,numTimestepsToShow)
-            $("#randomgrid_states").text(ui_blocks.state_text(states))
+            //$("#randomgrid_states").text(ui_blocks.state_text(states))
 
             //fill in descriptive text
-            $("#randomgrid_policy").text(`${whichPolicy}: [${policy[whichPolicy]}]`)
-            $("#randomgrid_descript").text("Static Image Faded elements: Where the cart *will* be in 1 timesteps at current velocity")
+            $("#randomgrid_policy").text(`${whichPolicy}: [${policies[whichPolicy]}]`)
+            //$("#randomgrid_descript").text("Static Image Faded elements: Where the cart *will* be in 1 timesteps at current velocity")
 
           });
 

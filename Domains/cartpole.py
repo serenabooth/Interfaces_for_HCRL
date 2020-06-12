@@ -239,7 +239,7 @@ class CartPole(Domain):
 
         self.env.observation_space = state
         self.env.render()
-        pyglet.image.get_buffer_manager().get_color_buffer().save("Screenshots/histories/tmp0.png")    
+        pyglet.image.get_buffer_manager().get_color_buffer().save("Screenshots/histories/tmp0.png")
 
         saved_image = Image.open("Screenshots/histories/tmp0.png")
 

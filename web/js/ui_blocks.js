@@ -1,62 +1,55 @@
+
 class UI_Blocks {
 
   /**
   populates a grid of random states
   **/
-  state_grid(viewer, domSelector, numRows, numCols, world_state_list = null, action_list = null, animation_args = null, num_timesteps_to_show = 1) {
+  state_grid(domSelector, numRows, numCols, cartpole_array, policy = null, animation_args = null, num_timesteps_to_show = 1) {
     var img_width = 300, img_height = 100
 
     for(let i = 0; i < numRows*numCols; i++) {
-      if(world_state_list != null) {
-          var world_state = world_state_list[i]
-      } else {
-          //populate grid cell with random state
-          var world_state = viewer.gen_random_state()
-      }
 
-      if(action_list != null)
-        var curr_action = action_list[i]
-      else
-        //select a random action for the gridcell
-        var curr_action = viewer.gen_random_action()
+      let cartpole = cartpole_array[i]
 
-      //create new div for the grid cell
-      let domId = "drawing-"+i;
-      //round decimal places for display
-      let roundedStateVals = this.roundElems(world_state,2)
-      let gridTxt = `x: (${roundedStateVals[0]},${roundedStateVals[1]}) , th: (${roundedStateVals[2]},${roundedStateVals[3]})`
-      $(domSelector).append(`<div id="${domId}" class="tooltip lightgrey">${gridTxt}</div>`)
+      //current world state
+      var world_state = cartpole.getState(false)
+      var curr_action = cartpole.getAction(policy)
 
-      viewer.gen_svg("#"+domId, world_state, curr_action, img_width, img_height,animation_args,num_timesteps_to_show)
+      //simulate future w/ chosen action
+      let sim_run = cartpole.simulate(curr_action,num_timesteps_to_show)
+      var next_state = sim_run["next"]
+      var future_state = sim_run["future"]
+      var degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
 
-    }
-  }
-
-  cluster_grid(viewer, domSelector, states) {
-    console.log(states)
-    var numRows = 4;
-    var numCols = 4; //this is set up in the CSS... TODO - try to make dynamic
-    var img_width = 300, img_height = 100
-
-    for(let i = 0; i < states.length; i++) {
-
-      var pos = i % numCols
-      console.log(pos)
-      //populate grid cell with random state
-      var random_state = viewer.set_random_state()
-      viewer.update_state(states[i])
-      // random_state.update_state(states[i])
-      //select a random action for the gridcell
-      var random_actions = viewer.gen_random_actions()
+      //simulate counterfactuals
+      var cf_action = cartpole.getCounterFactualAction(curr_action)
+      sim_run = cartpole.simulate(cf_action,num_timesteps_to_show)
+      var cf_next_state = sim_run["next"]
+      var cf_future_state = sim_run["future"]
+      var cf_degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
 
       //create new div for the grid cell
       let domId = "drawing-"+i;
-      $(domSelector).append(`<div id="${domId}" class="tooltip">${i}</div>`)
+      let cf_domId = `${domId}-counterfactual`
 
-      viewer.gen_svg("#"+domId, random_actions, img_width, img_height)
+      //create SVG of original action w/ text labels
+      let table_header = "<tr><th>x</th><th>x_dot</th><th>theta</th><th>theta_dot</th><th>Degen.</th></tr>"
+      let orig_state_txt = cartpole.toString(null,true,[])
+      let future_state_txt = cartpole.toString(future_state,true,[degenerate_state_label])
+      //$(domSelector).append(`<div id="${domId}" class="tooltip lightgrey">${orig_state_txt} => <br/>${future_state_txt}${degenerate_state_label}<br/></div>`)
+      $(domSelector).append(`<div id="${domId}"><table class="lightgrey" style="margin:auto;text-align:center">${table_header}${orig_state_txt}${future_state_txt}</table></div>`)
+
+      cartpole.viewer.gen_svg("#"+domId, world_state, curr_action, next_state, future_state, img_width, img_height,animation_args,num_timesteps_to_show)
+
+      //create SVG of CF action
+      let cf_future_state_txt = cartpole.toString(cf_future_state,true,cf_degenerate_state_label)
+      //$(domSelector).append(`<div id="${cf_domId}" class="tooltip lightgrey" style="background:#EEE">CF: ${cf_future_state_txt}${cf_degenerate_state_label}<br/><br/></div>`);
+      $(domSelector).append(`<div id="${cf_domId}"><table class="lightgrey" style="margin:auto;text-align:center">${table_header}${orig_state_txt}${cf_future_state_txt}</table></div>`)
+      cartpole.viewer.gen_svg("#"+cf_domId, world_state, cf_action, cf_next_state, cf_future_state, img_width, img_height,animation_args,num_timesteps_to_show)
     }
   }
 
+  /*
 
   //return formatted text list of states
   state_text(stateArr) {
@@ -65,17 +58,12 @@ class UI_Blocks {
       stateTxt.push(`[${s}]`)
     return stateTxt
   }
-  //truncates each float in the array and returns  new array
-  roundElems(floatArr, numDecPlaces) {
-    let roundedArr = []
-    for(let f of floatArr)
-      roundedArr.push(f.toFixed(numDecPlaces))
-    return roundedArr
-  }
-
+  */
 
   /**
   populates a timeline given run results
+
+  TODO: may not be working anymore after all the animation updates
   **/
   timeline(viewer, domSelector, runData, numCells = 5, allowActionChange = true) {
 
@@ -140,6 +128,8 @@ class UI_Blocks {
     });
 
     //update specified gridcell with world state + action at time t
+    //TODO: may not be working anymore after all the animation updates
+
     function updateTimelineGrid(t, runData, divId, changedData_t = null) {
 
       let divDomSelector = `#${divId}`
