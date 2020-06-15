@@ -65,8 +65,8 @@
 
             //===========< choose policy & generate states for grid>====================//
 
-            let numCols = 2
-            let numRows = 7
+            let numCols = 4
+            let numRows = 2
             let whichPolicy = "Undulating"
 
             //policies from the dropbox paper
@@ -92,11 +92,12 @@
                 when : 'now',
                 swing: false,
                 times: Number.MAX_SAFE_INTEGER,
-                wait:1500
+                wait:1500,
             }
             //the # of timesteps in the animation...
             var numTimestepsToShow = 25 //half a second when cartpole.tau=0.02
-            ui_blocks.state_grid("#randomgrid",numRows,numCols,cartpoles, policies[whichPolicy], animation_args,numTimestepsToShow)
+            var include_cfs = false 
+            ui_blocks.state_grid("#randomgrid",numRows,numCols,cartpoles, policies[whichPolicy], animation_args,include_cfs,numTimestepsToShow)
 
             //generate SVG's of states & fill in grid
             let cssVals = Array.from({length:numCols}).map(x => "auto")

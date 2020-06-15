@@ -2,63 +2,97 @@
 class UI_Blocks {
 
   /**
+  Creates an animation a cartpole state & a simulated policy
+  **/
+  create_grid_animation(containerDomSelect, animation_div_dom_id, cartpole, sim_run, img_width, img_height, animation_args, num_timesteps_to_show) {
+
+    //get simulation results
+    let action = sim_run["action"]
+    var next_state = sim_run["next"]
+    var future_state = sim_run["future"]
+
+    //create animation's div
+    $(containerDomSelect).append(`<div id="${animation_div_dom_id}"></div>`)
+
+    //create svg inside the div
+    cartpole.viewer.gen_svg("#"+animation_div_dom_id, cartpole.getState(false), action, next_state, future_state, img_width, img_height,animation_args,num_timesteps_to_show)
+  }
+
+  /**
+  Creates a table of state values
+  **/
+  create_grid_animation_txt(cartpole, sim_run,cf_sim_run = null) {
+
+    //create SVG of original action w/ text labels
+    let table_header =  "<tr><th>x</th><th>x_dot</th><th>theta</th><th>theta_dot</th><th>Degen?</th><th></th></tr>"
+    let orig_state_txt = cartpole.toString(null,true,["", "Orig"])
+
+    //create row for future state
+    var future_state = sim_run["future"]
+    var degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
+    let future_state_txt = cartpole.toString(future_state,true,[degenerate_state_label,"Future"])
+
+    //create row for cf future state
+    let cf_future_state_txt = ""
+    if(cf_sim_run) {
+      future_state = cf_sim_run["future"]
+      degenerate_state_label = cf_sim_run["degenerate"] ? "Y" : ""
+      cf_future_state_txt = cartpole.toString(future_state,true,[degenerate_state_label, "cf_future"])
+
+    }
+
+    let tableHTML = `<table class="lightgrey" style="margin:auto;text-align:center">${table_header}${orig_state_txt}${future_state_txt}${cf_future_state_txt}</table>`
+    return tableHTML
+  }
+
+  /**
   populates a grid of random states
   **/
-  state_grid(domSelector, numRows, numCols, cartpole_array, policy = null, animation_args = null, num_timesteps_to_show = 1) {
+  state_grid(divDomSelector, numRows, numCols, cartpole_array, policy = null, animation_args = null, include_cfs = true, num_timesteps_to_show = 1) {
     var img_width = 300, img_height = 100
 
+    //create a gridcell for each cartpole
     for(let i = 0; i < numRows*numCols; i++) {
+
+      //check to see whether we have enough cartpoles
+      if(i > cartpole_array.length) {
+        console.log("ui_blocks.state_grid(): Not enough cartpoles for the number of grid cells")
+        return
+      }
 
       let cartpole = cartpole_array[i]
 
-      //current world state
-      var world_state = cartpole.getState(false)
+      //create div for the cart's gridcell
+      let divId = `cart_${i}`
+      $(divDomSelector).append(`<div id="${divId}"></div>`)
+
+      //simulate from original action
       var curr_action = cartpole.getAction(policy)
+      let sim_run_results = cartpole.simulate(curr_action,num_timesteps_to_show)
 
-      //simulate future w/ chosen action
-      let sim_run = cartpole.simulate(curr_action,num_timesteps_to_show)
-      var next_state = sim_run["next"]
-      var future_state = sim_run["future"]
-      var degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
+      //simulate counterfactual action
+      let cf_sim_run_results = null
+      if(include_cfs) {
+        //simulate from counterfactual
+        curr_action = cartpole.getCounterFactualAction(curr_action)
+        cf_sim_run_results = cartpole.simulate(curr_action,num_timesteps_to_show)
+      }
 
-      //simulate counterfactuals
-      var cf_action = cartpole.getCounterFactualAction(curr_action)
-      sim_run = cartpole.simulate(cf_action,num_timesteps_to_show)
-      var cf_next_state = sim_run["next"]
-      var cf_future_state = sim_run["future"]
-      var cf_degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
+      //insert table of state values
+      let tableHTML = this.create_grid_animation_txt(cartpole, sim_run_results , cf_sim_run_results)
+      $("#"+divId).append(tableHTML)
 
-      //create new div for the grid cell
-      let domId = "drawing-"+i;
-      let cf_domId = `${domId}-counterfactual`
+      //insert simulation animation
+      var animation_div_dom_id = "drawing-"+i;
+      this.create_grid_animation("#"+divId, animation_div_dom_id, cartpole, sim_run_results, img_width , img_height, animation_args)
 
-      //create SVG of original action w/ text labels
-      let table_header = "<tr><th>x</th><th>x_dot</th><th>theta</th><th>theta_dot</th><th>Degen.</th></tr>"
-      let orig_state_txt = cartpole.toString(null,true,[])
-      let future_state_txt = cartpole.toString(future_state,true,[degenerate_state_label])
-      //$(domSelector).append(`<div id="${domId}" class="tooltip lightgrey">${orig_state_txt} => <br/>${future_state_txt}${degenerate_state_label}<br/></div>`)
-      $(domSelector).append(`<div id="${domId}"><table class="lightgrey" style="margin:auto;text-align:center">${table_header}${orig_state_txt}${future_state_txt}</table></div>`)
+      //insert counterfactual simulation animation
+      if(include_cfs)
+        this.create_grid_animation("#"+divId, animation_div_dom_id+"_cf", cartpole, cf_sim_run_results, img_width , img_height, animation_args)
 
-      cartpole.viewer.gen_svg("#"+domId, world_state, curr_action, next_state, future_state, img_width, img_height,animation_args,num_timesteps_to_show)
-
-      //create SVG of CF action
-      let cf_future_state_txt = cartpole.toString(cf_future_state,true,cf_degenerate_state_label)
-      //$(domSelector).append(`<div id="${cf_domId}" class="tooltip lightgrey" style="background:#EEE">CF: ${cf_future_state_txt}${cf_degenerate_state_label}<br/><br/></div>`);
-      $(domSelector).append(`<div id="${cf_domId}"><table class="lightgrey" style="margin:auto;text-align:center">${table_header}${orig_state_txt}${cf_future_state_txt}</table></div>`)
-      cartpole.viewer.gen_svg("#"+cf_domId, world_state, cf_action, cf_next_state, cf_future_state, img_width, img_height,animation_args,num_timesteps_to_show)
     }
-  }
 
-  /*
-
-  //return formatted text list of states
-  state_text(stateArr) {
-    let stateTxt = []
-    for(let s of stateArr)
-      stateTxt.push(`[${s}]`)
-    return stateTxt
   }
-  */
 
   /**
   populates a timeline given run results

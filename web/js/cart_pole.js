@@ -341,6 +341,7 @@ class CartPole {
     */
 
     return {
+      "action" : action,
       "next" : next_needed_fixing == null ? next_timestep_state_obj : next_needed_fixing,
       "future" : beyond_needed_fixing == null ? beyond_state_obj : beyond_needed_fixing,
       "degenerate" : (next_needed_fixing != null) ||  (beyond_needed_fixing != null)
