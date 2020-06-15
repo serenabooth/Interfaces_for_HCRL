@@ -174,6 +174,61 @@ class CartPole {
   }
 
   /**
+  generates requested states from high-level descriptions
+  **/
+  getSpecificState(x_name,x_dot_name,theta_name,theta_dot_name) {
+    // The control-theory state variables of the cart-pole system.
+    // Cart position, meters.
+    let x = 0;
+    let x_dot = 0;
+    let theta = 0;
+    let theta_dot = 0;
+
+    switch(x_name) {
+      case "left of center":
+        x = -this.cartpole_thresholds.x/2;
+      case "right of center":
+        x = this.cartpole_thresholds.x/2;
+      case "center":
+        x = 0;
+    }
+    //let x = Math.random() - 0.5;
+    // Cart velocity.
+    switch(x_dot_name) {
+      case "going left":
+        x_dot = -this.cartpole_thresholds.x_dot/2;
+      case "going right":
+        x_dot = this.cartpole_thresholds.x_dot/2;
+      case "still":
+        x_dot = 0;
+    }
+    //let x_dot = (Math.random() - 0.5) * 1;
+    // Pole angle, radians.
+    switch(theta_name) {
+      case "leaning left":
+        theta = -this.cartpole_thresholds.theta/2;
+      case "leaning right":
+        theta = this.cartpole_thresholds.theta/2;
+      case "upright":
+        theta = 0;
+    }
+    //let theta = (Math.random() - 0.5) * 2 * (6 / 360 * 2 * Math.PI);
+    // Pole angle velocity.
+    switch(theta_dot_name) {
+      case "rotating left":
+        theta_dot = -this.cartpole_thresholds.theta_dot/2;
+      case "rotating right":
+        theta_dot = this.cartpole_thresholds.theta_dot/2;
+      case "still":
+        theta_dot = 0;
+    }
+    //let theta_dot =  (Math.random() - 0.5) * 0.5;
+
+    return [x,x_dot, theta, theta_dot];
+  }
+
+
+  /**
    * Determine whether this simulation is done.
    *
    * A simulation is done when `x` (position of the cart) goes out of bound
