@@ -4,15 +4,16 @@ class UI_Blocks {
   /**
   populates a grid of random states
   **/
-  state_grid_hand_selected(domSelector, numRows, numCols, cartpole_array, policy = null, animation_args = null, num_timesteps_to_show = 1) {
+  state_grid_hand_selected(domSelector, numRows, numCols, cartpole_array, state_array, policy = null, animation_args = null, num_timesteps_to_show = 1) {
     var img_width = 300, img_height = 100
+    let counterfactuals = false
 
     for(let i = 0; i < numRows*numCols; i++) {
 
       let cartpole = cartpole_array[i]
 
       //current world state
-      var world_state = cartpole.getSpecificState("center","still","upright","still")
+      var world_state = cartpole.getSpecificState(state_array[i])
       var curr_action = cartpole.getAction(policy)
 
       //simulate future w/ chosen action
@@ -21,12 +22,14 @@ class UI_Blocks {
       var future_state = sim_run["future"]
       var degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
 
-      //simulate counterfactuals
-      var cf_action = cartpole.getCounterFactualAction(curr_action)
-      sim_run = cartpole.simulate(cf_action,num_timesteps_to_show)
-      var cf_next_state = sim_run["next"]
-      var cf_future_state = sim_run["future"]
-      var cf_degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
+      if (counterfactuals){
+        //simulate counterfactuals
+        var cf_action = cartpole.getCounterFactualAction(curr_action)
+        sim_run = cartpole.simulate(cf_action,num_timesteps_to_show)
+        var cf_next_state = sim_run["next"]
+        var cf_future_state = sim_run["future"]
+        var cf_degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
+      }
 
       //create new div for the grid cell
       let domId = "drawing-"+i;
@@ -41,11 +44,13 @@ class UI_Blocks {
 
       cartpole.viewer.gen_svg("#"+domId, world_state, curr_action, next_state, future_state, img_width, img_height,animation_args,num_timesteps_to_show)
 
-      //create SVG of CF action
-      let cf_future_state_txt = cartpole.toString(cf_future_state,true,cf_degenerate_state_label)
-      //$(domSelector).append(`<div id="${cf_domId}" class="tooltip lightgrey" style="background:#EEE">CF: ${cf_future_state_txt}${cf_degenerate_state_label}<br/><br/></div>`);
-      $(domSelector).append(`<div id="${cf_domId}"><table class="lightgrey" style="margin:auto;text-align:center">${table_header}${orig_state_txt}${cf_future_state_txt}</table></div>`)
-      cartpole.viewer.gen_svg("#"+cf_domId, world_state, cf_action, cf_next_state, cf_future_state, img_width, img_height,animation_args,num_timesteps_to_show)
+      if (counterfactuals){
+        //create SVG of CF action
+        let cf_future_state_txt = cartpole.toString(cf_future_state,true,cf_degenerate_state_label)
+        //$(domSelector).append(`<div id="${cf_domId}" class="tooltip lightgrey" style="background:#EEE">CF: ${cf_future_state_txt}${cf_degenerate_state_label}<br/><br/></div>`);
+        $(domSelector).append(`<div id="${cf_domId}"><table class="lightgrey" style="margin:auto;text-align:center">${table_header}${orig_state_txt}${cf_future_state_txt}</table></div>`)
+        cartpole.viewer.gen_svg("#"+cf_domId, world_state, cf_action, cf_next_state, cf_future_state, img_width, img_height,animation_args,num_timesteps_to_show)
+      }
     }
   }
 

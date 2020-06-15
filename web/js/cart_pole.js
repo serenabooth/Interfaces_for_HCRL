@@ -189,6 +189,10 @@ class CartPole {
         x = -this.cartpole_thresholds.x/2;
       case "right of center":
         x = this.cartpole_thresholds.x/2;
+      case "very left of center":
+        x = -this.cartpole_thresholds.x;
+      case "very right of center":
+        x = this.cartpole_thresholds.x;
       case "center":
         x = 0;
     }
@@ -198,6 +202,10 @@ class CartPole {
       case "going left":
         x_dot = -this.cartpole_thresholds.x_dot/2;
       case "going right":
+        x_dot = this.cartpole_thresholds.x_dot/2;
+      case "going left fast":
+        x_dot = -this.cartpole_thresholds.x_dot/2;
+      case "going right fast":
         x_dot = this.cartpole_thresholds.x_dot/2;
       case "still":
         x_dot = 0;

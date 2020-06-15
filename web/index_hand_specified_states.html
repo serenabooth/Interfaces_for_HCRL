@@ -65,8 +65,24 @@
 
             //===========< choose policy & generate states for grid>====================//
 
-            let numCols = 1 //2
-            let numRows = 1 //7
+            let numCols = 5 //2
+            let numRows = 2 //7
+
+            hand_picked_states = []
+            hand_picked_states.push(["very left of center","still","upright","still"])
+            hand_picked_states.push(["left of center","still","upright","still"])
+            hand_picked_states.push(["center","still","upright","still"])
+            hand_picked_states.push(["right of center","still","upright","still"])
+            hand_picked_states.push(["very right of center","still","upright","still"])
+
+            hand_picked_states.push(["center","going left fast","upright","still"])
+            hand_picked_states.push(["center","going left","upright","still"])
+            hand_picked_states.push(["center","still","upright","still"])
+            hand_picked_states.push(["center","going right","upright","still"])
+            hand_picked_states.push(["center","going right fast","upright","still"])
+            // hand_picked_states.push(["center","still","upright","still"])
+            // hand_picked_states.push(["center","still","upright","still"])
+
             let whichPolicy = "Undulating"
 
             //policies from the dropbox paper
@@ -83,6 +99,7 @@
               cartpoles.push(cp)
             }
 
+
             //===========< fill in HTML >====================//
 
             //enable SVG animations
@@ -96,7 +113,7 @@
             }
             //the # of timesteps in the animation...
             var numTimestepsToShow = 25 //half a second when cartpole.tau=0.02
-            ui_blocks.state_grid_hand_selected("#randomgrid",numRows,numCols,cartpoles, policies[whichPolicy], animation_args,numTimestepsToShow)
+            ui_blocks.state_grid_hand_selected("#randomgrid",numRows,numCols,cartpoles,hand_picked_states, policies[whichPolicy], animation_args,numTimestepsToShow)
 
             //generate SVG's of states & fill in grid
             let cssVals = Array.from({length:numCols}).map(x => "auto")
