@@ -1,10 +1,13 @@
 <HTML>
   <HEAD>
     <meta charset="UTF-8">
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+    <script src="./sim_runs/data0.js"></script>
+
     <script src="./offline_lib/jquery-3.4.1.js"></script>
     <script src="./offline_lib/jquery.csv.min.js"></script>
     <script src="./offline_lib/math.min.js"></script>
-
     <script src="./offline_lib/svgjs/svg.js"></script>
 
     <script src="./js/util.js"></script>
@@ -12,9 +15,8 @@
     <script src="./js/cartpole_viewer.js"></script>
     <script src="./js/ui_blocks.js"></script>
 
-    <script src="./sim_runs/data0.js"></script>
+    <script src="./js/main.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
 
     <link rel="stylesheet" href="./css/cartpole.css">
   </HEAD>
@@ -36,81 +38,13 @@
       <h2>Random Grid</h2>
       <h4 id="randomgrid_policy"></h4>
       <b id="randomgrid_descript"></b>
+      (Table rows: 1 = original, 2 = future, 3 = counterfactual)
 
       <div class="grid-container" id="randomgrid"></div>
-      <h5>State Data [x,xDot,theta,thetaDot]</h5>
+      <!--<h5>State Data [x,xDot,theta,thetaDot]</h5>
       <div id="randomgrid_states"></div>
-
+      -->
       <script>
-
-          $(document).ready(function() {
-
-            //===========< init sim & viewer thresholds >====================//
-            //thesholds for x & theta (radians)
-            //goes from (-val, +val)
-            var cartpole_thresholds = { x : 2.4,
-                                        theta : 24 * Math.PI / 180, // = 0.41887902047863906
-
-                                        //max velocity would span world in 1 timestep
-                                        //x_dot : 2.4,
-                                        //theta_dot : 2* 24 * Math.PI / 180
-                                      }
-            var cartpoleSim  = new CartPole(cartpole_thresholds)
-            var ui_blocks = new UI_Blocks()
-
-            //timelines
-            //ui_blocks.timeline(viewer,"#animation",window.run_data,1,false)
-            //ui_blocks.timeline(viewer,"#timeline",window.run_data)
-
-
-            //===========< choose policy & generate states for grid>====================//
-
-            let numCols = 4
-            let numRows = 2
-            let whichPolicy = "Undulating"
-
-            //policies from the dropbox paper
-            //NOTE: likely assumes tau of 0.02, which we changed...
-            let policies = {
-              "Undulating" : [-0.28795545, 0.4220686, -0.55905958, 0.79609386],
-              "Rigid" : [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
-            }
-
-            cartpoles = []
-            for(let i = 0; i < numRows*numCols; i++) {
-              //create random state cartpoles
-              cp = new CartPole(cartpole_thresholds)
-              cartpoles.push(cp)
-            }
-
-            //===========< fill in HTML >====================//
-
-            //enable SVG animations
-            var animation_args = {
-                duration: 1000,
-                delay : 0,
-                when : 'now',
-                swing: false,
-                times: Number.MAX_SAFE_INTEGER,
-                wait:1500,
-            }
-            //the # of timesteps in the animation...
-            var numTimestepsToShow = 25 //half a second when cartpole.tau=0.02
-            var include_cfs = false 
-            ui_blocks.state_grid("#randomgrid",numRows,numCols,cartpoles, policies[whichPolicy], animation_args,include_cfs,numTimestepsToShow)
-
-            //generate SVG's of states & fill in grid
-            let cssVals = Array.from({length:numCols}).map(x => "auto")
-            $("#randomgrid").css("grid-template-columns", cssVals.join(" "))
-
-            //$("#randomgrid_states").text(ui_blocks.state_text(states))
-
-            //fill in descriptive text
-            $("#randomgrid_policy").text(`${whichPolicy}: [${policies[whichPolicy]}]`)
-            //$("#randomgrid_descript").text("Static Image Faded elements: Where the cart *will* be in 1 timesteps at current velocity")
-
-          });
-
       </script>
   </BODY>
 </HTML>
