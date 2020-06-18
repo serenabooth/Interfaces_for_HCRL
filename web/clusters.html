@@ -61,7 +61,8 @@
 
             var coach = new COACH(num_states = 4,num_actions = 4, trace_set = [0.99])
             console.log(coach)
-            SM = coach.softmax_grad([0,1,2,3])
+            // SM = coach.softmax_grad([0,1,2,3])
+            coach.get_proposed_action([1,0,0,0])
 
             //timelines
             //ui_blocks.timeline(viewer,"#animation",window.run_data,1,false)

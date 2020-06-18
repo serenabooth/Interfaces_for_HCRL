@@ -161,6 +161,59 @@ class Cartpole_Viewer {
     }
 
 
+    // TODO : comment
+    gen_img(domSelector, world_state, img_width, img_height) {
+
+      //scale of world to image
+      var world_width = this.state_var_thresholds.x*2 //put thresholds at edge of grid
+      var scale = img_width/world_width
+
+      //dimensions of cart
+      var cartx = world_state.x *scale+img_width/2.0
+      var carty = img_height*0.66   // middle of cart
+      var cartwidth = 0.1*img_width
+      var cartheight = 0.1*img_height
+
+      //dimensions & angle of pole
+      var polewidth = 0.025*img_width
+      var polelen = cartwidth*2;
+      var theta_degrees = world_state.theta * 180 / Math.PI
+
+      //create SVG
+      var draw = SVG().addTo(domSelector).size(img_width, img_height)
+
+      //Object.assign(currState,this.state)
+
+      //draw track first so it's back-most layer on canvas
+      var track = draw.line(0, carty, img_width, carty)
+      track.stroke({ color: 'black', width: 1 })
+
+      //draw arrow to indicate direction - have to draw before cart
+      //so that red line doesn't overlap cart
+      var arrow_x_direction = action == 0 ? -1 : 1
+      var arrow_x = cartx - arrow_x_direction*1.75*cartwidth - arrow_x_direction*cartwidth/2
+      var arrow_point_x = arrow_x + cartwidth/2 * arrow_x_direction
+      var arrow_y_top = carty + img_height*(0.075)
+      var arrow_y_mid = carty
+      var arrow_y_bottom = carty - img_height*(0.075)
+
+      var arrow_triangle = draw.polygon(`${arrow_x},${arrow_y_top},${arrow_x},${arrow_y_bottom}, ${arrow_point_x},${arrow_y_mid}`).fill('rgba(255,0,0,1)')
+
+      var action = draw.line(arrow_point_x, arrow_y_mid, cartx - arrow_x_direction*cartwidth/2, arrow_y_mid)
+      //arrow_triangle.fill('rgba(255,0,0,0)')
+      action.stroke({ color: 'rgba(255,0,0,1)', width: 1.5/*, dasharray : "5,5"*/})
+
+      //initialize cart 2nd so it can be on top
+      var cart = draw.rect(cartwidth, cartheight).fill('rgb(0,0,0)')
+      var pole = draw.rect(polewidth, polelen).fill('rgb(204,153,102)')
+      var axle = draw.circle(polewidth*0.66).fill('rgb(127,127,204)')
+      //place cart components
+      cart.center(cartx,carty)
+      pole.center(cartx,carty-polelen/2)
+      pole.rotate(theta_degrees,cartx,carty)
+      axle.center(cartx,carty)
+    }
+
 
 
 }

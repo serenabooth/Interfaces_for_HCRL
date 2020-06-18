@@ -1,6 +1,23 @@
 
 class UI_Blocks {
 
+
+  /**
+  populates a grid of random states
+  **/
+  individual_episode(domSelector, cartpole) {
+    var img_width = 300, img_height = 100
+
+    //current world state
+    var world_state = cartpole.getState(false)
+    // var curr_action = cartpole.getAction(policy)
+    let domId = "drawing";
+    $(domSelector).append(`<div id="${domId}"></div>`)
+
+    cartpole.viewer.gen_img("#"+domId, world_state, img_width, img_height)
+  }
+
+
   /**
   populates a grid of random states
   **/

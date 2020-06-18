@@ -41,7 +41,7 @@ class CartPole {
    * Constructor of CartPole.
    */
 
-    constructor(cartpole_thresholds, state_as_arr = null) {
+    constructor(cartpole_thresholds, starting_state = false, state_as_arr = null) {
 
     // Constants that characterize the system.
     this.gravity = 9.8;
@@ -68,8 +68,10 @@ class CartPole {
 
     this.viewer = new Cartpole_Viewer(this)
 
-    if(state_as_arr == null)
+    if (state_as_arr == null && starting_state == false)
       this.setRandomState();
+    else if (state_as_arr == null && starting_state == true)
+      this.setStartingState();
     else
       this.setState(state_as_arr)
 
@@ -174,6 +176,18 @@ class CartPole {
   }
 
   /**
+  generates a random state in a starting position
+  **/
+  genStartingState() {
+    let x = Util.genRandomFloat(-0.05, 0.05);
+    let x_dot = Util.genRandomFloat(-0.05, 0.05);
+    let theta = Util.genRandomFloat(-0.05, 0.05);
+    let theta_dot = Util.genRandomFloat(-0.05, 0.05);
+
+    return [x, x_dot, theta, theta_dot]
+  }
+
+  /**
    * Determine whether this simulation is done.
    *
    * A simulation is done when `x` (position of the cart) goes out of bound
@@ -244,6 +258,15 @@ class CartPole {
     let stateArr = this.genRandomState()
     this.setState(stateArr)
   }
+
+  /**
+   * Set the starting state of the cart-pole system randomly.
+   */
+  setStartingState() {
+    let stateArr = this.genStartingState()
+    this.setState(stateArr)
+  }
+
 
   /**
    * Set the state of the cart-pole system according to an argument.

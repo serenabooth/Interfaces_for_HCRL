@@ -1,0 +1,61 @@
+<HTML>
+  <HEAD>
+    <meta charset="UTF-8">
+    <script src="./offline_lib/jquery-3.4.1.js"></script>
+    <script src="./offline_lib/jquery.csv.min.js"></script>
+    <script src="./offline_lib/math.min.js"></script>
+
+    <script src="./offline_lib/svgjs/svg.js"></script>
+
+    <script src="./js/util.js"></script>
+    <script src="./js/cart_pole.js"></script>
+    <script src="./js/cartpole_viewer.js"></script>
+    <script src="./js/ui_blocks.js"></script>
+
+    <script src="./sim_runs/data0.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+
+    <link rel="stylesheet" href="./css/cartpole.css">
+  </HEAD>
+  <BODY>
+
+      <h2>Train Cartpole using COACH</h2>
+
+      <div class="grid-container" id="cartpole_instance"></div>
+
+      <script>
+
+
+          var ws = new WebSocket("ws://localhost:8000/echo")
+
+          ws.onopen = function() {
+
+                            // Web Socket is connected, send data using send()
+                            ws.send("Message to send");
+                            alert("Message is sent...");
+                         };
+
+
+          $(document).ready(function() {
+
+            //===========< init sim & viewer thresholds >====================//
+            //thesholds for x & theta (radians)
+            //goes from (-val, +val)
+            var cartpole_thresholds = { x : 2.4,
+                                        theta : 24 * Math.PI / 180, // = 0.41887902047863906
+                                      }
+            var cartpoleSim  = new CartPole(cartpole_thresholds)
+            var ui_blocks = new UI_Blocks()
+
+            //===========< choose policy & generate states for grid>====================//
+
+            cp = new CartPole(cartpole_thresholds, starting_state = true)
+            ui_blocks.individual_episode("#cartpole_instance", cp)
+            console.log(cp.getState())
+
+          });
+
+      </script>
+  </BODY>
+</HTML>
