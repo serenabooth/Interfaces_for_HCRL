@@ -73,6 +73,8 @@ class CartPole {
   **/
   getAction(state_as_arr,policy = null) {
 
+    console.log('state_as_arr',state_as_arr)
+    console.log('policy',policy)
     var bool = (policy == null) ? (Math.random() < 0.5) : (math.dot(policy,state_as_arr) < 0)
     if(bool)
       return this.MOVE_LEFT
@@ -175,51 +177,48 @@ class CartPole {
   getSpecificState(x_name,x_dot_name,theta_name,theta_dot_name) {
     // The control-theory state variables of the cart-pole system.
     // Cart position, meters.
+    let x = 0;
+    let x_dot = 0;
+    let theta = 0;
+    let theta_dot = 0;
+
     switch(x_name) {
       case "left of center":
-        let x = -this.cartpole_thresholds.x/2;
+        x = -this.cartpole_thresholds.x/2;
       case "right of center":
-        let x = this.cartpole_thresholds.x/2;
+        x = this.cartpole_thresholds.x/2;
       case "center":
-        let x = 0;
-      default:
-        let x = 0;
+        x = 0;
     }
     //let x = Math.random() - 0.5;
     // Cart velocity.
     switch(x_dot_name) {
       case "going left":
-        let x_dot = -this.cartpole_thresholds.x_dot/2;
+        x_dot = -this.cartpole_thresholds.x_dot/2;
       case "going right":
-        let x_dot = this.cartpole_thresholds.x_dot/2;
+        x_dot = this.cartpole_thresholds.x_dot/2;
       case "still":
-        let x_dot = 0;
-      default:
-        let x_dot = 0;
+        x_dot = 0;
     }
     //let x_dot = (Math.random() - 0.5) * 1;
     // Pole angle, radians.
     switch(theta_name) {
       case "leaning left":
-        let theta = -this.cartpole_thresholds.theta/2;
+        theta = -this.cartpole_thresholds.theta/2;
       case "leaning right":
-        let theta = this.cartpole_thresholds.theta/2;
+        theta = this.cartpole_thresholds.theta/2;
       case "upright":
-        let theta = 0;
-      default:
-        let theta = 0;
+        theta = 0;
     }
     //let theta = (Math.random() - 0.5) * 2 * (6 / 360 * 2 * Math.PI);
     // Pole angle velocity.
     switch(theta_dot_name) {
       case "rotating left":
-        let theta_dot = -this.cartpole_thresholds.theta_dot/2;
+        theta_dot = -this.cartpole_thresholds.theta_dot/2;
       case "rotating right":
-        let theta_dot = this.cartpole_thresholds.theta_dot/2;
+        theta_dot = this.cartpole_thresholds.theta_dot/2;
       case "still":
-        let theta_dot = 0;
-      default:
-        let theta_dot = 0;
+        theta_dot = 0;
     }
     //let theta_dot =  (Math.random() - 0.5) * 0.5;
 
