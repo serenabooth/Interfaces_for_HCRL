@@ -176,7 +176,6 @@ class CartPole {
   }
 
   /**
-<<<<<<< HEAD
   generates a random state in a starting position
   **/
   genStartingState() {
@@ -188,7 +187,7 @@ class CartPole {
     return [x, x_dot, theta, theta_dot]
   }
 
-=======
+  /**
   generates requested states from high-level descriptions
   **/
   getSpecificState(x_name,x_dot_name,theta_name,theta_dot_name) {
@@ -250,8 +249,6 @@ class CartPole {
     return [x,x_dot, theta, theta_dot];
   }
 
-
->>>>>>> 28bf3d45f0eb0e0ff09c92218f8b7a471af5f9ae
   /**
    * Determine whether this simulation is done.
    *
