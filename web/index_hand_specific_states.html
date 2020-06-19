@@ -12,11 +12,9 @@
     <script src="./js/cartpole_viewer.js"></script>
     <script src="./js/ui_blocks.js"></script>
 
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
-
-    <script src="./js/RL_Methods/COACH.js"></script>
     <script src="./sim_runs/data0.js"></script>
 
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
 
     <link rel="stylesheet" href="./css/cartpole.css">
   </HEAD>
@@ -35,14 +33,16 @@
       <hr/>
 -->
 
-      <h2>Clusters</h2>
+      <h2>Hand Specified Grid</h2>
       <h4 id="randomgrid_policy"></h4>
       <b id="randomgrid_descript"></b>
+      <p>(Table rows: 1 = original, 2 = future, 3 = counterfactual)</p>
 
       <div class="grid-container" id="randomgrid"></div>
+      <!--
       <h5>State Data [x,xDot,theta,thetaDot]</h5>
       <div id="randomgrid_states"></div>
-
+-->
       <script>
 
           $(document).ready(function() {
@@ -53,17 +53,13 @@
             var cartpole_thresholds = { x : 2.4,
                                         theta : 24 * Math.PI / 180, // = 0.41887902047863906
 
-                                        //max velocity would span world in 1 timestep
-                                        //x_dot : 2.4,
-                                        //theta_dot : 2* 24 * Math.PI / 180
+                                        //max velocity - cart would span world in 2 timesteps?
+                                        x_dot : 2.4,
+
+                                        theta_dot : 2* 24 * Math.PI / 180
                                       }
             var cartpoleSim  = new CartPole(cartpole_thresholds)
             var ui_blocks = new UI_Blocks()
-
-            var coach = new COACH(num_states = 4,num_actions = 4, trace_set = [0.99])
-            console.log(coach)
-            // SM = coach.softmax_grad([0,1,2,3])
-            coach.get_proposed_action([1,0,0,0])
 
             //timelines
             //ui_blocks.timeline(viewer,"#animation",window.run_data,1,false)
@@ -72,8 +68,24 @@
 
             //===========< choose policy & generate states for grid>====================//
 
-            let numCols = 2
-            let numRows = 7
+            let numCols = 5 //2
+            let numRows = 2 //7
+
+            hand_picked_states = []
+            hand_picked_states.push(["very left of center","still","upright","still"])
+            hand_picked_states.push(["left of center","still","upright","still"])
+            hand_picked_states.push(["center","still","upright","still"])
+            hand_picked_states.push(["right of center","still","upright","still"])
+            hand_picked_states.push(["very right of center","still","upright","still"])
+
+            hand_picked_states.push(["center","going left fast","upright","still"])
+            hand_picked_states.push(["center","going left","upright","still"])
+            hand_picked_states.push(["center","still","upright","still"])
+            hand_picked_states.push(["center","going right","upright","still"])
+            hand_picked_states.push(["center","going right fast","upright","still"])
+            // hand_picked_states.push(["center","still","upright","still"])
+            // hand_picked_states.push(["center","still","upright","still"])
+
             let whichPolicy = "Undulating"
 
             //policies from the dropbox paper
@@ -84,9 +96,12 @@
             }
 
             cartpoles = []
-            for(let i = 0; i < numRows*numCols; i++) {
-              //create random state cartpoles
+            for(let human_readable_state of hand_picked_states) {
+              //instantiate cartpole
               cp = new CartPole(cartpole_thresholds)
+              //update the internal state to reflect defined states
+              cp.setSpecificState(human_readable_state)
+              cp.setTitle(human_readable_state.toString())
               cartpoles.push(cp)
             }
 
@@ -99,8 +114,9 @@
                 when : 'now',
                 swing: false,
                 times: Number.MAX_SAFE_INTEGER,
-                wait:1500
+                wait:1500,
             }
+
             //the # of timesteps in the animation...
             var numTimestepsToShow = 25 //half a second when cartpole.tau=0.02
             var include_cfs = true

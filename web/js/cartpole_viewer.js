@@ -8,6 +8,8 @@ class Cartpole_Viewer {
       Object.assign(this.state_var_thresholds, this.sim.cartpole_thresholds)
     }
 
+
+
     /**
     Generates an SVG from a given world state
 
