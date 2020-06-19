@@ -1,4 +1,4 @@
-import sys, random, torch
+import sys, random, torch, threading, time, json
 import numpy as np
 import datetime, time
 from copy import deepcopy
@@ -56,21 +56,34 @@ class COACH:
         for trace_val in trace_set:
             self.eligibility_traces[trace_val] = np.zeros(self.weights.shape)
 
+clients = []
 class SimpleEcho(WebSocket):
-
     def handleMessage(self):
         # echo message back to client
-        print (self.data)
-        self.sendMessage(self.data)
+        print ("Handling message")
+        msg = json.loads(self.data)
+        print (msg)
+        print (type(msg))
+        # self.sendMessage(self.data)
 
     def handleConnected(self):
+        clients.append(self)
         print(self.address, 'connected')
 
     def handleClose(self):
+        clients.remove(self)
         print(self.address, 'closed')
 
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
 
     server = SimpleWebSocketServer('', 8000, SimpleEcho)
-    server.serveforever()
+
+    server_thread = threading.Thread(target=server.serveforever)
+    server_thread.daemon = True
+    server_thread.start()
+
+    while True:
+        for client in clients:
+            client.sendMessage("hello")
+        time.sleep(0.1)

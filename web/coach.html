@@ -20,24 +20,42 @@
   </HEAD>
   <BODY>
 
+      <script>
+        function negativeFeedback() {
+          console.log("-1");
+        }
+
+        function positiveFeedback() {
+          console.log("+1");
+        }
+      </script>
+
       <h2>Train Cartpole using COACH</h2>
 
       <div class="grid-container" id="cartpole_instance"></div>
+      <button type="button" onclick="negativeFeedback();">Bad!</button>
+      <button type="button" onclick="positiveFeedback();">Good!</button>
 
       <script>
 
-
-          var ws = new WebSocket("ws://localhost:8000/echo")
-
-          ws.onopen = function() {
-
-                            // Web Socket is connected, send data using send()
-                            ws.send("Message to send");
-                            alert("Message is sent...");
-                         };
-
-
           $(document).ready(function() {
+
+            var python_ws = new WebSocket("ws://localhost:8000/echo")
+
+            python_ws.onopen = function(msg) {
+              // Web Socket is connected, send data using send()
+              python_ws.send("Connection established");
+            };
+
+            python_ws.onmessage = function (evt) {
+              var received_msg = evt.data;
+              console.log("Received message: " + received_msg)
+            };
+
+            python_ws.onclose = function() {
+              // websocket is closed.
+              console.log("Connection is closed...");
+            };
 
             //===========< init sim & viewer thresholds >====================//
             //thesholds for x & theta (radians)
@@ -52,7 +70,11 @@
 
             cp = new CartPole(cartpole_thresholds, starting_state = true)
             ui_blocks.individual_episode("#cartpole_instance", cp)
+
             console.log(cp.getState())
+
+            var cp_state = JSON.stringify(cp.getState())
+            python_ws.onopen = () => python_ws.send(cp_state);
 
           });
 
