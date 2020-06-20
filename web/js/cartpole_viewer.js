@@ -15,7 +15,7 @@ class Cartpole_Viewer {
 
     If animation is enabled, Faded cartpole representation represents orignal
 
-    @param {string} domSelector the div that'll contain the SVG
+    @param {string} svgObj svgjs object
     @param {array} world_state sim's state obj
     @param {number} action 0 or 1 for left vs right
     @param {array} next_state next state given the action
@@ -24,7 +24,7 @@ class Cartpole_Viewer {
     @param {number} img_height
     @param {object} animation_args if null, then static image. Paramters as defined here: https://svgjs.com/docs/3.0/animating/
     **/
-    gen_svg(domSelector, world_state, action, next_state, future_state, img_width, img_height, animation_args = null) {
+    gen_svg(svgObj, world_state, action, next_state, future_state = null, img_width, img_height, animation_args = null) {
 
       //scale of world to image
       var world_width = this.state_var_thresholds.x*2 //put thresholds at edge of grid
@@ -38,7 +38,6 @@ class Cartpole_Viewer {
       var pole_est_future_theta = future_state.theta
       var pole_est_future_theta_degrees = pole_est_future_theta * 180 / Math.PI
       var cart_est_future_x = (future_state.x)*scale+img_width/2.0
-
 
       //dimensions of cart
       var cartx = world_state.x *scale+img_width/2.0
@@ -70,9 +69,7 @@ class Cartpole_Viewer {
         //========== Begin SVG ===================//
 
         //create SVG
-        var draw = SVG().addTo(domSelector).size(img_width, img_height)
-
-        //Object.assign(currState,this.state)
+        var draw = svgObj
 
         //draw track first so it's back-most layer on canvas
         var track = draw.line(0, carty, img_width, carty)

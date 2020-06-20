@@ -37,10 +37,11 @@
  *   - leftward or rightward force.
  */
 class CartPole {
+
+  static id = 0
   /**
    * Constructor of CartPole.
    */
-
   constructor(cartpole_thresholds, state_as_arr = null, title = null) {
 
     //list of states in this sim
@@ -49,8 +50,8 @@ class CartPole {
     this.cartpole_thresholds = cartpole_thresholds
 
     this.viewer = new Cartpole_Viewer(this)
+    this.id = CartPole.id++
     this.title = title ? title : ""
-
 
     if(state_as_arr == null)
       this.setRandomState();
@@ -242,7 +243,7 @@ class CartPole {
   /**
   generates requested states from high-level descriptions
   **/
-  setSpecificState(human_readable_state) {
+  getStateArrFromHumanReadableStates(human_readable_state) {
     // The control-theory state variables of the cart-pole system.
     // Cart position, meters.
     let x_name = human_readable_state[0]
@@ -314,7 +315,7 @@ class CartPole {
     }
     //let theta_dot =  (Math.random() - 0.5) * 0.5;
 
-    this.setState([x,x_dot, theta, theta_dot]);
+    return [x,x_dot, theta, theta_dot];
   }
 
 

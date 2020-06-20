@@ -2,23 +2,28 @@
   <HEAD>
     <meta charset="UTF-8">
 
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
-    <script src="./sim_runs/data0.js"></script>
-
+    <!-- 3rd party libs -->
     <script src="./offline_lib/jquery-3.4.1.js"></script>
     <script src="./offline_lib/jquery.csv.min.js"></script>
     <script src="./offline_lib/math.min.js"></script>
     <script src="./offline_lib/svgjs/svg.js"></script>
 
+    <!-- code for viz -->
     <script src="./js/util.js"></script>
     <script src="./js/cart_pole.js"></script>
     <script src="./js/cartpole_viewer.js"></script>
     <script src="./js/ui_blocks.js"></script>
+    <link rel="stylesheet" href="./css/cartpole.css">
+
+    <!-- code for analysis -->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
+    <script src="./sim_runs/data0.js"></script>
+    <script src="./js/RL_Methods/COACH.js"></script>
+    <script src="./js/linear_policy.js"></script>
+
 
     <script src="./js/main.js"></script>
 
-
-    <link rel="stylesheet" href="./css/cartpole.css">
   </HEAD>
   <BODY>
     <!--
@@ -35,16 +40,37 @@
       <hr/>
 -->
 
-      <h2>Random Grid</h2>
-      <h4 id="randomgrid_policy"></h4>
-      <b id="randomgrid_descript"></b>
-      (Table rows: 1 = original, 2 = future, 3 = counterfactual)
+      <div id="animationDiv">
+        <h2 class="title"></h2>
+        <h4 class="policy"></h4>
+        <b class="descript"></b>
+        <div class="animation-container"></div>
+      </div>
 
-      <div class="grid-container" id="randomgrid"></div>
+      <div id=canvasDiv>
+        <h2 class="title"></h2>
+        <h4 class="policy"></h4>
+        <b class="descript"></b>
+        <div class="canvas-container"></div>
+      </div>
+
+      <div id=gridDiv>
+        <h2 class="title"></h2>
+        <h4 class="policy"></h4>
+        <b class="descript"></b>
+        <div class="grid-container"></div>
+      </div>
+
       <!--<h5>State Data [x,xDot,theta,thetaDot]</h5>
       <div id="randomgrid_states"></div>
       -->
       <script>
+      //try not to put any JS code here... make mods in main.js
+      $(document).ready(function() {
+        let main = new Main()
+        main.run()
+      })
+
       </script>
   </BODY>
 </HTML>

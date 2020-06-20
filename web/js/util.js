@@ -4,6 +4,13 @@ Static utility functions
 class Util {
 
   /**
+  @param {string} domSelector the div that'll contain the SVG
+  **/
+  static gen_empty_svg(domSelector, img_width, img_height) {
+    return SVG().addTo(domSelector).size(img_width, img_height)
+  }
+
+  /**
    * Returns a random number between min (inclusive) and max (exclusive)
    * https://stackoverflow.com/questions/1527803/generating-random-whole-numbers-in-javascript-in-a-specific-range
    */
