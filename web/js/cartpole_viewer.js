@@ -26,6 +26,7 @@ class Cartpole_Viewer {
     **/
     gen_svg(svgObj, world_state, action, next_state, future_state = null, img_width, img_height, animation_args = null) {
 
+
       //scale of world to image
       var world_width = this.state_var_thresholds.x*2 //put thresholds at edge of grid
       var scale = img_width/world_width
@@ -111,6 +112,9 @@ class Cartpole_Viewer {
 
         //if animating, faded cart represents original timestep
         if(animation_args != null) {
+
+          if(animation_args.not_svgjs_show_title)
+            svgObj.text(this.sim.title).font({ fill: '#ddd'})
 
           //put faded cart in original
           faded_cart.center(cartx,carty)

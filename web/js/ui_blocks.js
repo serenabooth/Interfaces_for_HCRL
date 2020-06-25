@@ -3,10 +3,34 @@ class UI_Blocks {
 
 
   /**
-  Create a canvas that one can place animations on at specified x,y positions
+  Place cartpole animations at specified x,y positions
+  @domSelect: the selector for the containing dom element
+  @corkboard_width :
+  @corkboard_height: d
+  @cartpole_array: array of cartpoles. Each cartpole should be set to the desired state to display
+  @cartpole_positions: an array of { 'x':xPox, 'y':yPos}. Index of position specifies cartpole at same index.
+                      Note: position (0,0) in SVG is in the top-left
+  @policy: policy for cartpole (as array)
+  @display_args: an object containing arguments that configure animations
+  @animation_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
   **/
-  static state_canvas(canvasDivDomSelector, canvas_width, canvas_height, cartpoles, cartpole_positions) {
+  static state_corkboard(domSelect, corkboard_width, corkboard_height, cartpole_array, cartpole_positions, policy, display_args, animation_args) {
+    var svgObj = Util.gen_empty_svg(domSelect, corkboard_width, corkboard_height)
+
+    //render and place each cartpole
+
+    for (let i = 0; i < cartpole_array.length; i++) {
+      let cp = cartpole_array[i]
+      let cp_pos = cartpole_positions[i]
+      let runs = cp.run_sims_from_policy(policy, display_args.num_timesteps_to_simulate, display_args.include_cfs)
+      //let cf_sim_run_results = runs["cf_sim"]
+
+      UI_Blocks.create_animation_in_svg(svgObj, cp_pos["x"], cp_pos["y"], cp, runs["sim"], display_args.img_width, display_args.img_height, animation_args)
+    }
+
   }
+
+
 
   /**
   Creates a grid of cartpole animations
@@ -27,6 +51,10 @@ class UI_Blocks {
       return
     }
 
+    //change CSS in grid to reflect correct # of columns
+    let cssVals = Array.from({length:numCols}).map(x => "auto")
+    $(gridDivDomSelector).css("grid-template-columns", cssVals.join(" "))
+
     //create a gridcell for each cartpole
     for(let i = 0; i < numRows*numCols; i++) {
 
@@ -45,6 +73,31 @@ class UI_Blocks {
 
   //===== BEGIN Grid Helper Functions ======//
 
+  /**
+  Creates an animation a cartpole state & a simulated policy. The state should be set within the cartpole pbject itself
+  @svg: the parent svg
+  @x: x position of this animation within parent SVG
+  @y: x position of this animation within parent SVG
+  @cartpole: a cartpole object w/ the state values defined
+  @sim_run: contains future simulation data
+  @img_width:
+  @img_height
+  @animation_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
+  **/
+  static create_animation_in_svg(parentSVG, x, y, cartpole, sim_run, img_width, img_height, animation_args) {
+
+    //get simulation results
+    let action = sim_run["action"]
+    var next_state = sim_run["next"]
+    var future_state = sim_run["future"]
+
+    //create svg inside the div
+    var svgObj = parentSVG.nested(x,y)
+    svgObj.attr('x', x)
+    svgObj.attr('y', y)
+    cartpole.viewer.gen_svg(svgObj, cartpole.getState(false), action, next_state, future_state, img_width, img_height,animation_args)
+  }
+
 
       /**
       Creates an animation a cartpole state & a simulated policy. The state should be set within the cartpole pbject itself
@@ -57,7 +110,7 @@ class UI_Blocks {
       @img_height
       @animation_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
       **/
-      static create_animation(containerDomSelect, animation_div_dom_id, cartpole, sim_run, img_width, img_height, animation_args) {
+      static create_animation_in_dom_elem(containerDomSelect, animation_div_dom_id, cartpole, sim_run, img_width, img_height, animation_args) {
 
         //get simulation results
         let action = sim_run["action"]
@@ -103,17 +156,10 @@ class UI_Blocks {
 
       static populate_grid_cell(gridCellDomSelect, cartpole, policy, display_args) {
 
-        //simulate from original action
-        var curr_action = cartpole.getAction(policy)
-        let sim_run_results = cartpole.simulate(curr_action, display_args.num_timesteps_to_simulate)
-
-        //simulate counterfactual action
-        let cf_sim_run_results = null
-        if(display_args.include_cfs) {
-          //simulate from counterfactual
-          curr_action = cartpole.getCounterFactualAction(curr_action)
-          cf_sim_run_results = cartpole.simulate(curr_action,display_args.num_timesteps_to_simulate)
-        }
+        //runs sim & cf_sim for the cartpole
+        let runs = cartpole.run_sims_from_policy(policy, display_args.num_timesteps_to_simulate, display_args.include_cfs)
+        let sim_run_results = runs["sim"]
+        let cf_sim_run_results = runs["cf_sim"]
 
         //insert table of state values
         let tableHTML = this.create_animation_txt(cartpole, sim_run_results , cf_sim_run_results)
@@ -121,11 +167,11 @@ class UI_Blocks {
 
         //insert simulation animation
         var animation_div_dom_id = "drawing-"+cartpole.id;
-        this.create_animation(gridCellDomSelect, animation_div_dom_id, cartpole, sim_run_results, display_args.img_width , display_args.img_height, display_args.animation_args)
+        this.create_animation_in_dom_elem(gridCellDomSelect, animation_div_dom_id, cartpole, sim_run_results, display_args.img_width , display_args.img_height, display_args.animation_args)
 
         //insert counterfactual simulation animation
         if(display_args.include_cfs)
-          this.create_animation(gridCellDomSelect, animation_div_dom_id+"_cf", cartpole, cf_sim_run_results, display_args.img_width , display_args.img_height, display_args.animation_args)
+          this.create_animation_in_dom_elem(gridCellDomSelect, animation_div_dom_id+"_cf", cartpole, cf_sim_run_results, display_args.img_width , display_args.img_height, display_args.animation_args)
 
       }
   //===== END Grid Helper Functions ======//

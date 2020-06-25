@@ -369,6 +369,29 @@ class CartPole {
   }
 
   /**
+  Given a policy, will determine the action and run simulation  
+  **/
+  run_sims_from_policy(policy, timesteps = 1, include_cfs=true) {
+    //simulate from original action
+    var curr_action = this.getAction(policy)
+    let sim_run_results = this.simulate(curr_action, timesteps)
+
+    //simulate counterfactual action
+    let cf_sim_run_results = null
+    if(include_cfs) {
+      //simulate from counterfactual
+      curr_action = this.getCounterFactualAction(curr_action)
+      cf_sim_run_results = this.simulate(curr_action,timesteps)
+    }
+
+    return {
+      "sim" :sim_run_results,
+      "cf_sim" : cf_sim_run_results
+    }
+  }
+
+
+  /**
   simulates the next time step(s) of the cartpole
   does not update internal state of the sim
 
