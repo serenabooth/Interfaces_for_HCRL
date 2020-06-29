@@ -364,9 +364,9 @@ def COACH_GRIDWORLD(domain, num_episodes = 100, trace_set = [0.1], delay = 0, le
 def gridworld_test():
     domain = Gridworld()
 
-    for reward_fn in [0,1]:
+    for reward_fn in [1]:
 
-        total_num_steps, eval_episodes = COACH_GRIDWORLD(domain, trace_set = [0], reward_fn = reward_fn)
+        total_num_steps, eval_episodes = COACH_GRIDWORLD(domain, trace_set = [0.1], reward_fn = reward_fn)
         log_mean_steps = np.log(np.mean(total_num_steps, axis = 1))
         log_num_steps_std = np.std(np.log(total_num_steps), axis=1)
 
@@ -374,7 +374,7 @@ def gridworld_test():
         if reward_fn == 0:
             label = "task based"
         elif reward_fn == 1:
-            label = "policy indepdendent"
+            label = "COACH (policy indepdendent)"
         plt.plot(eval_episodes, log_mean_steps, label = label)
         plt.fill_between(eval_episodes,
                             log_mean_steps - log_num_steps_std,

@@ -37,10 +37,11 @@
  *   - leftward or rightward force.
  */
 class CartPole {
+
+  static id = 0
   /**
    * Constructor of CartPole.
    */
-
   constructor(cartpole_thresholds, state_as_arr = null, title = null) {
 
     //list of states in this sim
@@ -49,8 +50,8 @@ class CartPole {
     this.cartpole_thresholds = cartpole_thresholds
 
     this.viewer = new Cartpole_Viewer(this)
+    this.id = CartPole.id++
     this.title = title ? title : ""
-
 
     if(state_as_arr == null)
       this.setRandomState();
@@ -240,7 +241,7 @@ class CartPole {
   /**
   generates requested states from high-level descriptions
   **/
-  setSpecificState(human_readable_state) {
+  getStateArrFromHumanReadableStates(human_readable_state) {
     // The control-theory state variables of the cart-pole system.
     // Cart position, meters.
     let x_name = human_readable_state[0]
@@ -312,7 +313,7 @@ class CartPole {
     }
     //let theta_dot =  (Math.random() - 0.5) * 0.5;
 
-    this.setState([x,x_dot, theta, theta_dot]);
+    return [x,x_dot, theta, theta_dot];
   }
 
 
@@ -373,6 +374,29 @@ class CartPole {
   setTitle(title) {
     this.title = title
   }
+
+  /**
+  Given a policy, will determine the action and run simulation  
+  **/
+  run_sims_from_policy(policy, timesteps = 1, include_cfs=true) {
+    //simulate from original action
+    var curr_action = this.getAction(policy)
+    let sim_run_results = this.simulate(curr_action, timesteps)
+
+    //simulate counterfactual action
+    let cf_sim_run_results = null
+    if(include_cfs) {
+      //simulate from counterfactual
+      curr_action = this.getCounterFactualAction(curr_action)
+      cf_sim_run_results = this.simulate(curr_action,timesteps)
+    }
+
+    return {
+      "sim" :sim_run_results,
+      "cf_sim" : cf_sim_run_results
+    }
+  }
+
 
   /**
   simulates the next time step(s) of the cartpole
