@@ -44,9 +44,9 @@ class Main {
     **/
     run() {
 
-      this.sandbox_eg()
-      //this.sandbox_sb()
-      //this.sandbox_sc()
+      // this.sandbox_eg()
+      this.sandbox_sb()
+      // this.sandbox_sc()
 
     }
 
@@ -76,21 +76,16 @@ class Main {
     **/
     sandbox_sb() {
 
-      /*
-      var coach = new COACH(num_states = 4,num_actions = 4, trace_set = [0.99])
-      console.log(coach)
-      SM = coach.softmax_grad([0,1,2,3])
-      */
+      //choose a policy
+      let whichPolicy = "Undulating"
+      //policies from the dropbox paper
+      let policies = {
+        //NOTE: assumes tau of 0.02???
+        "Undulating" : [-0.28795545, 0.4220686, -0.55905958, 0.79609386],
+        "Rigid" : [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
+      }
 
-      var policy = new Linear_Policy(4)
-      var cartpole = new CartPole(this.cartpole_thresholds)
-      let state = cartpole.getState()
-      console.log(state)
-      policy.get_move(state)
-
-      //note: timeline currently not working... need to fix
-      UI_Blocks.timeline(cartpole,"#animation",window.run_data,1,false)
-      UI_Blocks.timeline(cartpole,"#timeline",window.run_data)
+      this.createRandomGrid("#gridDiv", policies[whichPolicy])
 
     }
 
@@ -234,5 +229,40 @@ class Main {
     UI_Blocks.state_grid(domSelect+" .animation-container", numRows,numCols,cartpoles, this.cartpole_display_args, policy)
   }
 
+  createHandpickedGrid(domSelect, policy = null) {
+    $(domSelect+" .title").html("Handpicked Grid")
 
+    let hand_picked_states = []
+    hand_picked_states.push(["very left of center","still","upright","still"])
+    hand_picked_states.push(["left of center","still","upright","still"])
+    hand_picked_states.push(["center","still","upright","still"])
+    hand_picked_states.push(["right of center","still","upright","still"])
+    hand_picked_states.push(["very right of center","still","upright","still"])
+
+    hand_picked_states.push(["center","going left fast","upright","still"])
+    hand_picked_states.push(["center","going left","upright","still"])
+    hand_picked_states.push(["center","still","upright","still"])
+    hand_picked_states.push(["center","going right","upright","still"])
+    hand_picked_states.push(["center","going right fast","upright","still"])
+
+    let numCols = 3
+    let numRows = 2
+
+    var cartpoles = []
+
+    var i = 0
+    for(let human_readable_state of hand_picked_states) {
+
+      //instantiate cartpole & add to the list
+      let cp = new CartPole(this.cartpole_thresholds)
+      cp.setTitle(human_readable_state.toString())
+      //update the internal state to reflect defined states
+      let state_vals_as_arr = cp.getStateArrFromHumanReadableStates(human_readable_state)
+      cp.setState(state_vals_as_arr)
+      cartpoles.push(cp)
+    }
+
+    UI_Blocks.state_grid(domSelect+" .animation-container", numRows,numCols,cartpoles, this.cartpole_display_args, policy)
+
+  }
 }

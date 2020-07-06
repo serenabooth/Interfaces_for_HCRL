@@ -31,7 +31,7 @@ def test_cartpole_COACH(oracle_parameters):
 
     total_rewards = []
     for _ in range(0,1):
-        episode_total_rewards, eval_episodes = COACH.COACH_CARTPOLE(domain, num_episodes=15, trace_set = [0.9], reward_fn = 0, learning_rate = 0.1, oracle_parameters = oracle_parameters)
+        episode_total_rewards, eval_episodes = COACH.COACH_CARTPOLE(domain, num_episodes=15, trace_set = [0], reward_fn = 0, learning_rate = 0.1, oracle_parameters = oracle_parameters)
         if total_rewards == []:
             total_rewards = episode_total_rewards
 
