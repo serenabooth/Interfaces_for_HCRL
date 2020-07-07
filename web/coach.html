@@ -68,7 +68,9 @@
 
             //===========< choose policy & generate states for grid>====================//
 
-            cp = new CartPole(cartpole_thresholds, starting_state = true)
+            cp = new CartPole(cartpole_thresholds = cartpole_thresholds, state_as_arr = null, title = null, starting_state = true)
+
+            console.log(cp.getState())
             ui_blocks.individual_episode("#cartpole_instance", cp)
 
             console.log(cp.getState())

@@ -42,7 +42,7 @@ class CartPole {
   /**
    * Constructor of CartPole.
    */
-  constructor(cartpole_thresholds, state_as_arr = null, title = null) {
+  constructor(cartpole_thresholds, state_as_arr = null, title = null, starting_state = false) {
 
     //list of states in this sim
     this.state_var_list = ["x", "x_dot", "theta", "theta_dot"]
@@ -54,7 +54,7 @@ class CartPole {
     this.title = title ? title : ""
 
     if(state_as_arr == null)
-      this.setRandomState();
+      this.setRandomState(starting_state);
     else
       this.setState(state_as_arr)
 
@@ -78,6 +78,7 @@ class CartPole {
     this.MOVE_LEFT = 0
     this.MOVE_RIGHT = 1
 
+    console.log("State: " + this.getState())
     //====< END Cartpole Contants >======//
   }
 
@@ -203,6 +204,28 @@ class CartPole {
 
     // Pole angle velocity.
     let theta_dot =  (Math.random() - 0.5) * 0.5;
+
+    return [x,x_dot, theta, theta_dot]
+  }
+
+  /**
+  generates single random starting state
+  **/
+  genStartingState() {
+
+    // The control-theory state variables of the cart-pole system.
+    // Cart position, meters.
+    //let x = Math.random() - 0.5;  was in original code...
+    let x = Util.genRandomFloat(-0.05, 0.05)
+    // Cart velocity.
+    let x_dot = Util.genRandomFloat(-0.05, 0.05)
+
+    // Pole angle, radians.
+    //let theta = (Math.random() - 0.5) * 2 * (6 / 360 * 2 * Math.PI);   was in original code...
+    let theta  = Util.genRandomFloat(-0.05, 0.05)
+
+    // Pole angle velocity.
+    let theta_dot = Util.genRandomFloat(-0.05, 0.05)
 
     return [x,x_dot, theta, theta_dot]
   }
@@ -335,8 +358,16 @@ class CartPole {
   /**
    * Set the state of the cart-pole system randomly.
    */
-  setRandomState() {
-    let stateArr = this.genRandomState()
+  setRandomState(starting_state) {
+    let stateArr = null
+    if (starting_state){
+      stateArr = this.genStartingState()
+      // console.log("starting state")
+    }
+    else {
+      stateArr = this.genRandomState()
+      console.log(stateArr)
+    }
     this.setState(stateArr)
   }
 
@@ -376,7 +407,7 @@ class CartPole {
   }
 
   /**
-  Given a policy, will determine the action and run simulation  
+  Given a policy, will determine the action and run simulation
   **/
   run_sims_from_policy(policy, timesteps = 1, include_cfs=true) {
     //simulate from original action
