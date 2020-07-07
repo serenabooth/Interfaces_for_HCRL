@@ -13,6 +13,7 @@
     <script src="./js/ui_blocks.js"></script>
 
     <script src="./sim_runs/data0.js"></script>
+    <script src="./js/main.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
 
@@ -22,10 +23,14 @@
 
       <script>
         function negativeFeedback() {
+          python_ws.send("Connection established");
+
           console.log("-1");
         }
 
         function positiveFeedback() {
+          python_ws.send("Connection established");
+
           console.log("+1");
         }
       </script>
@@ -33,8 +38,20 @@
       <h2>Train Cartpole using COACH</h2>
 
       <div class="grid-container" id="cartpole_instance"></div>
-      <button type="button" onclick="negativeFeedback();">Bad!</button>
+
+      <div id=feedbackButtons></div>
+<!--       <div id=badButton></div>
+ -->
+<!--       <button type="button" onclick="negativeFeedback();">Bad!</button>
       <button type="button" onclick="positiveFeedback();">Good!</button>
+ -->
+      <div id=gridDiv>
+        <h2 class="title"></h2>
+        <h4 class="policy"></h4>
+        <b class="descript"></b>
+        <div class="grid-container animation-container"></div>
+      </div>
+
 
       <script>
 
@@ -56,6 +73,30 @@
               // websocket is closed.
               console.log("Connection is closed...");
             };
+
+
+            var badBtn = document.createElement("button");
+            badBtn.innerHTML = "Bad";
+            badBtn.onclick = function(){
+              var msg = JSON.stringify("-1")
+              python_ws.send(msg);
+              console.log("Bad!")
+            }
+
+
+            var goodBtn = document.createElement("button");
+            goodBtn.innerHTML = "Good";
+            goodBtn.onclick = function(){
+              var msg = JSON.stringify("1")
+              python_ws.send(msg);
+              console.log("Good!")
+            }
+
+            var body = document.getElementById("feedbackButtons");
+            body.appendChild(badBtn);
+            body.appendChild(goodBtn);
+
+
 
             //===========< init sim & viewer thresholds >====================//
             //thesholds for x & theta (radians)
@@ -79,6 +120,11 @@
             python_ws.onopen = () => python_ws.send(cp_state);
 
           });
+
+          $(document).ready(function() {
+            let main = new Main()
+            main.run()
+          })
 
       </script>
   </BODY>
