@@ -42,7 +42,7 @@ class CartPole {
   /**
    * Constructor of CartPole.
    */
-  constructor(cartpole_thresholds, state_as_arr = null, title = null, starting_state = false) {
+  constructor(cartpole_thresholds, state_as_arr = null, title = null, is_starting_state = false) {
 
     //list of states in this sim
     this.state_var_list = ["x", "x_dot", "theta", "theta_dot"]
@@ -54,7 +54,7 @@ class CartPole {
     this.title = title ? title : ""
 
     if(state_as_arr == null)
-      this.setRandomState(starting_state);
+      this.setRandomState(is_starting_state);
     else
       this.setState(state_as_arr)
 
@@ -87,8 +87,35 @@ class CartPole {
 
   //===========< END Static Methods >================//
 
+
     /**
     check whether the cart state is degenerate
+
+    @return true if degenerate; false otherwise
+    **/
+    checkDegenerate(state_as_obj = null) {
+
+      if(state_as_obj == null)
+        state_as_obj = this.getState(false)
+
+      //check to see if any state vars have exceeded threshold
+      for(let i = 0; i < this.state_var_list.length; i++) {
+        let state_var_name = this.state_var_list[i]
+        let state_var_val = state_as_obj[state_var_name]
+        let state_var_threshold = this.cartpole_thresholds[state_var_name]
+
+        // check if out of threshold
+        if(Math.abs(state_var_val) > state_var_threshold) {
+          return true
+        }
+      }
+
+      return false
+    }
+
+
+    /**
+    check whether the cart state is degenerate; fix if so
 
     @return null if state was *not* degenerate. Otherwise return fixed state_as_obj
     **/
@@ -377,6 +404,13 @@ class CartPole {
   setStartingState() {
     let stateArr = this.genStartingState()
     this.setState(stateArr)
+  }
+
+  /**
+   * Reset after entering a degenerate state or restarting.
+   */
+  reset() {
+    setStartingState()
   }
 
 

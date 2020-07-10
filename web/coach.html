@@ -56,7 +56,7 @@
       <script>
 
           $(document).ready(function() {
-
+            var cp = null
             var python_ws = new WebSocket("ws://localhost:8000/echo")
 
             python_ws.onopen = function(msg) {
@@ -78,9 +78,16 @@
             var badBtn = document.createElement("button");
             badBtn.innerHTML = "Bad";
             badBtn.onclick = function(){
-              var msg = JSON.stringify("-1")
+
+              var msg = {
+                reward: -1,
+                state: cp.getState()
+              }
+
+              msg = JSON.stringify(msg)
               python_ws.send(msg);
               console.log("Bad!")
+              console.log(cp.getState())
             }
 
 
@@ -90,6 +97,7 @@
               var msg = JSON.stringify("1")
               python_ws.send(msg);
               console.log("Good!")
+              console.log(cp.getState())
             }
 
             var body = document.getElementById("feedbackButtons");

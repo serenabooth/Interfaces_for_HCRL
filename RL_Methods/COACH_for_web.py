@@ -17,13 +17,13 @@ def softmax_grad(s):
     jacobian = np.diagflat(s) - np.dot(SM, SM.T)
     return jacobian
 
-class COACH:
+class COACH():
     weights = None
     eligibility_traces = {}
     trace_set = None
     learning_rate = None
 
-    def __init__(obs_size, action_size, trace_set = [0.99], delay = 0, learning_rate = 0.05):
+    def __init__(self, obs_size, action_size, trace_set = [0.99], delay = 0, learning_rate = 0.05):
         self.weights = np.zeros((obs_size, action_size))
         self.trace_set = trace_set
         self.learning_rate = learning_rate
@@ -31,7 +31,7 @@ class COACH:
         for trace_val in trace_set:
             self.eligibility_traces[trace_val] = np.zeros(self.weights.shape)
 
-    def get_proposed_action(state):
+    def get_proposed_action(self, state):
         # Determine which action to take
         action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(self.weights)))
         action = np.random.choice(n_action, p=action_weights)
@@ -43,7 +43,7 @@ class COACH:
 
         return action_weights, action, gradient
 
-    def train_COACH(last_state, last_action, last_gradient, reward, selected_trace = 0.99):
+    def train_COACH(self, last_state, last_action, last_gradient, reward, selected_trace = 0.99):
         # TODO - select trace automatically
         for trace_val in self.trace_set:
             self.eligibility_traces[trace_val] = trace_val * self.eligibility_traces[trace_val]
@@ -52,7 +52,7 @@ class COACH:
         weights_delta = self.learning_rate * human_reward * eligibility_traces[selected_trace]
         self.weights += weights_delta
 
-    def reset():
+    def reset(self):
         for trace_val in trace_set:
             self.eligibility_traces[trace_val] = np.zeros(self.weights.shape)
 
@@ -83,7 +83,12 @@ if __name__ == "__main__":
     server_thread.daemon = True
     server_thread.start()
 
+    coach_trainer = COACH(obs_size = 4, action_size = 2)
+    policy = coach_trainer.weights
+
+    print (policy)
+
     while True:
-        for client in clients:
-            client.sendMessage("hello")
+        # for client in clients:
+        #     client.sendMessage("hello")
         time.sleep(0.1)
