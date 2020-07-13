@@ -23,7 +23,15 @@ class COACH():
     trace_set = None
     learning_rate = None
 
+    last_action = None
+    last_gradient = np.array([])
+
+    n_action = None
+    obs_size = None
+
     def __init__(self, obs_size, action_size, trace_set = [0.99], delay = 0, learning_rate = 0.05):
+        self.obs_size = obs_size
+        self.n_action = action_size
         self.weights = np.zeros((obs_size, action_size))
         self.trace_set = trace_set
         self.learning_rate = learning_rate
@@ -31,25 +39,38 @@ class COACH():
         for trace_val in trace_set:
             self.eligibility_traces[trace_val] = np.zeros(self.weights.shape)
 
-    def get_proposed_action(self, state):
-        # Determine which action to take
-        action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(self.weights)))
-        action = np.random.choice(n_action, p=action_weights)
+    def get_proposed_action(self, state, take_action = True):
+        state = np.array(state)
 
+        action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(self.weights)))
+        action = np.random.choice(self.n_action, p=action_weights)
+
+        print (action_weights)
+
+        print ('action ' + str(action))
         # compute gradient
         dsoftmax = softmax_grad(action_weights)[action]
         dlog = dsoftmax / action_weights[action].numpy()
         gradient = state[None,:].T.dot(dlog[None,:])
 
-        return action_weights, action, gradient
+        if take_action:
+            self.last_action = action
+            self.last_gradient = gradient
 
-    def train_COACH(self, last_state, last_action, last_gradient, reward, selected_trace = 0.99):
+        return action
+
+    def update_weights(self, reward, selected_trace = 0.99):
         # TODO - select trace automatically
+
+        if self.last_gradient.size == 0:
+            print ("No gradient; cannot update weights")
+            return
+
         for trace_val in self.trace_set:
             self.eligibility_traces[trace_val] = trace_val * self.eligibility_traces[trace_val]
-            self.eligibility_traces[trace_val] += last_gradient
+            self.eligibility_traces[trace_val] += self.last_gradient
 
-        weights_delta = self.learning_rate * human_reward * eligibility_traces[selected_trace]
+        weights_delta = self.learning_rate * reward * self.eligibility_traces[selected_trace]
         self.weights += weights_delta
 
     def reset(self):
@@ -59,11 +80,24 @@ class COACH():
 clients = []
 class SimpleEcho(WebSocket):
     def handleMessage(self):
+        global COACH_TRAINER
         # echo message back to client
         print ("Handling message")
         msg = json.loads(self.data)
         print (msg)
-        print (type(msg))
+
+        if isinstance(msg,dict):
+            if "msg_type" in msg.keys() and msg["msg_type"] == "feedback":
+                print ("received type feedback")
+
+                print ("Reward " + str(msg['reward']))
+
+                COACH_TRAINER.update_weights(msg['reward'])
+
+                action = COACH_TRAINER.get_proposed_action(msg['state'], take_action = True)
+
+                print (action)
+                print (COACH_TRAINER.weights)
         # self.sendMessage(self.data)
 
     def handleConnected(self):
@@ -74,6 +108,10 @@ class SimpleEcho(WebSocket):
         clients.remove(self)
         print(self.address, 'closed')
 
+
+
+COACH_TRAINER = COACH(obs_size = 4, action_size = 2)
+
 if __name__ == "__main__":
     HOST, PORT = "localhost", 8080
 
@@ -82,11 +120,6 @@ if __name__ == "__main__":
     server_thread = threading.Thread(target=server.serveforever)
     server_thread.daemon = True
     server_thread.start()
-
-    coach_trainer = COACH(obs_size = 4, action_size = 2)
-    policy = coach_trainer.weights
-
-    print (policy)
 
     while True:
         # for client in clients:
