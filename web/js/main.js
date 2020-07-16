@@ -131,18 +131,27 @@ class Main {
     $(domSelect+" .title").html("Handpicked Corkboard")
 
     //create human readable states
-    let hand_picked_states = []
-    hand_picked_states.push(["very left of center","still","upright","still"])
-    hand_picked_states.push(["left of center","still","upright","still"])
-    hand_picked_states.push(["center","still","upright","still"])
-    hand_picked_states.push(["right of center","still","upright","still"])
-    hand_picked_states.push(["very right of center","still","upright","still"])
+    let hand_picked_states1 = []
+    hand_picked_states1.push(["very left of center", "still","upright","still"])
+    hand_picked_states1.push(["left of center",      "still","upright","still"])
+    hand_picked_states1.push(["center",              "still","upright","still"])
+    hand_picked_states1.push(["right of center",     "still","upright","still"])
+    hand_picked_states1.push(["very right of center","still","upright","still"])
+    let hand_picked_states2 = []
+    hand_picked_states2.push(["very left of center", "going left","upright","still"])
+    hand_picked_states2.push(["left of center",      "going left","upright","still"])
+    hand_picked_states2.push(["center",              "going left","upright","still"])
+    hand_picked_states2.push(["right of center",     "going left","upright","still"])
+    hand_picked_states2.push(["very right of center","going left","upright","still"])
 
-    hand_picked_states.push(["center","going left fast","upright","still"])
-    hand_picked_states.push(["center","going left","upright","still"])
-    hand_picked_states.push(["center","still","upright","still"])
-    hand_picked_states.push(["center","going right","upright","still"])
-    hand_picked_states.push(["center","going right fast","upright","still"])
+
+    //hand_picked_states.push(["center","going left fast",  "upright","still"])
+    //hand_picked_states.push(["center","going left",       "upright","still"])
+    //hand_picked_states.push(["center","still",            "upright","still"])
+    //hand_picked_states.push(["center","going right",      "upright","still"])
+    //hand_picked_states.push(["center","going right fast", "upright","still"])
+
+
     // hand_picked_states.push(["center","still","upright","still"])
     // hand_picked_states.push(["center","still","upright","still"])
 
@@ -152,7 +161,7 @@ class Main {
     var cartpole_positions = []
 
     var i = 0
-    for(let human_readable_state of hand_picked_states) {
+    for(let human_readable_state of hand_picked_states1) {
 
       //instantiate cartpole & add to the list
       let cp = new CartPole(this.cartpole_thresholds)
@@ -164,8 +173,30 @@ class Main {
 
       //set position of animation on the corkboard
       let cp_pos = {
-        'x' : i * 50,
-        'y' : i * 100
+        'x' : 50, //i * 50,
+        'y' : i * 75
+      }
+      i++
+      cartpole_positions.push(cp_pos)
+
+    }
+
+    var i = 0
+    for(let human_readable_state of hand_picked_states2) {
+
+      //instantiate cartpole & add to the list
+      let cp = new CartPole(this.cartpole_thresholds)
+      cp.setTitle(human_readable_state.toString())
+      //update the internal state to reflect defined states
+      let state_vals_as_arr = cp.getStateArrFromHumanReadableStates(human_readable_state)
+      cp.setState(state_vals_as_arr)
+      console.log('human readable state',human_readable_state,'state vals',state_vals_as_arr,'action', cp.getAction(policy))
+      cartpoles.push(cp)
+
+      //set position of animation on the corkboard
+      let cp_pos = {
+        'x' : 250, //i * 50,
+        'y' : i * 75
       }
       i++
       cartpole_positions.push(cp_pos)

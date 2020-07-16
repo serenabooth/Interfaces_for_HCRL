@@ -257,13 +257,13 @@ class CartPole {
 
     switch(x_name) {
       case "left of center":
-        x = -this.cartpole_thresholds.x/2; break
+        x = -this.cartpole_thresholds.x/3; break
       case "right of center":
-        x = this.cartpole_thresholds.x/2; break
+        x = this.cartpole_thresholds.x/3; break
       case "very left of center":
-        x = -this.cartpole_thresholds.x; break
+        x = -this.cartpole_thresholds.x*2/3; break
       case "very right of center":
-        x = this.cartpole_thresholds.x; break
+        x = this.cartpole_thresholds.x*2/3; break
       case "center":
         x = 0; break;
       default :
@@ -376,7 +376,7 @@ class CartPole {
   }
 
   /**
-  Given a policy, will determine the action and run simulation  
+  Given a policy, will determine the action and run simulation
   **/
   run_sims_from_policy(policy, timesteps = 1, include_cfs=true) {
     //simulate from original action
