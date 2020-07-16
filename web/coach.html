@@ -40,11 +40,7 @@
       <div class="grid-container" id="cartpole_instance"></div>
 
       <div id=feedbackButtons></div>
-<!--       <div id=badButton></div>
- -->
-<!--       <button type="button" onclick="negativeFeedback();">Bad!</button>
-      <button type="button" onclick="positiveFeedback();">Good!</button>
- -->
+
       <div id=gridDiv>
         <h2 class="title"></h2>
         <h4 class="policy"></h4>
@@ -56,6 +52,7 @@
       <script>
 
           $(document).ready(function() {
+            var img_width = 300, img_height = 100
             var cp = null
             var python_ws = new WebSocket("ws://localhost:8000/echo")
 
@@ -65,8 +62,21 @@
             };
 
             python_ws.onmessage = function (evt) {
-              var received_msg = evt.data;
+              var received_msg = JSON.parse(evt.data);
               console.log("Received message: " + received_msg)
+
+              var done = cp.update(received_msg["action"])
+
+              console.log(done)
+              if (done) {
+                console.log("Episode finished")
+                cp.reset()
+              }
+
+              // TODO: convert this to a standalone function
+              $("#drawing").empty()
+              cp.viewer.gen_img("#drawing", cp.getState(false), img_width, img_height)
+
             };
 
             python_ws.onclose = function() {
@@ -80,29 +90,33 @@
             badBtn.onclick = function(){
 
               var msg = {
+                msg_type: "feedback",
                 reward: -1,
                 state: cp.getState()
               }
 
               msg = JSON.stringify(msg)
               python_ws.send(msg);
-              console.log("Bad!")
-              console.log(cp.getState())
             }
 
 
             var goodBtn = document.createElement("button");
             goodBtn.innerHTML = "Good";
             goodBtn.onclick = function(){
-              var msg = JSON.stringify("1")
+              var msg = {
+                msg_type: "feedback",
+                reward: 1,
+                state: cp.getState()
+              }
+
+              msg = JSON.stringify(msg)
               python_ws.send(msg);
-              console.log("Good!")
-              console.log(cp.getState())
             }
 
             var body = document.getElementById("feedbackButtons");
             body.appendChild(badBtn);
             body.appendChild(goodBtn);
+
 
 
 
@@ -119,10 +133,7 @@
 
             cp = new CartPole(cartpole_thresholds = cartpole_thresholds, state_as_arr = null, title = null, starting_state = true)
 
-            console.log(cp.getState())
             ui_blocks.individual_episode("#cartpole_instance", cp)
-
-            console.log(cp.getState())
 
             var cp_state = JSON.stringify(cp.getState())
             python_ws.onopen = () => python_ws.send(cp_state);

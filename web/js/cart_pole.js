@@ -78,7 +78,6 @@ class CartPole {
     this.MOVE_LEFT = 0
     this.MOVE_RIGHT = 1
 
-    console.log("State: " + this.getState())
     //====< END Cartpole Contants >======//
   }
 
@@ -393,7 +392,6 @@ class CartPole {
     }
     else {
       stateArr = this.genRandomState()
-      console.log(stateArr)
     }
     this.setState(stateArr)
   }
@@ -410,7 +408,7 @@ class CartPole {
    * Reset after entering a degenerate state or restarting.
    */
   reset() {
-    setStartingState()
+    this.setStartingState()
   }
 
 
@@ -478,7 +476,7 @@ class CartPole {
       "degenerate" : true if next and/or future states are degenerate (go beyond thresholds)
   }
   **/
-  simulate(action, timesteps = 1) {
+  simulate(action, timesteps = 1, fix_if_degenerate = true) {
 
     if(action == null)
       var force = 0
@@ -521,10 +519,14 @@ class CartPole {
       beyond_state_obj.theta = theta
     }
 
-    //if either of these go beyond thresholds, then cap at thresholds
-    let next_needed_fixing = this.fixDegenerate(next_timestep_state_obj)
-    let beyond_needed_fixing = this.fixDegenerate(beyond_state_obj)
+    let next_needed_fixing = null
+    let beyond_needed_fixing = null
 
+    if (fix_if_degenerate) {
+      //if either of these go beyond thresholds, then cap at thresholds
+      next_needed_fixing = this.fixDegenerate(next_timestep_state_obj)
+      beyond_needed_fixing = this.fixDegenerate(beyond_state_obj)
+    }
     /*
     console.log("next")
     console.log(next_timestep_state_obj)
@@ -580,7 +582,7 @@ class CartPole {
    */
   update(action) {
 
-    next = this.simulate(action)
+    var next = this.simulate(action, 1, false)["next"]
 
     this.x = next.x
     this.x_dot = next.x_dot

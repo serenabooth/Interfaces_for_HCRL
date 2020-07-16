@@ -88,16 +88,18 @@ class SimpleEcho(WebSocket):
 
         if isinstance(msg,dict):
             if "msg_type" in msg.keys() and msg["msg_type"] == "feedback":
-                print ("received type feedback")
-
-                print ("Reward " + str(msg['reward']))
-
+                # Train COACH with feedback received
                 COACH_TRAINER.update_weights(msg['reward'])
 
+                # Communicate which action to take next
                 action = COACH_TRAINER.get_proposed_action(msg['state'], take_action = True)
+                response = {
+                    "msg_type" : "proposed_action",
+                    "action": action
+                }
+                response = json.dumps(response)
+                self.sendMessage(response)
 
-                print (action)
-                print (COACH_TRAINER.weights)
         # self.sendMessage(self.data)
 
     def handleConnected(self):
