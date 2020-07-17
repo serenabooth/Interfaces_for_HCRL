@@ -24,7 +24,7 @@ class Cartpole_Viewer {
     @param {number} img_height
     @param {object} animation_args if null, then static image. Paramters as defined here: https://svgjs.com/docs/3.0/animating/
     **/
-    gen_svg(svgObj, world_state, action, next_state, future_state = null, img_width, img_height, animation_args = null) {
+    gen_svg(svgObj, world_state, action, next_state, future_state = null, img_width, img_height, animation_args = null, pullOrPush = "pull") {
 
 
       //scale of world to image
@@ -76,19 +76,17 @@ class Cartpole_Viewer {
         var track = draw.line(0, carty, img_width, carty)
         track.stroke({ color: 'black', width: 1 })
 
-        //draw arrow to indicate direction - have to draw before cart
-        //so that red line doesn't overlap cart
+        //draw an arrow shoing a push (or pull) force on the cart
         var arrow_x_direction = action == 0 ? -1 : 1
-        var arrow_x = cartx - arrow_x_direction*1.75*cartwidth - arrow_x_direction*cartwidth/2
-        var arrow_point_x = arrow_x + cartwidth/2 * arrow_x_direction
         var arrow_y_top = carty + img_height*(0.075)
         var arrow_y_mid = carty
-        var arrow_y_bottom = carty - img_height*(0.075)
+        var arrow_y_bottom = carty - img_height*(0.075)      
+        var whichSideOfCart = (pullOrPush == "push") ? -1 : 1;
+        var arrow_x = cartx + (whichSideOfCart)*arrow_x_direction*1.75*cartwidth + (whichSideOfCart)*arrow_x_direction*cartwidth/2
 
+        var arrow_point_x = arrow_x + cartwidth/2 * arrow_x_direction
         var arrow_triangle = draw.polygon(`${arrow_x},${arrow_y_top},${arrow_x},${arrow_y_bottom}, ${arrow_point_x},${arrow_y_mid}`).fill('rgba(255,0,0,1)')
-
         var action = draw.line(arrow_point_x, arrow_y_mid, cartx - arrow_x_direction*cartwidth/2, arrow_y_mid)
-        //arrow_triangle.fill('rgba(255,0,0,0)')
         action.stroke({ color: 'rgba(255,0,0,1)', width: 1.5/*, dasharray : "5,5"*/})
 
         //initialize faded cart
