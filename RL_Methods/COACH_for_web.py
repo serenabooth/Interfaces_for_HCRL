@@ -100,6 +100,7 @@ class SimpleEcho(WebSocket):
                 response = json.dumps(response)
                 self.sendMessage(response)
 
+
         # self.sendMessage(self.data)
 
     def handleConnected(self):

@@ -59,10 +59,9 @@ class UI_Blocks {
   @cartpole_array: array of cartpoles. Each cartpole should be set to the desired state to display
   @cartpole_display_args: an object containing arguments that configure animations
   @policy: policy for cartpole (as array)
-
+  @python_ws: websocket for communicating with RL algorithm
   **/
-  static state_grid(gridDivDomSelector, numRows, numCols, cartpole_array, cartpole_display_args, policy = null) {
-
+  static state_grid(gridDivDomSelector, numRows, numCols, cartpole_array, cartpole_display_args, policy = null, python_ws = null) {
     //check to see whether we have enough cartpoles
     if( numRows*numCols > cartpole_array.length) {
       console.log("ui_blocks.state_grid(): Not enough cartpoles for the number of grid cells")
@@ -173,7 +172,7 @@ class UI_Blocks {
       }
 
       static populate_grid_cell(gridCellDomSelect, cartpole, policy, display_args) {
-
+        console.log(policy)
         //runs sim & cf_sim for the cartpole
         let runs = cartpole.run_sims_from_policy(policy, display_args.num_timesteps_to_simulate, display_args.include_cfs)
         let sim_run_results = runs["sim"]

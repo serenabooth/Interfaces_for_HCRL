@@ -19,7 +19,7 @@ class Main {
                                   img_height: 100,
                                   img_width: 300,
                                   //will also display counterfactual future if true
-                                  include_cfs: true,
+                                  include_cfs: false,
                                   //number of timesteps to simulate into the future (and then animate)
                                   num_timesteps_to_simulate: 25,
                                   //parameters re: animation mechanics
@@ -76,6 +76,8 @@ class Main {
     **/
     sandbox_sb() {
 
+      var python_ws = new WebSocket("ws://localhost:8000/echo")
+
       //choose a policy
       let whichPolicy = "Undulating"
       //policies from the dropbox paper
@@ -85,7 +87,7 @@ class Main {
         "Rigid" : [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
       }
 
-      this.createRandomGrid("#gridDiv", policies[whichPolicy])
+      this.createRandomGrid("#gridDiv", null, python_ws)
 
     }
 
@@ -217,7 +219,7 @@ class Main {
   /**
   Creates a grid of randomly generated cartpoles
   **/
-  createRandomGrid(domSelect, policy=null) {
+  createRandomGrid(domSelect, policy=null, python_ws=null) {
 
     $(domSelect+" .title").html("Random Grid")
 
@@ -226,7 +228,7 @@ class Main {
 
     var cartpoles = Util.gen_rand_cartpoles(numCols*numRows, this.cartpole_thresholds)
 
-    UI_Blocks.state_grid(domSelect+" .animation-container", numRows,numCols,cartpoles, this.cartpole_display_args, policy)
+    UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args, policy, python_ws)
   }
 
   createHandpickedGrid(domSelect, policy = null) {

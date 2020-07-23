@@ -23,8 +23,9 @@ class Cartpole_Viewer {
     @param {number} img_width
     @param {number} img_height
     @param {object} animation_args if null, then static image. Paramters as defined here: https://svgjs.com/docs/3.0/animating/
+    @param {object} ws_python if null, then use action/next_state above. Otherwise, use to get proposed future states
     **/
-    gen_svg(svgObj, world_state, action, next_state, future_state = null, img_width, img_height, animation_args = null) {
+    gen_svg(svgObj, world_state, action, next_state, future_state = null, img_width, img_height, animation_args = null, ws_python = null) {
 
 
       //scale of world to image
@@ -193,6 +194,7 @@ class Cartpole_Viewer {
 
       //draw arrow to indicate direction - have to draw before cart
       //so that red line doesn't overlap cart
+      console.log(action)
       var arrow_x_direction = action == 0 ? -1 : 1
       var arrow_x = cartx - arrow_x_direction*1.75*cartwidth - arrow_x_direction*cartwidth/2
       var arrow_point_x = arrow_x + cartwidth/2 * arrow_x_direction

@@ -21,20 +21,6 @@
   </HEAD>
   <BODY>
 
-      <script>
-        function negativeFeedback() {
-          python_ws.send("Connection established");
-
-          console.log("-1");
-        }
-
-        function positiveFeedback() {
-          python_ws.send("Connection established");
-
-          console.log("+1");
-        }
-      </script>
-
       <h2>Train Cartpole using COACH</h2>
 
       <div class="grid-container" id="cartpole_instance"></div>
@@ -56,11 +42,6 @@
             var cp = null
             var python_ws = new WebSocket("ws://localhost:8000/echo")
 
-            python_ws.onopen = function(msg) {
-              // Web Socket is connected, send data using send()
-              python_ws.send("Connection established");
-            };
-
             python_ws.onmessage = function (evt) {
               var received_msg = JSON.parse(evt.data);
               console.log("Received message: " + received_msg)
@@ -75,15 +56,9 @@
 
               // TODO: convert this to a standalone function
               $("#drawing").empty()
-              cp.viewer.gen_img("#drawing", cp.getState(false), img_width, img_height)
+              cp.viewer.gen_img("#drawing", cp.getState(false), img_width, img_height, received_msg["action"])
 
             };
-
-            python_ws.onclose = function() {
-              // websocket is closed.
-              console.log("Connection is closed...");
-            };
-
 
             var badBtn = document.createElement("button");
             badBtn.innerHTML = "Bad";
