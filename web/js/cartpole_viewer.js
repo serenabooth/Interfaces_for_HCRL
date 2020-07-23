@@ -165,7 +165,7 @@ class Cartpole_Viewer {
 
 
     // TODO : comment
-    gen_img(domSelector, world_state, img_width, img_height) {
+    gen_img(domSelector, world_state, img_width, img_height, action) {
 
       //scale of world to image
       var world_width = this.state_var_thresholds.x*2 //put thresholds at edge of grid
@@ -193,6 +193,7 @@ class Cartpole_Viewer {
 
       //draw arrow to indicate direction - have to draw before cart
       //so that red line doesn't overlap cart
+      console.log(action)
       var arrow_x_direction = action == 0 ? -1 : 1
       var arrow_x = cartx - arrow_x_direction*1.75*cartwidth - arrow_x_direction*cartwidth/2
       var arrow_point_x = arrow_x + cartwidth/2 * arrow_x_direction
