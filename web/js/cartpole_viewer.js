@@ -165,7 +165,7 @@ class Cartpole_Viewer {
 
 
     // TODO : comment
-    gen_img(domSelector, world_state, img_width, img_height) {
+    gen_img(domSelector, world_state, img_width, img_height, action = 0) {
 
       //scale of world to image
       var world_width = this.state_var_thresholds.x*2 //put thresholds at edge of grid
