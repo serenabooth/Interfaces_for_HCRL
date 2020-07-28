@@ -19,6 +19,11 @@ class UI_Blocks {
   }
 
 
+  redrawCartpole(divId, cartpole, img_width, img_height, action) {
+    $(divId).empty()
+    cartpole.viewer.gen_img(divId, cartpole.getState(false), img_width, img_height, action)
+  }
+
   /**
   Place cartpole animations at specified x,y positions
   @domSelect: the selector for the containing dom element
@@ -76,13 +81,14 @@ class UI_Blocks {
     for(let i = 0; i < numRows*numCols; i++) {
 
       let cartpole = cartpole_array[i]
-
+      ws_messages[cartpole["id"]] = []
+      console.log("initializing ws_messages", cartpole["id"])
       //create div for the cart's gridcell
       let divId = `cart_${i}`
       $(gridDivDomSelector).append(`<div id="${divId}"></div>`)
 
       //insert gridcell contents into div
-      this.populate_grid_cell("#"+divId, cartpole, policy, cartpole_display_args)
+      this.populate_grid_cell("#"+divId, cartpole, policy, python_ws, cartpole_display_args)
     }
 
   }
@@ -128,7 +134,6 @@ class UI_Blocks {
       @animation_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
       **/
       static create_animation_in_dom_elem(containerDomSelect, animation_div_dom_id, cartpole, sim_run, img_width, img_height, animation_args) {
-
         //get simulation results
         let action = sim_run["action"]
         var next_state = sim_run["next"]
@@ -171,10 +176,10 @@ class UI_Blocks {
         return tableHTML
       }
 
-      static populate_grid_cell(gridCellDomSelect, cartpole, policy, display_args) {
+      static populate_grid_cell(gridCellDomSelect, cartpole, policy, python_ws, display_args) {
         console.log(policy)
         //runs sim & cf_sim for the cartpole
-        let runs = cartpole.run_sims_from_policy(policy, display_args.num_timesteps_to_simulate, display_args.include_cfs)
+        let runs = cartpole.run_sims_from_policy(policy, python_ws, display_args.num_timesteps_to_simulate, display_args.include_cfs)
         let sim_run_results = runs["sim"]
         let cf_sim_run_results = runs["cf_sim"]
 

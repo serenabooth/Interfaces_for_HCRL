@@ -1,3 +1,15 @@
+function waitForSocketConnection(socket, callback){
+    setTimeout(
+        function () {
+            if (socket.readyState == 1) {
+                    callback();
+            } else {
+                console.log("wait for connection...")
+                waitForSocketConnection(socket, callback);
+            }
+        }, 5); // wait 5 milisecond for the connection...
+}
+
 
 class Main {
 
@@ -67,27 +79,42 @@ class Main {
       let explanatoryText = `${whichPolicy}: [${policies[whichPolicy]}]`
 
 
-      this.handpickedStates( "#corkboardDiv", 900,900, policies[whichPolicy],explanatoryText )
+      this.handpickedStates( "#corkboardDiv", 900, 900, policies[whichPolicy], explanatoryText)
 
 
     }
+
+
     /**
     Serena's run sandbox
     **/
     sandbox_sb() {
-
       var python_ws = new WebSocket("ws://localhost:8000/echo")
 
-      //choose a policy
-      let whichPolicy = "Undulating"
-      //policies from the dropbox paper
-      let policies = {
-        //NOTE: assumes tau of 0.02???
-        "Undulating" : [-0.28795545, 0.4220686, -0.55905958, 0.79609386],
-        "Rigid" : [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
+      python_ws.onopen = () => python_ws.send(JSON.stringify("Connection established"));
+      //
+      //
+      var response_received = false
+      python_ws.onmessage = function (evt) {
+        var received_msg = JSON.parse(evt.data);
+        console.log("Received message: " + received_msg)
+
+        if ("cartpole_id" in received_msg) {
+          console.log("appending message", "cartpole " + received_msg["cartpole_id"], received_msg["action"])
+          ws_messages[received_msg["cartpole_id"]].push(received_msg["action"])
+
+
+        }
+      };
+
+      // this is some tomfoolery right here.
+      var mainObjct = this
+      function createGrid() {
+        mainObjct.createRandomGrid("#gridDiv", null, python_ws)
       }
 
-      this.createRandomGrid("#gridDiv", null, python_ws)
+      waitForSocketConnection(python_ws, createGrid)
+
 
     }
 
@@ -219,7 +246,7 @@ class Main {
   /**
   Creates a grid of randomly generated cartpoles
   **/
-  createRandomGrid(domSelect, policy=null, python_ws=null) {
+  createRandomGrid(domSelect, policy = null, python_ws = null) {
 
     $(domSelect+" .title").html("Random Grid")
 
@@ -231,7 +258,7 @@ class Main {
     UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args, policy, python_ws)
   }
 
-  createHandpickedGrid(domSelect, policy = null) {
+  createHandpickedGrid(domSelect, policy = null, python_ws = null) {
     $(domSelect+" .title").html("Handpicked Grid")
 
     let hand_picked_states = []
@@ -264,7 +291,7 @@ class Main {
       cartpoles.push(cp)
     }
 
-    UI_Blocks.state_grid(domSelect+" .animation-container", numRows,numCols,cartpoles, this.cartpole_display_args, policy)
+    UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args, policy, python_ws)
 
   }
 }

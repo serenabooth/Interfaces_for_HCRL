@@ -441,9 +441,38 @@ class CartPole {
   /**
   Given a policy, will determine the action and run simulation
   **/
-  run_sims_from_policy(policy, timesteps = 1, include_cfs=true) {
+  run_sims_from_policy(policy, python_ws = null, timesteps = 1, include_cfs=true) {
     //simulate from original action
-    var curr_action = this.getAction(policy)
+    var curr_action = null
+    if (python_ws == null) {
+        curr_action = this.getAction(policy)
+    }
+    else {
+
+      var msg = {
+        msg_type: "get_deterministic_action",
+        state: this.getState(),
+        cartpole_id: this["id"],
+      }
+
+      msg = JSON.stringify(msg)
+      python_ws.send(msg);
+
+
+      setTimeout(function(){
+          for (var key in ws_messages) {
+            if (ws_messages.hasOwnProperty(key)) {
+                console.log(key, ws_messages[key]);
+            }
+          }
+       }, 100); //time in milliseconds
+
+
+
+
+    }
+
+    console.log(this["id"], "current action", curr_action)
     let sim_run_results = this.simulate(curr_action, timesteps)
 
     //simulate counterfactual action

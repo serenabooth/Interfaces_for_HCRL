@@ -39,7 +39,7 @@ class COACH():
         for trace_val in trace_set:
             self.eligibility_traces[trace_val] = np.zeros(self.weights.shape)
 
-    def get_proposed_action(self, state, take_action = True):
+    def get_proposed_action(self, state, take_action = True, deterministic = False):
         state = np.array(state)
 
         action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(self.weights)))
@@ -99,17 +99,26 @@ class SimpleEcho(WebSocket):
                 }
                 response = json.dumps(response)
                 self.sendMessage(response)
-
-
-        # self.sendMessage(self.data)
+            elif "msg_type" in msg.keys() and msg["msg_type"] == "get_deterministic_action":
+                cartpole_id = msg["cartpole_id"]
+                action = COACH_TRAINER.get_proposed_action(msg['state'], take_action = False, deterministic = True)
+                response = {
+                    "msg_type": "proposed_action",
+                    "cartpole_id": cartpole_id,
+                    "action": action
+                }
+                response = json.dumps(response)
+                self.sendMessage(response)
 
     def handleConnected(self):
         clients.append(self)
         print(self.address, 'connected')
+        print(len(clients), 'client(s) connected')
 
     def handleClose(self):
         clients.remove(self)
         print(self.address, 'closed')
+        print(len(clients), 'client(s) connected')
 
 
 
@@ -127,4 +136,4 @@ if __name__ == "__main__":
     while True:
         # for client in clients:
         #     client.sendMessage("hello")
-        time.sleep(0.1)
+        time.sleep(0.31)

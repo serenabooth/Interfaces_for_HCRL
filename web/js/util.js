@@ -1,7 +1,11 @@
+var ws_messages = {}
+
 /**
 Static utility functions
 **/
 class Util {
+
+  // a global variable for sharing websocket communcations
 
   /**
   @param {string} domSelector the div that'll contain the SVG
