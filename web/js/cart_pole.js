@@ -458,21 +458,8 @@ class CartPole {
       msg = JSON.stringify(msg)
       python_ws.send(msg);
 
-
-      setTimeout(function(){
-          for (var key in ws_messages) {
-            if (ws_messages.hasOwnProperty(key)) {
-                console.log(key, ws_messages[key]);
-            }
-          }
-       }, 100); //time in milliseconds
-
-
-
-
     }
 
-    console.log(this["id"], "current action", curr_action)
     let sim_run_results = this.simulate(curr_action, timesteps)
 
     //simulate counterfactual action

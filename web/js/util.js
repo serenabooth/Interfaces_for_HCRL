@@ -1,4 +1,4 @@
-var ws_messages = {}
+var cartpole_divs_and_ids = {}
 
 /**
 Static utility functions

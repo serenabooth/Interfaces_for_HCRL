@@ -89,6 +89,8 @@ class Main {
     Serena's run sandbox
     **/
     sandbox_sb() {
+      // this is some tomfoolery right here.
+      var mainObjct = this
       var python_ws = new WebSocket("ws://localhost:8000/echo")
 
       python_ws.onopen = () => python_ws.send(JSON.stringify("Connection established"));
@@ -101,14 +103,20 @@ class Main {
 
         if ("cartpole_id" in received_msg) {
           console.log("appending message", "cartpole " + received_msg["cartpole_id"], received_msg["action"])
-          ws_messages[received_msg["cartpole_id"]].push(received_msg["action"])
+          // ws_messages[received_msg["cartpole_id"]].push(received_msg["action"])
 
+
+          var cartpole = cartpole_divs_and_ids[received_msg["cartpole_id"]]["cartpole"]
+          var cartpoleDiv = cartpole_divs_and_ids[received_msg["cartpole_id"]]["divId"]
+          console.log(cartpoleDiv)
+
+          // TODO: redraw cartpole with proposed action
+          $("#" + cartpoleDiv).empty();
+          UI_Blocks.populate_grid_cell("#" + cartpoleDiv, cartpole, null, python_ws, mainObjct.cartpole_display_args)
 
         }
       };
 
-      // this is some tomfoolery right here.
-      var mainObjct = this
       function createGrid() {
         mainObjct.createRandomGrid("#gridDiv", null, python_ws)
       }

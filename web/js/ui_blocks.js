@@ -81,11 +81,16 @@ class UI_Blocks {
     for(let i = 0; i < numRows*numCols; i++) {
 
       let cartpole = cartpole_array[i]
-      ws_messages[cartpole["id"]] = []
-      console.log("initializing ws_messages", cartpole["id"])
       //create div for the cart's gridcell
       let divId = `cart_${i}`
       $(gridDivDomSelector).append(`<div id="${divId}"></div>`)
+
+      cartpole_divs_and_ids[cartpole["id"]] =  {
+          "divId": divId,
+          "cartpole": cartpole
+      }
+
+      console.log(cartpole_divs_and_ids)
 
       //insert gridcell contents into div
       this.populate_grid_cell("#"+divId, cartpole, policy, python_ws, cartpole_display_args)
