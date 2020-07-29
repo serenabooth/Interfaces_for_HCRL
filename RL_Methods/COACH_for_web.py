@@ -91,6 +91,13 @@ class SimpleEcho(WebSocket):
                 # Train COACH with feedback received
                 COACH_TRAINER.update_weights(msg['reward'])
 
+                # communicate that the policy has been updated
+                response = {
+                    "msg_type" : "policy_updated",
+                }
+                response = json.dumps(response)
+                self.sendMessage(response)
+
                 # Communicate which action to take next
                 action = COACH_TRAINER.get_proposed_action(msg['state'], take_action = True)
                 response = {
@@ -99,6 +106,20 @@ class SimpleEcho(WebSocket):
                 }
                 response = json.dumps(response)
                 self.sendMessage(response)
+            elif "msg_type" in msg.keys() and msg["msg_type"] == "get_actions_cartpole_group":
+                print ("HERE")
+                print (msg["cartpoles"])
+
+                proposed_actions = {"msg_type" : "proposed_actions_cartpole_group"}
+
+                for id in msg["cartpoles"].keys():
+                    action = COACH_TRAINER.get_proposed_action(msg["cartpoles"][id]["state"], take_action = False, deterministic = True)
+                    proposed_actions[id] = {"divId": msg["cartpoles"][id]["divId"],
+                                            "proposed_action": action}
+
+                response = json.dumps(proposed_actions)
+                self.sendMessage(response)
+
             elif "msg_type" in msg.keys() and msg["msg_type"] == "get_deterministic_action":
                 cartpole_id = msg["cartpole_id"]
                 action = COACH_TRAINER.get_proposed_action(msg['state'], take_action = False, deterministic = True)

@@ -1,4 +1,4 @@
-var cartpole_divs_and_ids = {}
+var all_cartpoles = {}
 
 /**
 Static utility functions

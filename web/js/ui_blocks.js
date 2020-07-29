@@ -64,9 +64,8 @@ class UI_Blocks {
   @cartpole_array: array of cartpoles. Each cartpole should be set to the desired state to display
   @cartpole_display_args: an object containing arguments that configure animations
   @policy: policy for cartpole (as array)
-  @python_ws: websocket for communicating with RL algorithm
   **/
-  static state_grid(gridDivDomSelector, numRows, numCols, cartpole_array, cartpole_display_args, policy = null, python_ws = null) {
+  static state_grid(gridDivDomSelector, numRows, numCols, cartpole_array, cartpole_display_args, policy = null) {
     //check to see whether we have enough cartpoles
     if( numRows*numCols > cartpole_array.length) {
       console.log("ui_blocks.state_grid(): Not enough cartpoles for the number of grid cells")
@@ -85,15 +84,13 @@ class UI_Blocks {
       let divId = `cart_${i}`
       $(gridDivDomSelector).append(`<div id="${divId}"></div>`)
 
-      cartpole_divs_and_ids[cartpole["id"]] =  {
+      all_cartpoles[cartpole.id] =  {
           "divId": divId,
           "cartpole": cartpole
       }
 
-      console.log(cartpole_divs_and_ids)
-
       //insert gridcell contents into div
-      this.populate_grid_cell("#"+divId, cartpole, policy, python_ws, cartpole_display_args)
+      this.populate_grid_cell("#"+divId, cartpole, policy, cartpole_display_args)
     }
 
   }
@@ -181,10 +178,10 @@ class UI_Blocks {
         return tableHTML
       }
 
-      static populate_grid_cell(gridCellDomSelect, cartpole, policy, python_ws, display_args) {
+      static populate_grid_cell(gridCellDomSelect, cartpole, policy, display_args) {
         console.log(policy)
         //runs sim & cf_sim for the cartpole
-        let runs = cartpole.run_sims_from_policy(policy, python_ws, display_args.num_timesteps_to_simulate, display_args.include_cfs)
+        let runs = cartpole.run_sims_from_policy(policy, display_args.num_timesteps_to_simulate, display_args.include_cfs)
         let sim_run_results = runs["sim"]
         let cf_sim_run_results = runs["cf_sim"]
 

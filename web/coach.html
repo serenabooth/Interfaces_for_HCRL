@@ -38,6 +38,10 @@
       <script>
 
           $(document).ready(function() {
+
+            let main = new Main()
+            main.run()
+
             var img_width = 300, img_height = 100
             var cp = null
             var python_ws = new WebSocket("ws://localhost:8000/echo")
@@ -46,16 +50,20 @@
               var received_msg = JSON.parse(evt.data);
               console.log("Received message: " + received_msg)
 
-              var done = cp.update(received_msg["action"])
-
-              console.log(done)
-              if (done) {
-                console.log("Episode finished")
-                cp.reset()
+              if (received_msg["msg_type"] == "policy_updated") {
+                main.update_cartpole_grid()
               }
+              else if ("action" in received_msg) {
+                var done = cp.update(received_msg["action"])
 
-              ui_blocks.redrawCartpole("#drawing", cp, img_width, img_height, received_msg["action"])
+                console.log(done)
+                if (done) {
+                  console.log("Episode finished")
+                  cp.reset()
+                }
 
+                ui_blocks.redrawCartpole("#drawing", cp, img_width, img_height, received_msg["action"])
+              }
             };
 
             var badBtn = document.createElement("button");
@@ -107,16 +115,12 @@
             cp = new CartPole(cartpole_thresholds = cartpole_thresholds, state_as_arr = null, title = null, starting_state = true)
 
             ui_blocks.individual_episode("#cartpole_instance", cp)
+            // all_cartpoles[cp.id] = {"divId": "cartpole_instance",
+            //                         "cartpole": cp
+            //                        }
 
-            var cp_state = JSON.stringify(cp.getState())
-            python_ws.onopen = () => python_ws.send(cp_state);
-
+           console.log(all_cartpoles)
           });
-
-          $(document).ready(function() {
-            let main = new Main()
-            main.run()
-          })
 
       </script>
   </BODY>

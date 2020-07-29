@@ -48,6 +48,9 @@ class Main {
                                     not_svgjs_show_title: true,
                                   }
                                 }
+
+      this.python_ws = null
+
     }
 
     /**
@@ -91,37 +94,41 @@ class Main {
     sandbox_sb() {
       // this is some tomfoolery right here.
       var mainObjct = this
-      var python_ws = new WebSocket("ws://localhost:8000/echo")
 
-      python_ws.onopen = () => python_ws.send(JSON.stringify("Connection established"));
+      this.python_ws = new WebSocket("ws://localhost:8000/echo")
+      this.python_ws.onopen = () => this.python_ws.send(JSON.stringify("Connection established"));
+
       //
       //
       var response_received = false
-      python_ws.onmessage = function (evt) {
+      console.log(this.python_ws)
+      this.python_ws.onmessage = function (evt) {
         var received_msg = JSON.parse(evt.data);
         console.log("Received message: " + received_msg)
 
-        if ("cartpole_id" in received_msg) {
-          console.log("appending message", "cartpole " + received_msg["cartpole_id"], received_msg["action"])
-          // ws_messages[received_msg["cartpole_id"]].push(received_msg["action"])
+        if (received_msg["msg_type"] == "proposed_actions_cartpole_group") {
 
+          for (var id in received_msg) {
+            if (id == "msg_type") {
+            }
+            else {
+              var cartpole = all_cartpoles[id]["cartpole"]
+              var cartpoleDiv = received_msg[id]["divId"]
 
-          var cartpole = cartpole_divs_and_ids[received_msg["cartpole_id"]]["cartpole"]
-          var cartpoleDiv = cartpole_divs_and_ids[received_msg["cartpole_id"]]["divId"]
-          console.log(cartpoleDiv)
+              // TODO: redraw cartpole with proposed action
+              $("#" + cartpoleDiv).empty();
+              UI_Blocks.populate_grid_cell("#" + cartpoleDiv, cartpole, null, mainObjct.cartpole_display_args)
 
-          // TODO: redraw cartpole with proposed action
-          $("#" + cartpoleDiv).empty();
-          UI_Blocks.populate_grid_cell("#" + cartpoleDiv, cartpole, null, python_ws, mainObjct.cartpole_display_args)
-
+            }
+          }
         }
       };
 
       function createGrid() {
-        mainObjct.createRandomGrid("#gridDiv", null, python_ws)
+        mainObjct.createRandomGrid("#gridDiv", null, mainObjct.python_ws)
       }
 
-      waitForSocketConnection(python_ws, createGrid)
+      waitForSocketConnection(this.python_ws, createGrid)
 
 
     }
@@ -154,6 +161,25 @@ class Main {
 
 //===========< BEGIN Helper Functions >=============//
 
+  update_cartpole_grid() {
+
+      var cartpoles = {}
+
+      for (var id in all_cartpoles) {
+        cartpoles[id] = {"divId": all_cartpoles[id]["divId"],
+                         "state": all_cartpoles[id]["cartpole"].getState(),
+                        }
+      }
+
+      var msg = {
+        msg_type: "get_actions_cartpole_group",
+        cartpoles: cartpoles
+      }
+
+      msg = JSON.stringify(msg)
+      this.python_ws.send(msg);
+
+  }
 
   /**
   Creates cartpoles from handpicked states & create grid
