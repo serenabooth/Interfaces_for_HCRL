@@ -1,3 +1,5 @@
+var grid_type = "FREEZE_DIM" // "RANDOM" | "FREEZE_DIM" | "HAND_SELECTED"
+
 function waitForSocketConnection(socket, callback){
     setTimeout(
         function () {
@@ -10,6 +12,20 @@ function waitForSocketConnection(socket, callback){
         }, 5); // wait 5 milisecond for the connection...
 }
 
+function linspace(low, high, num_intervals, exclude_edges = true) {
+  if (exclude_edges) {
+    // exclude edges
+    num_intervals += 2;
+  }
+  var arr = [];
+  var step = (high - low) / (num_intervals - 1);
+  for (var i = 1; i < num_intervals - 1; i++) {
+    arr.push(low + (step * i));
+  }
+  return arr;
+}
+
+
 
 class Main {
 
@@ -20,7 +36,6 @@ class Main {
       //goes from (-val, +val)
       this.cartpole_thresholds = { x : 2.4,
                                     theta : 24 * Math.PI / 180, // = 0.41887902047863906
-
                                     //max velocity would span world in 1 timestep
                                     x_dot : 2*2.4,
                                     theta_dot : 2* 24 * Math.PI / 180
@@ -95,8 +110,52 @@ class Main {
       // this is some tomfoolery right here.
       var mainObjct = this
 
+      var img_width = this.cartpole_display_args.img_width
+      var img_height = this.cartpole_display_args.img_height
+      var cp = null
+
       this.python_ws = new WebSocket("ws://localhost:8000/echo")
       this.python_ws.onopen = () => this.python_ws.send(JSON.stringify("Connection established"));
+
+      var badBtn = document.createElement("button");
+      badBtn.innerHTML = "Bad";
+      badBtn.onclick = function(){
+
+        var msg = {
+          msg_type: "feedback",
+          reward: -1,
+          state: cp.getState()
+        }
+
+        msg = JSON.stringify(msg)
+        mainObjct.python_ws.send(msg);
+      }
+
+
+      var goodBtn = document.createElement("button");
+      goodBtn.innerHTML = "Good";
+      goodBtn.onclick = function(){
+        var msg = {
+          msg_type: "feedback",
+          reward: 1,
+          state: cp.getState()
+        }
+
+        msg = JSON.stringify(msg)
+        mainObjct.python_ws.send(msg);
+      }
+
+      var body = document.getElementById("feedbackButtons");
+      body.appendChild(badBtn);
+      body.appendChild(goodBtn);
+
+      //===========< init sim & viewer thresholds >====================//
+      var cartpoleSim  = new CartPole(mainObjct.cartpole_thresholds)
+      var ui_blocks = new UI_Blocks()
+
+      // add the cartpole for training feedback
+      cp = new CartPole(mainObjct.cartpole_thresholds, null, null, true)
+      ui_blocks.individual_episode("#cartpole_instance", cp)
 
       //
       //
@@ -106,8 +165,20 @@ class Main {
         var received_msg = JSON.parse(evt.data);
         console.log("Received message: " + received_msg)
 
-        if (received_msg["msg_type"] == "proposed_actions_cartpole_group") {
+        if (received_msg["msg_type"] == "policy_updated") {
+          mainObjct.update_cartpole_grid()
+        }
+        else if ("action" in received_msg) {
+          var done = cp.update(received_msg["action"])
 
+          if (done) {
+            console.log("Episode finished")
+            cp.reset()
+          }
+
+          ui_blocks.redrawCartpole("#drawing", cp, img_width, img_height, received_msg["action"])
+        }
+        else if (received_msg["msg_type"] == "proposed_actions_cartpole_group") {
           for (var id in received_msg) {
             if (id == "msg_type") {
             }
@@ -125,7 +196,23 @@ class Main {
       };
 
       function createGrid() {
-        mainObjct.createRandomGrid("#gridDiv", null, mainObjct.python_ws)
+        if (grid_type == "RANDOM") {
+            mainObjct.createRandomGrid("#gridDiv", null, mainObjct.python_ws)
+        }
+        else if (grid_type == "HAND_SELECTED") {
+
+        }
+        else if (grid_type == "FREEZE_DIM") {
+          var state = cp.getState()
+          var x = linspace(-mainObjct.cartpole_thresholds.x, mainObjct.cartpole_thresholds.x, 4)
+          var x_dot = linspace(-mainObjct.cartpole_thresholds.x_dot, mainObjct.cartpole_thresholds.x_dot, 4)
+          var theta = linspace(-mainObjct.cartpole_thresholds.theta, mainObjct.cartpole_thresholds.theta, 4)
+          var theta_dot = linspace(-mainObjct.cartpole_thresholds.theta_dot, mainObjct.cartpole_thresholds.theta_dot, 4)
+          mainObjct.createDimFreezeGrid("#gridDiv", state, x, x_dot, theta, theta_dot, null, mainObjct.python_ws)
+
+          console.log(x)
+
+        }
       }
 
       waitForSocketConnection(this.python_ws, createGrid)
@@ -276,6 +363,46 @@ class Main {
 
   }
 
+  createDimFreezeGrid(domSelect, state, x, x_dot, theta, theta_dot, policy = null, python_ws = null) {
+    var mainObjct = this;
+    $(domSelect+" .title").html("Frozen Dimension Grid")
+    let numCols = x.length
+    let numRows = 4
+
+    var cartpoles = []
+
+    for (var i = 0; i < numCols*numRows; i++) {
+      var tmp_state = state
+      if (i < 4) {
+        tmp_state[0] = x[i]
+        console.log(tmp_state)
+        let cp =
+
+        cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
+      }
+      else if (i < 8) {
+        tmp_state[1] = x_dot[i - 4]
+        cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
+
+      }
+      else if (i < 12) {
+        tmp_state[2] = theta[i - 8]
+        cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
+      }
+      else if (i < 16) {
+        tmp_state[3] = theta_dot[i - 12]
+        cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
+      }
+    }
+
+    console.log(cartpoles)
+
+    UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args, policy, python_ws)
+
+
+
+
+  }
 
   /**
   Creates a grid of randomly generated cartpoles

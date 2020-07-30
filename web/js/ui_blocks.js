@@ -179,7 +179,6 @@ class UI_Blocks {
       }
 
       static populate_grid_cell(gridCellDomSelect, cartpole, policy, display_args) {
-        console.log(policy)
         //runs sim & cf_sim for the cartpole
         let runs = cartpole.run_sims_from_policy(policy, display_args.num_timesteps_to_simulate, display_args.include_cfs)
         let sim_run_results = runs["sim"]

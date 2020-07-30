@@ -194,7 +194,6 @@ class Cartpole_Viewer {
 
       //draw arrow to indicate direction - have to draw before cart
       //so that red line doesn't overlap cart
-      console.log(action)
       var arrow_x_direction = action == 0 ? -1 : 1
       var arrow_x = cartx - arrow_x_direction*1.75*cartwidth - arrow_x_direction*cartwidth/2
       var arrow_point_x = arrow_x + cartwidth/2 * arrow_x_direction
