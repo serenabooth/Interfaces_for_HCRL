@@ -4,36 +4,31 @@ class UI_Blocks {
 
   /**
   Place cartpole animations at specified x,y positions
+  Simulations should have been run beforehand
+
   @domSelect: the selector for the containing dom element
   @corkboard_width :
   @corkboard_height: d
   @cartpole_array: array of cartpoles. Each cartpole should be set to the desired state to display
   @cartpole_positions: an array of { 'x':xPox, 'y':yPos}. Index of position specifies cartpole at same index.
                       Note: position (0,0) in SVG is in the top-left
-  @policy: policy for cartpole (as array)
   @display_args: an object containing arguments that configure animations
-  @animation_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
   **/
-  static state_corkboard(domSelect, corkboard_width, corkboard_height, cartpole_array, cartpole_positions, policy, display_args, animation_args) {
+  static state_corkboard(domSelect, corkboard_width, corkboard_height, cartpole_array, cartpole_positions, display_args) {
     var svgObj = Util.gen_empty_svg(domSelect, corkboard_width, corkboard_height)
 
     //render and place each cartpole
-
     for (let i = 0; i < cartpole_array.length; i++) {
       let cp = cartpole_array[i]
-      let cp_pos = cartpole_positions[i]
-      let runs = cp.run_sims_from_policy(policy, display_args.num_timesteps_to_simulate, display_args.include_cfs)
-      //let cf_sim_run_results = runs["cf_sim"]
+      let cp_svg_pos = cartpole_positions[i]
 
-      UI_Blocks.create_animation_in_svg(svgObj, cp_pos["x"], cp_pos["y"], cp, runs["sim"], display_args.img_width, display_args.img_height, animation_args)
+      UI_Blocks.embed_animation_svg_in_another_svg(svgObj, cp_svg_pos["x"], cp_svg_pos["y"], cp, display_args.img_width, display_args.img_height, display_args)
     }
-
   }
 
 
-
   /**
-  Creates a grid of cartpole animations
+  Creates a grid of cartpole animations - simulations should have been run before calling this
 
   @gridDivDomSelector: the div that contains the grid
   @numRows : number of rows in the grid
@@ -43,7 +38,7 @@ class UI_Blocks {
   @policy: policy for cartpole (as array)
 
   **/
-  static state_grid(gridDivDomSelector, numRows, numCols, cartpole_array, cartpole_display_args, policy = null) {
+  static state_grid(gridDivDomSelector, numRows, numCols, cartpole_array, display_args) {
 
     //check to see whether we have enough cartpoles
     if( numRows*numCols > cartpole_array.length) {
@@ -64,8 +59,17 @@ class UI_Blocks {
       let divId = `cart_${i}`
       $(gridDivDomSelector).append(`<div id="${divId}"></div>`)
 
-      //insert gridcell contents into div
-      this.populate_grid_cell("#"+divId, cartpole, policy, cartpole_display_args)
+      //insert table of state values
+      $("#"+divId).append(cartpole.getTitle())
+
+      //insert simulation animation
+      var animation_div_dom_id = "drawing-"+cartpole.id;
+      this.create_animation_in_dom_elem("#"+divId, animation_div_dom_id, cartpole, display_args.img_width , display_args.img_height, display_args)
+
+      //insert counterfactual simulation animation
+      //if(display_args.include_cfs)
+        //this.create_animation_in_dom_elem(gridCellDomSelect, animation_div_dom_id+"_cf", cartpole, cf_sim_run_results, display_args.img_width , display_args.img_height, display_args.animation_args)
+
     }
 
   }
@@ -73,116 +77,56 @@ class UI_Blocks {
 
   //===== BEGIN Grid Helper Functions ======//
 
-  /**
-  Creates an animation a cartpole state & a simulated policy. The state should be set within the cartpole pbject itself
-  @svg: the parent svg
-  @x: x position of this animation within parent SVG
-  @y: x position of this animation within parent SVG
-  @cartpole: a cartpole object w/ the state values defined
-  @sim_run: contains future simulation data
-  @img_width:
-  @img_height
-  @animation_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
-  **/
-  static create_animation_in_svg(parentSVG, x, y, cartpole, sim_run, img_width, img_height, animation_args) {
+      /**
+      @svg: the parent svg
+      @x: x position of this animation within parent SVG
+      @y: x position of this animation within parent SVG
+      @cartpole: a cartpole object w/ the state values defined
+      @img_width:
+      @img_height
+      @display_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
+      **/
+      static embed_animation_svg_in_another_svg(parentSVG, x, y, cartpole, img_width, img_height, display_args) {
 
-    //get simulation results
-    let action = sim_run["action"]
-    var next_state = sim_run["next"]
-    var future_state = sim_run["future"]
+        //create svg inside the div
+        var svgObj = parentSVG.nested(x,y)
+        svgObj.attr('x', x)
+        svgObj.attr('y', y)
 
-    //create svg inside the div
-    var svgObj = parentSVG.nested(x,y)
-    svgObj.attr('x', x)
-    svgObj.attr('y', y)
-    cartpole.viewer.gen_svg(svgObj, cartpole.getState(false), action, next_state, future_state, img_width, img_height,animation_args)
-  }
+        cartpole.viewer.populate_svg_simulation(svgObj, cartpole, img_width, img_height, display_args.timestepDelayMS)
+      }
+
 
 
       /**
-      Creates an animation a cartpole state & a simulated policy. The state should be set within the cartpole pbject itself
+      Creates an animation svg and places it within a dom object
+
+      simulation data should have been generated ahead of time
 
       @containerDomSelect: dom selector for a gridcell
       @animation_div_dom_id: desired div id for the animation div
-      @cartpole: a cartpole object w/ the state values defined
-      @sim_run: contains future simulation data
+      @cartpole: a cartpole object w/ the state values defined (should contain simRun data)
       @img_width:
       @img_height
       @animation_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
       **/
-      static create_animation_in_dom_elem(containerDomSelect, animation_div_dom_id, cartpole, sim_run, img_width, img_height, animation_args) {
-
-        //get simulation results
-        let action = sim_run["action"]
-        var next_state = sim_run["next"]
-        var future_state = sim_run["future"]
+      static create_animation_in_dom_elem(containerDomSelect, animation_div_dom_id, cartpole, img_width, img_height, display_args) {
 
         //create animation's div
         $(containerDomSelect).append(`<div id="${animation_div_dom_id}"></div>`)
 
-        //create svg inside the div
+        //create svg inside the div & populate it
         var svgObj = Util.gen_empty_svg("#"+animation_div_dom_id, img_width, img_height)
-        cartpole.viewer.gen_svg(svgObj, cartpole.getState(false), action, next_state, future_state, img_width, img_height,animation_args)
+        cartpole.viewer.populate_svg_simulation(svgObj, cartpole, img_width, img_height, display_args.timestepDelayMS)
       }
 
-      /**
-      Creates a table of state values
-      **/
-      static create_animation_txt(cartpole, sim_run,cf_sim_run = null) {
-
-        //create SVG of original action w/ text labels
-        let table_header =  "<tr><th>x</th><th>x_dot</th><th>theta</th><th>theta_dot</th><th>Degen?</th><th></th></tr>"
-        let orig_state_txt = cartpole.toString(null,true,[""/*, "Orig"*/])
-
-        //create row for future state
-        var future_state = sim_run["future"]
-        var degenerate_state_label = sim_run["degenerate"] ? "Y" : ""
-        let future_state_txt = cartpole.toString(future_state,true,[degenerate_state_label/*,"Future"*/])
-
-        //create row for cf future state
-        let cf_future_state_txt = ""
-        if(cf_sim_run) {
-          future_state = cf_sim_run["future"]
-          degenerate_state_label = cf_sim_run["degenerate"] ? "Y" : ""
-          cf_future_state_txt = cartpole.toString(future_state,true,[degenerate_state_label/*, "cf_future"*/])
-
-        }
-
-        let title = cartpole.title
-
-        let tableHTML = `${title}<table class="lightgrey" style="margin:auto;text-align:center">${table_header}${orig_state_txt}${future_state_txt}${cf_future_state_txt}</table>`
-        return tableHTML
-      }
-
-      static populate_grid_cell(gridCellDomSelect, cartpole, policy, display_args) {
-
-        //runs sim & cf_sim for the cartpole
-        let runs = cartpole.run_sims_from_policy(policy, display_args.num_timesteps_to_simulate, display_args.include_cfs)
-        let sim_run_results = runs["sim"]
-        let cf_sim_run_results = runs["cf_sim"]
-
-        //insert table of state values
-        let tableHTML = this.create_animation_txt(cartpole, sim_run_results , cf_sim_run_results)
-        $(gridCellDomSelect).append(tableHTML)
-
-        //insert simulation animation
-        var animation_div_dom_id = "drawing-"+cartpole.id;
-        this.create_animation_in_dom_elem(gridCellDomSelect, animation_div_dom_id, cartpole, sim_run_results, display_args.img_width , display_args.img_height, display_args.animation_args)
-
-        //insert counterfactual simulation animation
-        if(display_args.include_cfs)
-          this.create_animation_in_dom_elem(gridCellDomSelect, animation_div_dom_id+"_cf", cartpole, cf_sim_run_results, display_args.img_width , display_args.img_height, display_args.animation_args)
-
-      }
   //===== END Grid Helper Functions ======//
-
 
   static timeline() {
     console.log("This is not currently working... need to fix")
   }
+
   //NOTE: timeline functions are all broken due to updates in Cartpole obj
-
-
   //populates a timeline given run results
 
   //TODO: may not be working anymore after all the animation updates
