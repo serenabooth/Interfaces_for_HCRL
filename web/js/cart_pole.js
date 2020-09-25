@@ -1,41 +1,4 @@
-//https://github.com/tensorflow/tfjs-examples/blob/master/cart-pole/cart_pole.js
 
-/**
- * @license
- * Copyright 2018 Google LLC. All Rights Reserved.
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- * =============================================================================
- */
-
-/**
- * Implementation based on: http://incompleteideas.net/book/code/pole.c
- */
-
-/**
- * Cart-pole system simulator.
- *
- * In the control-theory sense, there are four state variables in this system:
- *
- *   - x: The 1D location of the cart.
- *   - x_dot: The velocity of the cart.
- *   - theta: The angle of the pole (in radians). A value of 0 corresponds to
- *     a vertical position.
- *   - theta_dot: The angular velocity of the pole.
- *
- * The system is controlled through a single action:
- *
- *   - leftward or rightward force.
- */
 class CartPole {
 
   static id = 0
@@ -44,150 +7,170 @@ class CartPole {
    */
   constructor(cartpole_thresholds, state_as_arr = null, title = null) {
 
+    //cart characteristics©
+    this.massCart = 1.0;
+    this.massPole = 0.1;
+    this.totalMass = this.massCart + this.massPole;
+    this.length = 0.5;
+    this.poleMoment = this.massPole * this.length;
+
+    // The control-theory state variables of the cart-pole system.
+
     //list of states in this sim
     this.state_var_list = ["x", "x_dot", "theta", "theta_dot"]
-    // Threshold values, beyond which a simulation will be marked as failed.
     this.cartpole_thresholds = cartpole_thresholds
+
+    // Cart position, meters.
+    this.x = 0
+    // Cart velocity.
+    this.x_dot = 0
+    // Pole angle, radians.
+    this.theta = 0
+    // Pole angle velocity.
+    this.theta_dot = 0
+
+    //keeps history of simulated states
+    this.state_history = []
+    this.action_history = []
+
 
     this.viewer = new Cartpole_Viewer(this)
     this.id = CartPole.id++
     this.title = title ? title : ""
 
     if(state_as_arr == null)
-      this.setRandomState();
-    else
-      this.setState(state_as_arr)
+      state_as_arr = this.genRandomState()
 
-    //====< BEGIN Cartpole Contants >======//
-
-    // Constants that characterize the system.
-    this.gravity = 9.8;
-    this.massCart = 1.0;
-    this.massPole = 0.1;
-    this.totalMass = this.massCart + this.massPole;
-    //this.cartWidth = 0.2;
-    //this.cartHeight = 0.1;
-    this.length = 0.5;
-    this.poleMoment = this.massPole * this.length;
-    this.forceMag = 10.0;
-
-    // Seconds between state updates.
-    this.tau = 0.02;
-
-    //actions as consts
-    this.MOVE_LEFT = 0
-    this.MOVE_RIGHT = 1
-
-    //====< END Cartpole Contants >======//
-  }
+    this.setState_privateMethod(state_as_arr)
+    this.initState = state_as_arr
+}
 
   //===========< BEGIN Static Methods >================//
 
+  static generateRandomPolicy() {
+    let policy = []
+    for(let i = 0; i < 4; i++)
+      //random number from [-1,1]
+      policy.push((Math.random() * 2) - 1)
+
+    return policy
+
+  }
+  /**
+  generates requested states from high-level descriptions
+  **/
+  static getStateArrFromHumanReadableStates(human_readable_state, cartpole_thresholds) {
+    // The control-theory state variables of the cart-pole system.
+    // Cart position, meters.
+    let x_name = human_readable_state[0]
+    let x_dot_name = human_readable_state[1]
+    let theta_name = human_readable_state[2]
+    let theta_dot_name = human_readable_state[3]
+
+    let x = 0;
+    let x_dot = 0;
+    let theta = 0;
+    let theta_dot = 0;
+
+    switch(x_name) {
+      case "left of center":
+        x = -cartpole_thresholds.x/2; break
+      case "right of center":
+        x = cartpole_thresholds.x/2; break
+      case "very left of center":
+        x = -cartpole_thresholds.x; break
+      case "very right of center":
+        x = cartpole_thresholds.x; break
+      case "center":
+        x = 0; break;
+      default :
+        console.log("x_name not recognized: ",x_name)
+    }
+    //let x = Math.random() - 0.5;
+    // Cart velocity.
+    switch(x_dot_name) {
+      case "going left":
+        x_dot = -cartpole_thresholds.x_dot/2; break
+      case "going right":
+        x_dot = cartpole_thresholds.x_dot/2; break
+      case "going left fast":
+        x_dot = -cartpole_thresholds.x_dot/2; break
+      case "going right fast":
+        x_dot = cartpole_thresholds.x_dot/2; break
+      case "still":
+        x_dot = 0; break
+      default:
+        console.log("x_dot not recognized: ",x_dot)
+    }
+
+    //let x_dot = (Math.random() - 0.5) * 1;
+    // Pole angle, radians.
+    switch(theta_name) {
+      case "leaning left":
+        theta = -cartpole_thresholds.theta/2; break
+      case "leaning right":
+        theta = cartpole_thresholds.theta/2; break
+      case "upright":
+        theta = 0; break
+      default:
+        console.log("theta not recognized: ",theta)
+
+    }
+    //let theta = (Math.random() - 0.5) * 2 * (6 / 360 * 2 * Math.PI);
+    // Pole angle velocity.
+    switch(theta_dot_name) {
+      case "rotating left":
+        theta_dot = -cartpole_thresholds.theta_dot/2; break
+      case "rotating right":
+        theta_dot = cartpole_thresholds.theta_dot/2; break
+      case "still":
+        theta_dot = 0; break
+      default:
+        console.log("theta_dot not recognized: ",theta_dot)
+    }
+    //let theta_dot =  (Math.random() - 0.5) * 0.5;
+
+    return [x,x_dot, theta, theta_dot];
+  }
 
   //===========< END Static Methods >================//
 
-    /**
-    check whether the cart state is degenerate
+  /**
+  Adds a state to the simulation trace
+  **/
+  addSimTimestep(state_as_arr, action) {
+      this.setState_privateMethod(state_as_arr)
+      this.state_history.push(state_as_arr)
+      this.action_history.push(action)
+  }
 
-    @return null if state was *not* degenerate. Otherwise return fixed state_as_obj
-    **/
-    fixDegenerate(state_as_obj = null) {
+  /**
+  returns cartpole state
+  **/
+  getState() {
+    let state = [this.x, this.x_dot,this.theta,this.theta_dot ]
+    return state
+  }
 
-      let hadToFix = false
-      let fixedState = {}
-
-      if(state_as_obj == null)
-        state_as_obj = this.getState(false)
-
-      //check to see if any state vars have exceeded threshold
-      for(let i = 0; i < this.state_var_list.length; i++) {
-        let state_var_name = this.state_var_list[i]
-        let state_var_val = state_as_obj[state_var_name]
-        let state_var_threshold = this.cartpole_thresholds[state_var_name]
-
-        //if there is no threshold defined, then keep orig value
-        if(!(state_var_name in this.cartpole_thresholds)) {
-          fixedState[state_var_name] = state_var_val
-          continue
-        }
-
-        //fix value if needed
-        if(Math.abs(state_var_val) > state_var_threshold) {
-          hadToFix = true
-          state_var_val = state_var_val < -state_var_threshold ? -state_var_threshold : state_var_threshold
-        }
-        fixedState[state_var_name] = state_var_val
-      }
-
-      return hadToFix ? fixedState : null
+  /**
+  returns current sim trace data
+  **/
+  getSimTrace() {
+    return {
+      initState : this.initState,
+      action_history : this.action_history,
+      state_history : this.state_history,
+      maxT : this.state_history.length
     }
+  }
 
-
-
-    /**
-    calculate the action given the state & policy
-
-    @policy: an array of floats. If null, the choose random action
-    @state_as_arr: an array of numbers. if null, then get own state
-    **/
-    getAction(policy = null, state_as_arr = null) {
-
-      if(state_as_arr == null)
-        state_as_arr = this.getState()
-
-      var bool = (policy == null) ? (Math.random() < 0.5) : (math.dot(policy,state_as_arr) < 0)
-      if(bool)
-        return this.MOVE_LEFT
-      else
-        return this.MOVE_RIGHT
-    }
-
-
-  /**
-  Get the opposite action
-  **/
-  getCounterFactualAction(curr_action) {
-    let cf_action = (curr_action == this.MOVE_LEFT) ? this.MOVE_RIGHT : this.MOVE_LEFT
-    return cf_action
+  getTitle() {
+    return this.title
   }
 
   /**
-  get min and max values of a particular stateVar
-
-  @stateArr: an array of arrays
-  @policy: an array of floats. If null, the choose random action
-  @returns {array} a 2 element array containing the min & max threshold of a state variable
-  **/
-  getMinMax(stateVar) {
-    return [-this.cartpole_thresholds[stateVar],this.cartpole_thresholds[stateVar]]
-  }
-
-  /**
-  TODO: fix and make better
-  **/
-  getOrderedStates(stateVar1, stateVar1NumIncs, stateVar2, stateVar2NumIncs) {//, stateVar1Range = null, stateVar2Range = null) {
-    var orderedStates = []
-
-    let state1Range = this.getMinMax(stateVar1)
-    let state2Range = this.getMinMax(stateVar2)
-
-    let state1Inc = (state1Range[1] - state1Range[0])/(stateVar1NumIncs)
-    let state2Inc = (state2Range[1] - state2Range[0])/(stateVar2NumIncs)
-    let x_dot = this.cartpole_thresholds["x_dot"]/4
-    let theta_dot = this.cartpole_thresholds["theta_dot"]/4
-
-    for(var i = state1Range[0]; i < state1Range[1]; i+=state1Inc)
-      for(var j = state2Range[0]; j < state2Range[1]; j+=state2Inc) {
-        orderedStates.push([i,x_dot,j,theta_dot])
-      }
-
-      console.log(orderedStates)
-    return orderedStates
-  }
-
-  /**
-  generates single random state
-  **/
+   * Set the state of the cart-pole system randomly.
+   */
   genRandomState() {
 
     // The control-theory state variables of the cart-pole system.
@@ -208,139 +191,6 @@ class CartPole {
   }
 
   /**
-  returns cartpole state
-  **/
-  getState(asArr = true) {
-    //TODO: give option to return as object
-
-    let state = [this.x, this.x_dot,this.theta,this.theta_dot ]
-
-    if(!asArr)
-      state = Util.stateArrToObj(state, this.state_var_list)
-
-    return state
-
-  }
-
-
-
-
-  /**
-   * Determine whether this simulation is done.
-   *
-   * A simulation is done when `x` (position of the cart) goes out of bound
-   * or when `theta` (angle of the pole) goes out of bound.
-   *
-   * @returns {bool} Whether the simulation is done.
-   */
-  isDone() {
-    return this.x < -this.cartpole_thresholds["x"] || this.x > this.cartpole_thresholds["x"] ||
-        this.theta < -this.cartpole_thresholds["theta"] || this.theta > this.cartpole_thresholds["theta"];
-  }
-
-  /**
-  generates requested states from high-level descriptions
-  **/
-  getStateArrFromHumanReadableStates(human_readable_state) {
-    // The control-theory state variables of the cart-pole system.
-    // Cart position, meters.
-    let x_name = human_readable_state[0]
-    let x_dot_name = human_readable_state[1]
-    let theta_name = human_readable_state[2]
-    let theta_dot_name = human_readable_state[3]
-
-    let x = 0;
-    let x_dot = 0;
-    let theta = 0;
-    let theta_dot = 0;
-
-
-    switch(x_name) {
-      case "left of center":
-        x = -this.cartpole_thresholds.x/3; break
-      case "right of center":
-        x = this.cartpole_thresholds.x/3; break
-      case "very left of center":
-        x = -this.cartpole_thresholds.x*2/3; break
-      case "very right of center":
-        x = this.cartpole_thresholds.x*2/3; break
-      case "center":
-        x = 0; break;
-      default :
-        console.log("x_name not recognized: ",x_name)
-    }
-    //let x = Math.random() - 0.5;
-    // Cart velocity.
-    switch(x_dot_name) {
-      case "going left":
-        x_dot = -this.cartpole_thresholds.x_dot/2; break
-      case "going right":
-        x_dot = this.cartpole_thresholds.x_dot/2; break
-      case "going left fast":
-        x_dot = -this.cartpole_thresholds.x_dot/2; break
-      case "going right fast":
-        x_dot = this.cartpole_thresholds.x_dot/2; break
-      case "still":
-        x_dot = 0; break
-      default:
-        console.log("x_dot not recognized: ",x_dot)
-    }
-
-    //let x_dot = (Math.random() - 0.5) * 1;
-    // Pole angle, radians.
-    switch(theta_name) {
-      case "leaning left":
-        theta = -this.cartpole_thresholds.theta/2; break
-      case "leaning right":
-        theta = this.cartpole_thresholds.theta/2; break
-      case "upright":
-        theta = 0; break
-      default:
-        console.log("theta not recognized: ",theta)
-
-    }
-    //let theta = (Math.random() - 0.5) * 2 * (6 / 360 * 2 * Math.PI);
-    // Pole angle velocity.
-    switch(theta_dot_name) {
-      case "rotating left":
-        theta_dot = -this.cartpole_thresholds.theta_dot/2; break
-      case "rotating right":
-        theta_dot = this.cartpole_thresholds.theta_dot/2; break
-      case "still":
-        theta_dot = 0; break
-      default:
-        console.log("theta_dot not recognized: ",theta_dot)
-    }
-    //let theta_dot =  (Math.random() - 0.5) * 0.5;
-
-    return [x,x_dot, theta, theta_dot];
-  }
-
-
-  /**
-  set cartpole state from array of state values
-  **/
-  setState(state_as_arr) {
-    // The control-theory state variables of the cart-pole system.
-    // Cart position, meters.
-    this.x = state_as_arr[0]
-    // Cart velocity.
-    this.x_dot = state_as_arr[1]
-    // Pole angle, radians.
-    this.theta = state_as_arr[2]
-    // Pole angle velocity.
-    this.theta_dot =  state_as_arr[3]
-  }
-
-  /**
-   * Set the state of the cart-pole system randomly.
-   */
-  setRandomState() {
-    let stateArr = this.genRandomState()
-    this.setState(stateArr)
-  }
-
-  /**
    * Set the starting state of the cart-pole system randomly.
    */
   setStartingState() {
@@ -352,17 +202,20 @@ class CartPole {
   /**
    * Set the state of the cart-pole system according to an argument.
    */
-  setState(stateArr) {
+  setState_privateMethod(state_as_arr) {
+
     // The control-theory state variables of the cart-pole system.
     // Cart position, meters.
-    this.x = stateArr[0]
+    this.x = state_as_arr[0]
     // Cart velocity.
-    this.x_dot = stateArr[1]
+    this.x_dot = state_as_arr[1]
     // Pole angle, radians.
-    this.theta = stateArr[2]
+    this.theta = state_as_arr[2]
     // Pole angle velocity.
-    this.theta_dot =  stateArr[3]
+    this.theta_dot =  state_as_arr[3]
   }
+
+
 
   /**
    * Get current state as a tf.Tensor of shape [1, 4].
@@ -371,112 +224,17 @@ class CartPole {
   }
   */
 
+  reset(new_state_as_arr = null) {
+    this.initState = (new_state_as_arr == null) ? this.genRandomState() : new_state_as_arr
+    this.setState_privateMethod(this.initState)
+    this.state_history = []
+    this.action_history = []
+  }
+
   setTitle(title) {
     this.title = title
   }
 
-  /**
-  Given a policy, will determine the action and run simulation
-  **/
-  run_sims_from_policy(policy, timesteps = 1, include_cfs=true) {
-    //simulate from original action
-    var curr_action = this.getAction(policy)
-    let sim_run_results = this.simulate(curr_action, timesteps)
-
-    //simulate counterfactual action
-    let cf_sim_run_results = null
-    if(include_cfs) {
-      //simulate from counterfactual
-      curr_action = this.getCounterFactualAction(curr_action)
-      cf_sim_run_results = this.simulate(curr_action,timesteps)
-    }
-
-    return {
-      "sim" :sim_run_results,
-      "cf_sim" : cf_sim_run_results
-    }
-  }
-
-
-  /**
-  simulates the next time step(s) of the cartpole
-  does not update internal state of the sim
-
-  TODO: ceil/floor when we create a degenerate case (i.e. exceeding thresholds)
-  TODO: create a user note that we have created a degenerate case
-
-  @param {float} action if null, then no force applied. Else right-force for positive number and left-force for negative
-  @param {int} timesteps number of timesteps to simulate (# secs depends on this.tau)
-  @return obj {
-      "next" : the state after the next timestep
-      "future" : state beyond 1 timestep, assuming the same velocity
-      "degenerate" : true if next and/or future states are degenerate (go beyond thresholds)
-  }
-  **/
-  simulate(action, timesteps = 1) {
-
-    if(action == null)
-      var force = 0
-    else
-      var force = action > 0 ? this.forceMag : -this.forceMag;
-
-    const cosTheta = Math.cos(this.theta);
-    const sinTheta = Math.sin(this.theta);
-
-    const temp =
-        (force + this.poleMoment * this.theta_dot * this.theta_dot * sinTheta) /
-        this.totalMass;
-    const thetaAcc = (this.gravity * sinTheta - cosTheta * temp) /
-        (this.length *
-         (4 / 3 - this.massPole * cosTheta * cosTheta / this.totalMass));
-    const xAcc = temp - this.poleMoment * thetaAcc * cosTheta / this.totalMass;
-
-    // Update the four state variables, using Euler's method.
-    //update for 1 timestep
-    let x = this.x + (this.tau * this.x_dot);
-    let theta = this.theta + (this.tau * this.theta_dot);
-    //update the velocity from the action
-    let x_dot = this.x_dot + (this.tau * xAcc);
-    let theta_dot = this.theta_dot + (this.tau * thetaAcc);
-
-    let next_timestep_state_obj = {
-      "x" : x,
-      "x_dot" : x_dot,
-      "theta" : theta,
-      "theta_dot" : theta_dot
-    }
-
-    let beyond_state_obj = {...next_timestep_state_obj}
-
-    //simulate forward the rest of the steps
-    if(timesteps > 1) {
-      x += (timesteps-1)*(this.tau * x_dot);
-      theta += (timesteps-1)*(this.tau * theta_dot);
-      beyond_state_obj.x = x
-      beyond_state_obj.theta = theta
-    }
-
-    //if either of these go beyond thresholds, then cap at thresholds
-    let next_needed_fixing = this.fixDegenerate(next_timestep_state_obj)
-    let beyond_needed_fixing = this.fixDegenerate(beyond_state_obj)
-
-    /*
-    console.log("next")
-    console.log(next_timestep_state_obj)
-    console.log(next_needed_fixing)
-
-    console.log("beyond")
-    console.log(beyond_state_obj)
-    console.log(beyond_needed_fixing)
-    */
-
-    return {
-      "action" : action,
-      "next" : next_needed_fixing == null ? next_timestep_state_obj : next_needed_fixing,
-      "future" : beyond_needed_fixing == null ? beyond_state_obj : beyond_needed_fixing,
-      "degenerate" : (next_needed_fixing != null) ||  (beyond_needed_fixing != null)
-    }
-  }
 
   /**
    *  generate reader-friendly view of state values
@@ -489,9 +247,6 @@ class CartPole {
     if (state == null) {
       state = this.getState()
     }
-
-    if(!Array.isArray(state))
-      state = Util.stateObjToArr(state, this.state_var_list)
 
     //round decimal places for display
     let roundedStateVals = Util.roundElems(state,2)
@@ -506,23 +261,42 @@ class CartPole {
       return `x: (${roundedStateVals[0]},${roundedStateVals[1]}), th: (${roundedStateVals[2]},${roundedStateVals[3]})`
   }
 
-  /**
-   * Update the cart-pole system using an action.
+/*
 
-   * @param {number} action Only the sign of `action` matters.
-   *   A value > 0 leads to a rightward force of a fixed magnitude.
-   *   A value <= 0 leads to a leftward force of the same fixed magnitude.
-   */
-  update(action) {
+/**
+get min and max values of a particular stateVar
 
-    next = this.simulate(action)
+@stateArr: an array of arrays
+@policy: an array of floats. If null, the choose random action
+@returns {array} a 2 element array containing the min & max threshold of a state variable
+**
+getMinMax(stateVar) {
+  return [-this.cartpole_thresholds[stateVar],this.cartpole_thresholds[stateVar]]
+}
 
-    this.x = next.x
-    this.x_dot = next.x_dot
-    this.theta = next.theta
-    this.theta_dot = next.theta_dot
+/**
+TODO: fix and make better
+**
+getOrderedStates(stateVar1, stateVar1NumIncs, stateVar2, stateVar2NumIncs) {//, stateVar1Range = null, stateVar2Range = null) {
+  var orderedStates = []
 
-    return this.isDone();
-  }
+  let state1Range = this.getMinMax(stateVar1)
+  let state2Range = this.getMinMax(stateVar2)
+
+  let state1Inc = (state1Range[1] - state1Range[0])/(stateVar1NumIncs)
+  let state2Inc = (state2Range[1] - state2Range[0])/(stateVar2NumIncs)
+  let x_dot = this.cartpole_thresholds["x_dot"]/4
+  let theta_dot = this.cartpole_thresholds["theta_dot"]/4
+
+  for(var i = state1Range[0]; i < state1Range[1]; i+=state1Inc)
+    for(var j = state2Range[0]; j < state2Range[1]; j+=state2Inc) {
+      orderedStates.push([i,x_dot,j,theta_dot])
+    }
+
+    console.log(orderedStates)
+  return orderedStates
+}
+
+*/
 
 }

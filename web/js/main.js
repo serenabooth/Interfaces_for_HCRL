@@ -18,10 +18,14 @@ class Main {
                                   //height & width of an individual animation
                                   img_height: 100,
                                   img_width: 300,
+
+                                  //timestepDelayMS : 20,   //20 is default at 50fps
+                                  timestepDelayMS : 100,   //20 is default at 50fps
+
                                   //will also display counterfactual future if true
-                                  include_cfs: true,
-                                  //number of timesteps to simulate into the future (and then animate)
-                                  num_timesteps_to_simulate: 25,
+                                  //include_cfs: true,
+                                  maxTimesteps: 1000,
+                                  /*
                                   //parameters re: animation mechanics
                                   animation_args: {
                                     //https://svgjs.com/docs/3.0/animating/
@@ -35,7 +39,11 @@ class Main {
                                     //including arguments that are not svgjs
                                     not_svgjs_show_title: true,
                                   }
+                                  */
                                 }
+
+        this.cartpoleSim = new CartPoleSim(this.cartpole_thresholds)
+
     }
 
     /**
@@ -44,9 +52,9 @@ class Main {
     **/
     run() {
 
-      this.sandbox_eg()
+      //this.sandbox_eg()
       //this.sandbox_sb()
-      //this.sandbox_sc()
+      this.sandbox_sc()
 
     }
 
@@ -65,7 +73,6 @@ class Main {
       }
 
       let explanatoryText = `${whichPolicy}: [${policies[whichPolicy]}]`
-
 
       this.handpickedStates( "#corkboardDiv", 900,900, policies[whichPolicy],explanatoryText )
 
@@ -105,14 +112,21 @@ class Main {
       let policies = {
         //NOTE: assumes tau of 0.02???
         "Undulating" : [-0.28795545, 0.4220686, -0.55905958, 0.79609386],
-        "Rigid" : [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
+        "Rigid" : [-0.06410089, 0.18941857, 0.43170927, 0.30863926],
+        "Random" : CartPole.generateRandomPolicy(),
       }
 
-      let explanatoryText = `${whichPolicy}: [${policies[whichPolicy]}]`
-      this.createRandomCorkboard( "#corkboardDiv", 900,900, policies[whichPolicy],explanatoryText )
+      //this.createRandomSimulatedGrid(simrun_params_list)
+
+
+      //console.log(cartpole.state_history)
+      //console.log(cartpole.action_history)
+
+      //let explanatoryText = `${whichPolicy}: [${policies[whichPolicy]}]`
+      //this.createRandomCorkboard( "#corkboardDiv", 900,900, policies[whichPolicy],explanatoryText )
 
       //display cartpoles
-      //this.createRandomGrid("#gridDiv", policies[whichPolicy])
+      this.createRandomGrid("#gridDiv", policies)
 
       //timelines - not working
       //ui_blocks.timeline(viewer,"#animation",window.run_data,1,false)
@@ -121,7 +135,6 @@ class Main {
     }
 
 //===========< BEGIN Helper Functions >=============//
-
 
   /**
   Creates cartpoles from handpicked states & create grid
@@ -164,11 +177,11 @@ class Main {
     for(let human_readable_state of hand_picked_states1) {
 
       //instantiate cartpole & add to the list
-      let cp = new CartPole(this.cartpole_thresholds)
-      cp.setTitle(human_readable_state.toString())
+      let state_vals_as_arr = CartPole.getStateArrFromHumanReadableStates(human_readable_state, this.cartpole_thresholds)
+
       //update the internal state to reflect defined states
-      let state_vals_as_arr = cp.getStateArrFromHumanReadableStates(human_readable_state)
-      cp.setState(state_vals_as_arr)
+      let cp = new CartPoleOld(this.cartpole_thresholds, state_vals_as_arr)
+      cp.setTitle(human_readable_state.toString())
       cartpoles.push(cp)
 
       //set position of animation on the corkboard
@@ -203,7 +216,6 @@ class Main {
 
     }
 
-
     //change the default display parameters
     this.cartpole_display_args.img_height = 75
     this.cartpole_display_args.img_width = 150
@@ -219,7 +231,6 @@ class Main {
       UI_Blocks.state_corkboard(domSelect+" .animation-container", corkboard_length, corkboard_width, cartpoles, cartpole_positions, policy, this.cartpole_display_args, this.cartpole_display_args.animation_args)
     }
 
-
   }
 
   /**
@@ -228,41 +239,62 @@ class Main {
 
     $(domSelect+" .title").html("Cartpole Corkboard")
 
+    //num cartpoles
     let n = 10
+    let maxTimesteps = 10
+    let timestepsToCoast = 10
+
     //create cartpoles
     var cartpoles = Util.gen_rand_cartpoles(n, this.cartpole_thresholds)
 
     //define cartpole animation positions
     var cartpole_positions = []
     for(let i =0; i < cartpoles.length; i++) {
+
+      //run simulation with cartple
+      let cp = cartpoles[i]
+      cp.setTitle(""+i)
+      this.cartpoleSim.simulation(cp, policy, maxTimesteps,timestepsToCoast)
+
+      //determine cartpole position
       let cp_pos = {
         'x' : i * 50,
-        'y' : i * 50
+        'y' : i * 100
       }
       cartpole_positions.push(cp_pos)
     }
 
-    UI_Blocks.state_corkboard(domSelect+" .animation-container", corkboard_length, corkboard_width, cartpoles, cartpole_positions, policy, this.cartpole_display_args, this.cartpole_display_args.animation_args)
+    UI_Blocks.state_corkboard(domSelect+" .animation-container", corkboard_length, corkboard_width, cartpoles, cartpole_positions, this.cartpole_display_args)
 
     //text to describe grid
     $("#corkboardDiv .policy").text(explanatoryText)
 
   }
 
-
   /**
   Creates a grid of randomly generated cartpoles
   **/
-  createRandomGrid(domSelect, policy=null) {
+  createRandomGrid(domSelect, policies) {
 
     $(domSelect+" .title").html("Random Grid")
 
     let numCols = 4
-    let numRows = 2
+    let numRows = 3
 
+    //generate & simulate random cartples
     var cartpoles = Util.gen_rand_cartpoles(numCols*numRows, this.cartpole_thresholds)
+    for(let i =0; i < cartpoles.length; i++) {
 
-    UI_Blocks.state_grid(domSelect+" .animation-container", numRows,numCols,cartpoles, this.cartpole_display_args, policy)
+      //select random policy
+      let policyName = Util.getRandomElemFromArray(Object.keys(policies))
+
+      //run simulation with policy
+      let cp = cartpoles[i]
+      cp.setTitle(i+"_"+policyName)
+      this.cartpoleSim.simulation(cp, policies[policyName], this.cartpole_display_args.maxTimesteps)
+    }
+
+    UI_Blocks.state_grid(domSelect+" .animation-container", numRows,numCols,cartpoles, this.cartpole_display_args)
   }
 
 

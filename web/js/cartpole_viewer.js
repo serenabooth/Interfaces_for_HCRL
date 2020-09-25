@@ -6,15 +6,206 @@ class Cartpole_Viewer {
       //max/mins of the cartpole state vals
       this.state_var_thresholds = {}
       Object.assign(this.state_var_thresholds, this.sim.cartpole_thresholds)
+
+      this.world_width = this.state_var_thresholds.x*2 //put thresholds at edge of grid
+
+    }
+
+    //==============< BEGIN Methods to calculate SVG positions =================//
+
+    //converts cartpole xPos into the SVG xPos
+    calc_svg_xpos(world_x, img_width, world_width) {
+      var scale = img_width/world_width
+      return world_x *scale+img_width/2.0
+    }
+
+    /**
+    Calculates the svg positions of the various parts of the cartpole & arrows
+    **/
+    calc_svg_positions(cartpole_state, action, img_width, img_height, pullOrPush = "pull") {
+
+      var svg_positions = {
+        img_width: img_width,
+        pole : {},
+        cart : {},
+        arrow : {},
+        pullOrPush: pullOrPush
+      }
+
+      let world_state = {
+        x : cartpole_state[0],
+        xDot : cartpole_state[1],
+        theta : cartpole_state[2],
+        thetaDot : cartpole_state[3],
+      }
+
+      //dimensions of cart
+      svg_positions.cart.x = this.calc_svg_xpos(world_state.x, img_width, this.world_width)
+      svg_positions.cart.y = img_height*0.66   // middle of cart
+      svg_positions.cart.width = 0.1*img_width
+      svg_positions.cart.height = 0.1*img_height
+
+      //dimensions & angle of pole
+      svg_positions.pole.width = 0.025*img_width
+      svg_positions.pole.len = svg_positions.cart.width*2;
+      svg_positions.pole.theta_degrees = world_state.theta * 180 / Math.PI
+
+      //determine which way to draw the arrow
+      var whichSideOfCart = (pullOrPush == "push") ? -1 : 1;
+
+      //if there is no action, then we don't include an arrow
+      if(action == null)
+        svg_positions.arrow = null
+      else {
+        svg_positions.arrow.x_direction_const = action  //action will be -1 or 1
+        svg_positions.arrow.y_top = svg_positions.cart.y + img_height*(0.025)
+        svg_positions.arrow.y_mid = svg_positions.cart.y
+        svg_positions.arrow.y_bottom = svg_positions.cart.y - img_height*(0.025)
+        svg_positions.arrow.x = svg_positions.cart.x + (whichSideOfCart)*svg_positions.arrow.x_direction_const*0.25*svg_positions.cart.width + (whichSideOfCart)*svg_positions.arrow.x_direction_const*svg_positions.cart.width/2
+        svg_positions.arrow.point_x = svg_positions.arrow.x + svg_positions.cart.width/2 * 0.75*svg_positions.arrow.x_direction_const
+      }
+
+      return svg_positions
+    }
+
+    //==============< END Methods to calculate SVG positions =================//
+
+    //==============< BEGIN Methods to draw SVG elements =================//
+
+    /**
+    based on results from calc_svg_positions(), add the arrow to the SVG
+    **/
+    draw_arrow(svgObj, svg_positions) {
+
+      //don't include arrow if we don't have info (happens when there's no action)
+      if(svg_positions.arrow == null)
+        return;
+
+      //draw an arrow shoing a push (or pull) force on the cart
+      var arrow_triangle = svgObj.polygon(`${svg_positions.arrow.x},${svg_positions.arrow.y_top},${svg_positions.arrow.x},${svg_positions.arrow.y_bottom}, ${svg_positions.arrow.point_x},${svg_positions.arrow.y_mid}`).fill('rgba(255,0,0,1)')
+      var arrow_line = svgObj.line(svg_positions.arrow.point_x, svg_positions.arrow.y_mid, svg_positions.cart.x - svg_positions.arrow.x_direction_const*svg_positions.cart.width/2, svg_positions.arrow.y_mid)
+      arrow_line.stroke({ color: 'rgba(255,0,0,1)', width: 1.5/*, dasharray : "5,5"*/})
+
+      return {
+        triangle: arrow_triangle,
+        line : arrow_line
+      }
     }
 
 
+    /**
+    based on results from calc_svg_positions(), add cart to the SVG
+    **/
+    draw_cart(svgObj, svg_positions) {
 
+      //initialize cart 2nd so it can be on top
+      var box = svgObj.rect(svg_positions.cart.width, svg_positions.cart.height).fill('rgb(0,0,0)')
+      var pole = svgObj.rect(svg_positions.pole.width, svg_positions.pole.len).fill('rgb(204,153,102)')
+      var axle = svgObj.circle(svg_positions.pole.width*0.66).fill('rgb(127,127,204)')
+
+      this.move_cart(svg_positions.cart, svg_positions.pole, box, pole, axle)
+
+      return {"box" :box, "pole" : pole, "axle" : axle}
+    }
+
+    /**
+    draw an additional faded cart that has slightly smaller parts than the normal cart
+    **/
+    draw_faded_cart(svgObj, svg_positions_cart, svg_positions_pole) {
+      //initialize faded cart
+      var box = svgObj.rect(svg_positions_cart.width, svg_positions_cart.height*0.75).fill('rgba(0,0,0,0.33)')
+      var axle = svgObj.circle(svg_positions_pole.width*0.66).fill('rgb(127,127,204)')
+      var pole = svgObj.rect(svg_positions_pole.width, svg_positions_pole.len).fill('rgba(204,153,102,0.5)')
+
+      return {"box" :box, "pole" : pole, "axle" : axle}
+    }
+
+    /**
+    based on results from calc_svg_positions(), add track to the SVG
+    **/
+    draw_track(svgObj, svg_positions) {
+      //draw track first so it's back-most layer on canvas
+      var track = svgObj.line(0, svg_positions.cart.y, svg_positions.img_width, svg_positions.cart.y)
+      track.stroke({ color: 'black', width: 1 })
+
+      return track
+    }
+
+    /**
+    Moves cart elements to correct position
+    **/
+    move_cart(svg_positions_cart, svg_positions_pole, box, pole, axle) {
+      //place cart components
+      box.center(svg_positions_cart.x,svg_positions_cart.y)
+      pole.center(svg_positions_cart.x,svg_positions_cart.y-svg_positions_pole.len/2)
+      pole.rotate(svg_positions_pole.theta_degrees, svg_positions_cart.x,svg_positions_cart.y)
+      axle.center(svg_positions_cart.x,svg_positions_cart.y)
+    }
+
+
+  //==============< END Methods to draw SVG elements =================//
+
+
+  //==============< BEGIN Methods to create whole SVGs =================//
+
+    /**
+    populate SVG for a single timeslice
+    **/
+    populate_svg_snapshot(svgObj, world_state, action, img_width, img_height, title="", pullOrPush = "pull") {
+
+      var svg_positions = this.calc_svg_positions(world_state, action, img_width, img_height, pullOrPush)
+      //========== Begin SVG ===================//
+      //create SVG
+      var track = this.draw_track(svgObj, svg_positions)
+      var arrow = this.draw_arrow(svgObj, svg_positions)
+      var cart = this.draw_cart(svgObj, svg_positions)
+
+      svgObj.text(title)
+
+      return {
+        track : track, arrow : arrow, cart : cart
+      }
+    }
+
+    /**
+    create animation of a simulation run in an existing SVG
+
+    timestepDelayMS: default display speed = 50fps = 20ms/frame
+    **/
+    populate_svg_simulation(cartpoleSVG, cartpole, img_width, img_height, timestepDelayMS = 20, showTitle=false) {
+
+      let simTrace = cartpole.getSimTrace()
+
+      //animate the simulation by reusing the SVG object
+      let title = (showTitle) ? cartpole.getTitle() : ""
+      this.populate_svg_snapshot(cartpoleSVG, simTrace.initState, null, img_width, img_height)
+
+      let max_time = simTrace.state_history.length
+
+      for( let i = 0; i < max_time; i++) {
+        //get the timestep data
+        let curr_state = simTrace.state_history[i]
+        let action = simTrace.action_history[i]
+
+        let self = this
+        setTimeout(function() {
+          cartpoleSVG.clear()
+          //not most efficient but should be okay for user experience...
+          self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, title )
+
+
+        }, timestepDelayMS*i)
+
+        }
+
+
+    }
+
+/*
     /**
     Generates an SVG from a given world state
 
     If animation is enabled, Faded cartpole representation represents orignal
-
     @param {string} svgObj svgjs object
     @param {array} world_state sim's state obj
     @param {number} action 0 or 1 for left vs right
@@ -23,198 +214,57 @@ class Cartpole_Viewer {
     @param {number} img_width
     @param {number} img_height
     @param {object} animation_args if null, then static image. Paramters as defined here: https://svgjs.com/docs/3.0/animating/
-    **/
-    gen_svg(svgObj, world_state, action, next_state, future_state = null, img_width, img_height, animation_args = null, pullOrPush = "pull") {
+    **
+    populate_svg_pushAndCoastAnimation(svgObj, world_state, action, next_state, future_state = null, img_width, img_height, animation_args = null, pullOrPush = "pull") {
 
-
-      //scale of world to image
-      var world_width = this.state_var_thresholds.x*2 //put thresholds at edge of grid
-      var scale = img_width/world_width
-
-      //the est x & theta the prev timestep
-      var pole_est_next_theta = next_state.theta
-      var pole_est_next_theta_degrees = pole_est_next_theta * 180 / Math.PI
-      var cart_est_next_x = (next_state.x)*scale+img_width/2.0
-
-      var pole_est_future_theta = future_state.theta
-      var pole_est_future_theta_degrees = pole_est_future_theta * 180 / Math.PI
-      var cart_est_future_x = (future_state.x)*scale+img_width/2.0
-
-      //dimensions of cart
-      var cartx = world_state.x *scale+img_width/2.0
-      var carty = img_height*0.66   // middle of cart
-      var cartwidth = 0.1*img_width
-      var cartheight = 0.1*img_height
-
-      //dimensions & angle of pole
-      var polewidth = 0.025*img_width
-      var polelen = cartwidth*2;
-      var theta_degrees = world_state.theta * 180 / Math.PI
-
-        //========= Create tooltip ===============//
-/*
-        //an on-click event to the svg. TODO: make it a mouse-over & format text
-        var tooltip_txt = ""
-        for(let v in world_state) {
-          let rounded_val = world_state[v].toFixed(2)
-          tooltip_txt += `${v} : ${rounded_val}<br/>`
-        }
-        tooltip_txt+= "-----------------<br/>"
-        if(action == 0)
-          tooltip_txt += "pushTo: left"
-        else
-        tooltip_txt += "pushTo: right"
-
-        $(domSelector).append(`<span class="tooltiptext">${tooltip_txt}</span>`);
-*/
+        var svg_positions = this.calc_svg_positions(world_state, action, img_width, img_height, pullOrPush)
         //========== Begin SVG ===================//
-
         //create SVG
-        var draw = svgObj
-
-        //draw track first so it's back-most layer on canvas
-        var track = draw.line(0, carty, img_width, carty)
-        track.stroke({ color: 'black', width: 1 })
-
-        //draw an arrow shoing a push (or pull) force on the cart
-        var arrow_x_direction = action == 0 ? -1 : 1
-        var arrow_y_top = carty + img_height*(0.075)
-        var arrow_y_mid = carty
-        var arrow_y_bottom = carty - img_height*(0.075)      
-        var whichSideOfCart = (pullOrPush == "push") ? -1 : 1;
-        var arrow_x = cartx + (whichSideOfCart)*arrow_x_direction*1.75*cartwidth + (whichSideOfCart)*arrow_x_direction*cartwidth/2
-
-        var arrow_point_x = arrow_x + cartwidth/2 * arrow_x_direction
-        var arrow_triangle = draw.polygon(`${arrow_x},${arrow_y_top},${arrow_x},${arrow_y_bottom}, ${arrow_point_x},${arrow_y_mid}`).fill('rgba(255,0,0,1)')
-        var action = draw.line(arrow_point_x, arrow_y_mid, cartx - arrow_x_direction*cartwidth/2, arrow_y_mid)
-        action.stroke({ color: 'rgba(255,0,0,1)', width: 1.5/*, dasharray : "5,5"*/})
-
-        //initialize faded cart
-        var faded_cart = draw.rect(cartwidth, cartheight*0.75).fill('rgba(0,0,0,0.33)')
-        var faded_cart_axle =  draw.circle(polewidth*0.66).fill('rgb(127,127,204)')
-        var faded_pole = draw.rect(polewidth, polelen).fill('rgba(204,153,102,0.5)')
-
-        //initialize cart 2nd so it can be on top
-        var cart = draw.rect(cartwidth, cartheight).fill('rgb(0,0,0)')
-        var pole = draw.rect(polewidth, polelen).fill('rgb(204,153,102)')
-        var axle = draw.circle(polewidth*0.66).fill('rgb(127,127,204)')
-        //place cart components
-        cart.center(cartx,carty)
-        pole.center(cartx,carty-polelen/2)
-        pole.rotate(theta_degrees,cartx,carty)
-        axle.center(cartx,carty)
-
-        //draw est. amt cart traveled since last timetep
-        var cart_est_next_track = draw.line(cartx, carty, cart_est_next_x, carty)
-        cart_est_next_track.stroke({ color: 'rgba(96,175,255,0.25)', width: 7 })
+        var track = this.draw_track(svgObj, svg_positions)
+        var arrow = this.draw_arrow(svgObj, svg_positions)
+        var cart = this.draw_cart(svgObj, svg_positions)
+        var faded_cart = this.draw_faded_cart(svgObj, svg_positions)
 
         //if animating, faded cart represents original timestep
         if(animation_args != null) {
+
+          var cart_est_future_x = this.calc_svg_xpos(future_state.x, img_width, this.world_width)
+          var future_state_theta_degrees = future_state.theta * 180 / Math.PI
 
           if(animation_args.not_svgjs_show_title)
             svgObj.text(this.sim.title).font({ fill: '#ddd'})
 
           //put faded cart in original
-          faded_cart.center(cartx,carty)
-          faded_cart_axle.center(cartx,carty)
-          faded_pole.center(cartx,carty-polelen/2)
-          faded_pole.rotate(theta_degrees,cartx,carty)
+          faded_cart.box.center(svg_positions.cart.x,svg_positions.cart.y)
+          faded_cart.axle.center(svg_positions.cart.x,svg_positions.cart.y)
+          faded_cart.pole.center(svg_positions.cart.x,svg_positions.cart.y-svg_positions.pole.len/2)
+          faded_cart.pole.rotate(svg_positions.pole.theta_degrees,svg_positions.cart.x,svg_positions.cart.y)
 
           //animate opaque cart
-          //the lines commented above each animation is a vestiage of trying to animate the
-          //  immediate next step and following timsteps separately
-          //pole.animate(animation_args).rotate(pole_est_next_theta_degrees-theta_degrees,cartx,carty).center(cart_est_next_x,carty-polelen/2)
-          pole.animate(animation_args).center(cart_est_future_x,carty-polelen/2).rotate(pole_est_future_theta_degrees-theta_degrees,cartx,carty)
-          //console.log("theta1"+ (theta_degrees))
-          //console.log("theta2"+ (pole_est_future_theta_degrees-theta_degrees))
-          //cart.animate(animation_args).center(cart_est_next_x,carty)
-          cart.animate(animation_args).center(cart_est_future_x,carty)
-
-          //axle.animate(animation_args).center(cart_est_next_x,carty)
-          axle.animate(animation_args).center(cart_est_future_x,carty)
-
-
-          /*
-          an attempt at making the red triangle visible between the "next" and "future" timestep
-
-          arrow_triangle.animate(animation_args).attr({ fill:"red"})
-                        .animate(animation_args).attr({ fill:"red"})
-
-          arrow_triangle.animate(animation_args).stroke({ color: 'rgba(255,0,0,0)'})
-                .animate(animation_args).stroke({ color: 'rgba(255,0,0,1)'})
-
-                          arrow_triangle.animate(animation_args).fill('rgba(255,0,0,0)')
-                                        .animate(animation_args).fill('rgba(255,0,0,1)')
-
-                    */
+          cart.pole.animate(animation_args).center(cart_est_future_x,svg_positions.cart.y-svg_positions.pole.len/2).rotate(future_state_theta_degrees-  svg_positions.pole.theta_degrees,svg_positions.cart.x,svg_positions.cart.y)
+          cart.box.animate(animation_args).center(cart_est_future_x,svg_positions.cart.y)
+          cart.axle.animate(animation_args).center(cart_est_future_x,svg_positions.cart.y)
 
         //if static image, it's the next timestep
         } else {
-          faded_cart.center(cart_est_next_x,carty)
+
+          //draw est. amt cart traveled since last timetep
+          var cart_est_next_x = this.calc_svg_xpos(next_state.x, img_width, this.world_width)
+          var cart_est_next_track = svgObj.line(svg_positions.cart.x, svg_positions.cart.y, cart_est_next_x, svg_positions.cart.y)
+          cart_est_next_track.stroke({ color: 'rgba(96,175,255,0.25)', width: 7 })
+
+          //next_state.theta_degrees = next_state.theta * 180 / Math.PI
+
+          faded_cart.box.center(cart_est_next_x,svg_positions.cart.y)
           //orig position of cart
-          faded_cart_axle.center(cart_est_next_x,carty)
+          faded_cart.axle.center(cart_est_next_x,svg_positions.cart.y)
           //orig pole position
-          faded_pole.center(cart_est_next_x,carty-polelen/2)
-          faded_pole.rotate(pole_est_next_theta_degrees,cartx,carty)
+          faded_cart.pole.center(cart_est_next_x,svg_positions.cart.y-svg_positions.pole.len/2)
+          faded_cart.pole.rotate(future_state_theta_degrees,svg_positions.cart.x,svg_positions.cart.y)
         }
-
-
     }
+    */
 
-
-    // TODO : comment
-    gen_img(domSelector, world_state, img_width, img_height) {
-
-      //scale of world to image
-      var world_width = this.state_var_thresholds.x*2 //put thresholds at edge of grid
-      var scale = img_width/world_width
-
-      //dimensions of cart
-      var cartx = world_state.x *scale+img_width/2.0
-      var carty = img_height*0.66   // middle of cart
-      var cartwidth = 0.1*img_width
-      var cartheight = 0.1*img_height
-
-      //dimensions & angle of pole
-      var polewidth = 0.025*img_width
-      var polelen = cartwidth*2;
-      var theta_degrees = world_state.theta * 180 / Math.PI
-
-      //create SVG
-      var draw = SVG().addTo(domSelector).size(img_width, img_height)
-
-      //Object.assign(currState,this.state)
-
-      //draw track first so it's back-most layer on canvas
-      var track = draw.line(0, carty, img_width, carty)
-      track.stroke({ color: 'black', width: 1 })
-
-      //draw arrow to indicate direction - have to draw before cart
-      //so that red line doesn't overlap cart
-      var arrow_x_direction = action == 0 ? -1 : 1
-      var arrow_x = cartx - arrow_x_direction*1.75*cartwidth - arrow_x_direction*cartwidth/2
-      var arrow_point_x = arrow_x + cartwidth/2 * arrow_x_direction
-      var arrow_y_top = carty + img_height*(0.075)
-      var arrow_y_mid = carty
-      var arrow_y_bottom = carty - img_height*(0.075)
-
-      var arrow_triangle = draw.polygon(`${arrow_x},${arrow_y_top},${arrow_x},${arrow_y_bottom}, ${arrow_point_x},${arrow_y_mid}`).fill('rgba(255,0,0,1)')
-
-      var action = draw.line(arrow_point_x, arrow_y_mid, cartx - arrow_x_direction*cartwidth/2, arrow_y_mid)
-      //arrow_triangle.fill('rgba(255,0,0,0)')
-      action.stroke({ color: 'rgba(255,0,0,1)', width: 1.5/*, dasharray : "5,5"*/})
-
-      //initialize cart 2nd so it can be on top
-      var cart = draw.rect(cartwidth, cartheight).fill('rgb(0,0,0)')
-      var pole = draw.rect(polewidth, polelen).fill('rgb(204,153,102)')
-      var axle = draw.circle(polewidth*0.66).fill('rgb(127,127,204)')
-      //place cart components
-      cart.center(cartx,carty)
-      pole.center(cartx,carty-polelen/2)
-      pole.rotate(theta_degrees,cartx,carty)
-      axle.center(cartx,carty)
-    }
-
-
+    //==============< END Methods to create whole SVGs =================//
 
 }
