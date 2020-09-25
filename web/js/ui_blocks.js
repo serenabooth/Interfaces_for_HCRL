@@ -178,6 +178,29 @@ class UI_Blocks {
         return tableHTML
       }
 
+
+      static populate_grid_cell_from_proposed_actions(gridCellDomSelect, cartpole, proposed_actions, display_args) {
+        //runs sim & cf_sim for the cartpole
+
+        let runs = cartpole.run_sims_from_action_sequence(proposed_actions, display_args.include_cfs)
+        let sim_run_results = runs["sim"]
+        console.log("Sim results " + sim_run_results)
+        let cf_sim_run_results = runs["cf_sim"]
+
+        //insert table of state values
+        let tableHTML = this.create_animation_txt(cartpole, sim_run_results, cf_sim_run_results)
+        $(gridCellDomSelect).append(tableHTML)
+
+        //insert simulation animation
+        var animation_div_dom_id = "drawing-"+cartpole.id;
+        this.create_animation_in_dom_elem(gridCellDomSelect, animation_div_dom_id, cartpole, sim_run_results, display_args.img_width , display_args.img_height, display_args.animation_args)
+
+        //insert counterfactual simulation animation
+        if(display_args.include_cfs)
+          this.create_animation_in_dom_elem(gridCellDomSelect, animation_div_dom_id+"_cf", cartpole, cf_sim_run_results, display_args.img_width , display_args.img_height, display_args.animation_args)
+
+      }
+
       static populate_grid_cell(gridCellDomSelect, cartpole, policy, display_args) {
         //runs sim & cf_sim for the cartpole
         let runs = cartpole.run_sims_from_policy(policy, display_args.num_timesteps_to_simulate, display_args.include_cfs)

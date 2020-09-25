@@ -1,5 +1,9 @@
 var grid_type = "FREEZE_DIM" // "RANDOM" | "FREEZE_DIM" | "HAND_SELECTED"
 
+// src: https://stackoverflow.com/questions/12303989/cartesian-product-of-multiple-arrays-in-javascript
+const f = (a, b) => [].concat(...a.map(d => b.map(e => [].concat(d, e))));
+const cartesian = (a, b, ...c) => (b ? cartesian(f(a, b), ...c) : a);
+
 function waitForSocketConnection(socket, callback){
     setTimeout(
         function () {
@@ -11,20 +15,6 @@ function waitForSocketConnection(socket, callback){
             }
         }, 5); // wait 5 milisecond for the connection...
 }
-
-function linspace(low, high, num_intervals, exclude_edges = true) {
-  if (exclude_edges) {
-    // exclude edges
-    num_intervals += 2;
-  }
-  var arr = [];
-  var step = (high - low) / (num_intervals - 1);
-  for (var i = 1; i < num_intervals - 1; i++) {
-    arr.push(low + (step * i));
-  }
-  return arr;
-}
-
 
 
 class Main {
@@ -75,7 +65,8 @@ class Main {
     run() {
 
       // this.sandbox_eg()
-      this.sandbox_sb()
+      // this.sandbox_sb()
+      this.sandbox_equivalence_classes()
       // this.sandbox_sc()
 
     }
@@ -102,6 +93,87 @@ class Main {
 
     }
 
+    /**
+    A development playground for exploring the equivalence class idea
+    **/
+    sandbox_equivalence_classes() {
+      // this is some tomfoolery right here.
+      var mainObjct = this
+
+      var img_width = this.cartpole_display_args.img_width
+      var img_height = this.cartpole_display_args.img_height
+
+      // define the base cartpole object
+      var cp = new CartPole(mainObjct.cartpole_thresholds, null, null, true)
+
+      this.python_ws = new WebSocket("ws://localhost:8000/echo")
+      this.python_ws.onopen = () => this.python_ws.send(JSON.stringify("Connection established"));
+
+      // add a button to the page
+      var updateBtn = document.createElement("button");
+      updateBtn.innerHTML = "Update";
+      updateBtn.onclick = function(){
+        var msg = {
+          msg_type: "update_equivalence_classes",
+        }
+        msg = JSON.stringify(msg)
+        mainObjct.python_ws.send(msg);
+      }
+      var body = document.getElementById("feedbackButtons");
+      body.appendChild(updateBtn);
+
+
+      var cartpoleSim  = new CartPole(mainObjct.cartpole_thresholds)
+      var ui_blocks = new UI_Blocks()
+
+      //todo: randomly initialize a BUNCH of states
+      var response_received = false
+      console.log(this.python_ws)
+      this.python_ws.onmessage = function (evt) {
+        var received_msg = JSON.parse(evt.data);
+        console.log("Received message: " + received_msg)
+
+        if (received_msg["msg_type"] == "policy_updated") {
+          mainObjct.update_cartpole_grid(5, this.python_ws)
+        }
+        else if (received_msg["msg_type"] == "proposed_actions_cartpole_group") {
+          for (var idx in received_msg["ordered_cartpoles"]) {
+            var msg_payload = received_msg["ordered_cartpoles"][idx]
+            var cartpole = all_cartpoles[msg_payload["cartpoleId"]]["cartpole"]
+            var cartpoleDiv = msg_payload["divId"]
+            var proposed_actions = msg_payload["proposed_actions"]
+
+            $('#' + cartpoleDiv).appendTo('#gridDiv');
+            $("#" + cartpoleDiv).empty();
+            UI_Blocks.populate_grid_cell_from_proposed_actions("#" + cartpoleDiv, cartpole, proposed_actions, mainObjct.cartpole_display_args)
+
+          }
+
+        }
+
+      }
+
+      function createGrid() {
+        if (grid_type == "RANDOM") {
+            mainObjct.createRandomGrid("#gridDiv", null, mainObjct.python_ws)
+        }
+        else if (grid_type == "HAND_SELECTED") {
+
+        }
+        else if (grid_type == "FREEZE_DIM") {
+          var state = cp.getState()
+          var x_samples = Util.linspace(-mainObjct.cartpole_thresholds.x, mainObjct.cartpole_thresholds.x, 5, true)
+          var x_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.x_dot, mainObjct.cartpole_thresholds.x_dot, 5, true)
+          var theta_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta, mainObjct.cartpole_thresholds.theta, 5, true)
+          var theta_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta_dot, mainObjct.cartpole_thresholds.theta_dot, 5, true)
+          mainObjct.createDimCoverActionSpace("#gridDiv", state, x_samples, x_dot_samples, theta_samples, theta_dot_samples, 1, null, mainObjct.python_ws)
+          mainObjct.update_cartpole_grid(5, mainObjct.python_ws)
+        }
+      }
+
+      waitForSocketConnection(this.python_ws, createGrid)
+
+    }
 
     /**
     Serena's run sandbox
@@ -185,10 +257,12 @@ class Main {
             else {
               var cartpole = all_cartpoles[id]["cartpole"]
               var cartpoleDiv = received_msg[id]["divId"]
+              var proposed_actions = received_msg[id]["proposed_actions"]
 
               // TODO: redraw cartpole with proposed action
               $("#" + cartpoleDiv).empty();
-              UI_Blocks.populate_grid_cell("#" + cartpoleDiv, cartpole, null, mainObjct.cartpole_display_args)
+              UI_Blocks.populate_grid_cell_from_proposed_actions("#" + cartpoleDiv, cartpole, proposed_actions, mainObjct.cartpole_display_args)
+
 
             }
           }
@@ -204,12 +278,11 @@ class Main {
         }
         else if (grid_type == "FREEZE_DIM") {
           var state = cp.getState()
-          var x = linspace(-mainObjct.cartpole_thresholds.x, mainObjct.cartpole_thresholds.x, 4)
-          var x_dot = linspace(-mainObjct.cartpole_thresholds.x_dot, mainObjct.cartpole_thresholds.x_dot, 4)
-          var theta = linspace(-mainObjct.cartpole_thresholds.theta, mainObjct.cartpole_thresholds.theta, 4)
-          var theta_dot = linspace(-mainObjct.cartpole_thresholds.theta_dot, mainObjct.cartpole_thresholds.theta_dot, 4)
-          mainObjct.createDimFreezeGrid("#gridDiv", state, x, x_dot, theta, theta_dot, null, mainObjct.python_ws)
-
+          var x = Util.linspace(-mainObjct.cartpole_thresholds.x, mainObjct.cartpole_thresholds.x, 4)
+          var x_dot = Util.linspace(-mainObjct.cartpole_thresholds.x_dot, mainObjct.cartpole_thresholds.x_dot, 4)
+          var theta = Util.linspace(-mainObjct.cartpole_thresholds.theta, mainObjct.cartpole_thresholds.theta, 4)
+          var theta_dot = Util.linspace(-mainObjct.cartpole_thresholds.theta_dot, mainObjct.cartpole_thresholds.theta_dot, 4)
+          mainObjct.createDimFreezeGrid("#gridDiv", state, x, x_dot, theta, theta_dot, 4, 4, null, mainObjct.python_ws)
           console.log(x)
 
         }
@@ -248,13 +321,13 @@ class Main {
 
 //===========< BEGIN Helper Functions >=============//
 
-  update_cartpole_grid() {
-
+  update_cartpole_grid(num_steps, python_ws) {
       var cartpoles = {}
 
       for (var id in all_cartpoles) {
         cartpoles[id] = {"divId": all_cartpoles[id]["divId"],
                          "state": all_cartpoles[id]["cartpole"].getState(),
+                         "num_steps": num_steps,
                         }
       }
 
@@ -264,8 +337,7 @@ class Main {
       }
 
       msg = JSON.stringify(msg)
-      this.python_ws.send(msg);
-
+      python_ws.send(msg);
   }
 
   /**
@@ -363,45 +435,55 @@ class Main {
 
   }
 
-  createDimFreezeGrid(domSelect, state, x, x_dot, theta, theta_dot, policy = null, python_ws = null) {
+  createDimFreezeGrid(domSelect, state, x_samples, x_dot_samples, theta_samples, theta_dot_samples, numRows, numCols, policy = null, python_ws = null) {
     var mainObjct = this;
     $(domSelect+" .title").html("Frozen Dimension Grid")
-    let numCols = x.length
-    let numRows = 4
+
 
     var cartpoles = []
+    var dims = ["x", "x_dot", "theta", "theta_dot"]
 
-    for (var i = 0; i < numCols*numRows; i++) {
-      var tmp_state = state
-      if (i < 4) {
-        tmp_state[0] = x[i]
-        console.log(tmp_state)
-        let cp =
-
-        cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
-      }
-      else if (i < 8) {
-        tmp_state[1] = x_dot[i - 4]
-        cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
-
-      }
-      else if (i < 12) {
-        tmp_state[2] = theta[i - 8]
-        cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
-      }
-      else if (i < 16) {
-        tmp_state[3] = theta_dot[i - 12]
-        cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
+    for (var i = 0; i < dims.length; i++) {
+      let dim = dims[i]
+      console.log(dim)
+      for (var j = 0; j < x_samples.length; j++) {
+        var tmp_state = state
+        if (dim == "x") {
+          tmp_state[0] = x_samples[i]
+          cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
+        }
+        else if (dim == "x_dot") {
+          tmp_state[0] = x_dot_samples[i]
+          cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
+        }
+        else if (dim == "theta") {
+          tmp_state[0] = theta_samples[i]
+          cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
+        }
+        else if (dim == "theta_dot") {
+          tmp_state[0] = theta_dot_samples[i]
+          cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
+        }
       }
     }
 
     console.log(cartpoles)
 
     UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args, policy, python_ws)
+  }
 
 
+  createDimCoverActionSpace(domSelect, state, x_samples, x_dot_samples, theta_samples, theta_dot_samples, numCols, policy = null, python_ws = null) {
+    var mainObjct = this;
+    $(domSelect+" .title").html("Cover State Space")
 
+    var cartpoles_tmp = cartesian(x_samples, x_dot_samples, theta_samples, theta_dot_samples);
+    var cartpoles = []
+    for (var i = 0; i < cartpoles_tmp.length; i++) {
+      cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, cartpoles_tmp[i]))
+    }
 
+    UI_Blocks.state_grid(domSelect+" .animation-container", cartpoles.length, numCols, cartpoles, this.cartpole_display_args, policy, python_ws)
   }
 
   /**

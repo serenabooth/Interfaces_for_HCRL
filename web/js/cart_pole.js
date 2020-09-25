@@ -444,7 +444,6 @@ class CartPole {
   run_sims_from_policy(policy, timesteps = 1, include_cfs=true) {
     //simulate from original action
     var curr_action = this.getAction(policy)
-
     let sim_run_results = this.simulate(curr_action, timesteps)
 
     //simulate counterfactual action
@@ -461,6 +460,125 @@ class CartPole {
     }
   }
 
+  /**
+  **/
+  run_sims_from_action_sequence(proposed_actions, include_cfs=true) {
+    var simulation = { "sim": [],
+                       "cf_sim": []}
+
+    var sim_run_results = this.simulate_action_list(proposed_actions)
+    simulation["sim"].push(sim_run_results)
+    console.log(sim_run_results)
+    //simulate counterfactual action
+    var cf_sim_run_results = null
+    // if(include_cfs) {
+    //   //simulate from counterfactual
+    //   var curr_action = ~proposed_action
+    //   // curr_action = this.getCounterFactualAction(curr_action)
+    //   cf_sim_run_results = this.simulate(curr_action,1)
+    //   simulation["cf_sim"].push(cf_sim_run_results)
+    //
+    // }
+
+    return {
+      "sim" :sim_run_results,
+      "cf_sim" : cf_sim_run_results
+    }
+  }
+
+  /**
+  simulates the next time step(s) of the cartpole
+  does not update internal state of the sim
+
+  TODO: ceil/floor when we create a degenerate case (i.e. exceeding thresholds)
+  TODO: create a user note that we have created a degenerate case
+
+  @param {float} action if null, then no force applied. Else right-force for positive number and left-force for negative
+  @param {int} timesteps number of timesteps to simulate (# secs depends on this.tau)
+  @return obj {
+      "next" : the state after the next timestep
+      "future" : state beyond 1 timestep, assuming the same velocity
+      "degenerate" : true if next and/or future states are degenerate (go beyond thresholds)
+  }
+  **/
+  simulate_action_list(actions, fix_if_degenerate = false) {
+    var x = this.x
+    var x_dot = this.x_dot
+    var theta = this.theta
+    var theta_dot = this.theta_dot
+    var next_needed_fixing = null
+    var beyond_needed_fixing = null
+    console.log("helllllllllllllllo")
+
+    console.log("Action set" + actions)
+    for (var idx in actions) {
+
+      var action = actions[idx]
+      var force = action > 0 ? this.forceMag : -this.forceMag;
+
+      var cosTheta = Math.cos(theta);
+      var sinTheta = Math.sin(theta);
+
+
+      var temp =
+          (force + this.poleMoment * theta_dot * theta_dot * sinTheta) /
+          this.totalMass;
+      var thetaAcc = (this.gravity * sinTheta - cosTheta * temp) /
+          (this.length *
+           (4 / 3 - this.massPole * cosTheta * cosTheta / this.totalMass));
+      var xAcc = temp - this.poleMoment * thetaAcc * cosTheta / this.totalMass;
+
+      // Update the four state variables, using Euler's method.
+      //update for 1 timestep
+
+      x = x + (this.tau * x_dot);
+      theta = theta + (this.tau * theta_dot);
+      //update the velocity from the action
+      x_dot = x_dot + (this.tau * xAcc);
+      theta_dot = theta_dot + (this.tau * thetaAcc);
+      var next_timestep_state_obj = {
+        "x" : x,
+        "x_dot" : x_dot,
+        "theta" : theta,
+        "theta_dot" : theta_dot
+      }
+
+      var beyond_state_obj = {...next_timestep_state_obj}
+
+      // //simulate forward the rest of the steps
+      // if(timesteps > 1) {
+      //   x += (timesteps-1)*(this.tau * x_dot);
+      //   theta += (timesteps-1)*(this.tau * theta_dot);
+      //   beyond_state_obj.x = x
+      //   beyond_state_obj.theta = theta
+      // }
+
+      if (fix_if_degenerate) {
+        //if either of these go beyond thresholds, then cap at thresholds
+        next_needed_fixing = this.fixDegenerate(next_timestep_state_obj)
+        beyond_needed_fixing = this.fixDegenerate(beyond_state_obj)
+      }
+
+
+    }
+
+
+    /*
+    console.log("next")
+    console.log(next_timestep_state_obj)
+    console.log(next_needed_fixing)
+
+    console.log("beyond")
+    console.log(beyond_state_obj)
+    console.log(beyond_needed_fixing)
+    */
+    return {
+      "action" : actions[0],
+      "next" : next_needed_fixing == null ? next_timestep_state_obj : next_needed_fixing,
+      "future" : beyond_needed_fixing == null ? beyond_state_obj : beyond_needed_fixing,
+      "degenerate" : (next_needed_fixing != null) ||  (beyond_needed_fixing != null)
+    }
+  }
 
   /**
   simulates the next time step(s) of the cartpole
@@ -478,7 +596,7 @@ class CartPole {
   }
   **/
   simulate(action, timesteps = 1, fix_if_degenerate = true) {
-
+    console.log("simulating")
     if(action == null)
       var force = 0
     else
@@ -486,6 +604,7 @@ class CartPole {
 
     const cosTheta = Math.cos(this.theta);
     const sinTheta = Math.sin(this.theta);
+
 
     const temp =
         (force + this.poleMoment * this.theta_dot * this.theta_dot * sinTheta) /
@@ -497,10 +616,12 @@ class CartPole {
 
     // Update the four state variables, using Euler's method.
     //update for 1 timestep
+
     let x = this.x + (this.tau * this.x_dot);
     let theta = this.theta + (this.tau * this.theta_dot);
     //update the velocity from the action
     let x_dot = this.x_dot + (this.tau * xAcc);
+
     let theta_dot = this.theta_dot + (this.tau * thetaAcc);
 
     let next_timestep_state_obj = {
@@ -537,7 +658,6 @@ class CartPole {
     console.log(beyond_state_obj)
     console.log(beyond_needed_fixing)
     */
-
     return {
       "action" : action,
       "next" : next_needed_fixing == null ? next_timestep_state_obj : next_needed_fixing,

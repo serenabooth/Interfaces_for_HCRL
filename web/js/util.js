@@ -81,4 +81,31 @@ class Util {
     return state_as_arr
   }
 
+  /***
+  A helper function to create a linspace over an interval
+
+  For example, given params (-2.4, 2.4, 2, true), the resulting arr is [-0.8,0.8]
+  Given (-2.4, 2.4, 2, false), the resulting arr is [-2.4, -0.8, 0.8, 2.4]
+
+  @param {float} low
+  @param {float} high end point of interval
+  @param {int} num_intervals number of segments to construct
+  @param {bool} exclude_edges whether to include low and high points
+  ***/
+  static linspace(low, high, num_intervals, exclude_edges = true) {
+    var arr = [];
+    var step = (high - low) / (num_intervals - 1);
+
+    for (var i = 0; i < num_intervals; i++) {
+      if (exclude_edges && (i == 0 || i == num_intervals - 1)) {
+        // if exclude_edges is true, skip first and last values
+      }
+      else {
+        arr.push(low + (step * i));
+      }
+    }
+    console.log(arr)
+    return arr;
+  }
+
 }

@@ -26,6 +26,20 @@ class CartPole(Domain):
         self.obs_size = self.env.observation_space.high.size
 
 
+    def set_state(self, state):
+        """
+        A bit hacky! Used to set state given a state array
+
+        Params
+        ------
+            self : CartPole
+            state : list of [x, xdot, theta, thetadot] 
+        """
+        self.env.env.state = deepcopy(state)
+        obs = np.array(list(self.env.unwrapped.state))
+        self.last_observation = obs
+        return obs
+
     def set_recording(self, recording=True):
         """
         Start recording videos of episodes.
