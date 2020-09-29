@@ -19,27 +19,11 @@ class Main {
                                   img_height: 100,
                                   img_width: 300,
 
-                                  //timestepDelayMS : 20,   //20 is default at 50fps
-                                  timestepDelayMS : 100,   //20 is default at 50fps
+                                  timestepDelayMS : 100,   //20 is simulation standard at 50fps
 
                                   //will also display counterfactual future if true
                                   //include_cfs: true,
                                   maxTimesteps: 1000,
-                                  /*
-                                  //parameters re: animation mechanics
-                                  animation_args: {
-                                    //https://svgjs.com/docs/3.0/animating/
-                                    duration: 1000,
-                                    delay : 0,
-                                    when : 'now',
-                                    swing: false,
-                                    times: Number.MAX_SAFE_INTEGER,
-                                    wait:1500,
-
-                                    //including arguments that are not svgjs
-                                    not_svgjs_show_title: true,
-                                  }
-                                  */
                                 }
 
         this.cartpoleSim = new CartPoleSim(this.cartpole_thresholds)

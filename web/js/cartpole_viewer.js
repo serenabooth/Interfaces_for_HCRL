@@ -178,28 +178,36 @@ class Cartpole_Viewer {
 
       //animate the simulation by reusing the SVG object
       let title = (showTitle) ? cartpole.getTitle() : ""
-      this.populate_svg_snapshot(cartpoleSVG, simTrace.initState, null, img_width, img_height)
 
       let max_time = simTrace.state_history.length
 
-      for( let i = 0; i < max_time; i++) {
+      let self = this
+      let i = 0;
+      setInterval(function() {
+
+        //get current time
+        let t = i++ % max_time
+        //console.log(cartpole.title+": "+t + "( " + i +")")
+
+        cartpoleSVG.clear()
+
         //get the timestep data
-        let curr_state = simTrace.state_history[i]
-        let action = simTrace.action_history[i]
+        let curr_state = simTrace.state_history[t]
+        let action = simTrace.action_history[t]
 
-        let self = this
-        setTimeout(function() {
-          cartpoleSVG.clear()
-          //not most efficient but should be okay for user experience...
-          self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, title )
+        //draw cartpole
+        self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, title )
 
-
-        }, timestepDelayMS*i)
-
+        //create a 'flashing' element when cartpole resets
+        //TOOD: make this better
+        if(t==0) {
+          cartpoleSVG.circle(500).fill('rgba(255,255,255,0.5)').center(img_width*0.5, img_height*0.5)
         }
 
+      },timestepDelayMS)
 
     }
+
 
 /*
     /**
