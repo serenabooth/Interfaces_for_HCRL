@@ -5,7 +5,7 @@ class CartPole {
   /**
    * Constructor of CartPole.
    */
-  constructor(cartpole_thresholds, state_as_arr = null, title = null) {
+  constructor(cartpole_thresholds, state_as_arr = null, title = null, is_starting_state = false) {
 
 //https://mlpack.org/doc/mlpack-git/doxygen/classmlpack_1_1rl_1_1CartPole.html
 
@@ -198,6 +198,13 @@ class CartPole {
   setStartingState() {
     let stateArr = this.genStartingState()
     this.setState(stateArr)
+  }
+
+  /**
+   * Reset after entering a degenerate state or restarting.
+   */
+  reset() {
+    this.setStartingState()
   }
 
 

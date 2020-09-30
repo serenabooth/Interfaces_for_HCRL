@@ -13,6 +13,7 @@
     <script src="./js/ui_blocks.js"></script>
 
     <script src="./sim_runs/data0.js"></script>
+    <script src="./js/main.js"></script>
 
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
 
@@ -20,62 +21,26 @@
   </HEAD>
   <BODY>
 
-      <script>
-        function negativeFeedback() {
-          console.log("-1");
-        }
-
-        function positiveFeedback() {
-          console.log("+1");
-        }
-      </script>
-
       <h2>Train Cartpole using COACH</h2>
 
       <div class="grid-container" id="cartpole_instance"></div>
-      <button type="button" onclick="negativeFeedback();">Bad!</button>
-      <button type="button" onclick="positiveFeedback();">Good!</button>
+
+      <div id=feedbackButtons></div>
+
+      <div id=gridDiv>
+        <h2 class="title"></h2>
+        <h4 class="policy"></h4>
+        <b class="descript"></b>
+        <div class="grid-container animation-container"></div>
+      </div>
+
 
       <script>
 
           $(document).ready(function() {
 
-            var python_ws = new WebSocket("ws://localhost:8000/echo")
-
-            python_ws.onopen = function(msg) {
-              // Web Socket is connected, send data using send()
-              python_ws.send("Connection established");
-            };
-
-            python_ws.onmessage = function (evt) {
-              var received_msg = evt.data;
-              console.log("Received message: " + received_msg)
-            };
-
-            python_ws.onclose = function() {
-              // websocket is closed.
-              console.log("Connection is closed...");
-            };
-
-            //===========< init sim & viewer thresholds >====================//
-            //thesholds for x & theta (radians)
-            //goes from (-val, +val)
-            var cartpole_thresholds = { x : 2.4,
-                                        theta : 24 * Math.PI / 180, // = 0.41887902047863906
-                                      }
-            var cartpoleSim  = new CartPole(cartpole_thresholds)
-            var ui_blocks = new UI_Blocks()
-
-            //===========< choose policy & generate states for grid>====================//
-
-            cp = new CartPole(cartpole_thresholds, starting_state = true)
-            ui_blocks.individual_episode("#cartpole_instance", cp)
-
-            console.log(cp.getState())
-
-            var cp_state = JSON.stringify(cp.getState())
-            python_ws.onopen = () => python_ws.send(cp_state);
-
+            let main = new Main()
+            main.run()
           });
 
       </script>

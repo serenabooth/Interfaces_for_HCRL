@@ -2,7 +2,13 @@
 class UI_Blocks {
 
 
-  /**
+  // redrawCartpole(divId, cartpole, img_width, img_height, action) {
+  //   $(divId).empty()
+  //   cartpole.viewer.gen_img(divId, cartpole.getState(false), img_width, img_height, action)
+  // }
+
+
+
   /**
   Creates a grid of cartpole animations - simulations should have been run before calling this
 
@@ -11,8 +17,6 @@ class UI_Blocks {
   @numCols : number of columns in the grid
   @cartpole_array: array of cartpoles. Each cartpole should be set to the desired state to display
   @cartpole_display_args: an object containing arguments that configure animations
-  @policy: policy for cartpole (as array)
-
   **/
   static state_grid(gridDivDomSelector, numRows, numCols, cartpole_array, display_args) {
 
@@ -30,7 +34,6 @@ class UI_Blocks {
     for(let i = 0; i < numRows*numCols; i++) {
 
       let cartpole = cartpole_array[i]
-
       //create div for the cart's gridcell
       let divId = `cart_${i}`
       $(gridDivDomSelector).append(`<div id="${divId}"></div>`)
@@ -40,7 +43,7 @@ class UI_Blocks {
 
       //insert simulation animation
       var animation_div_dom_id = "drawing-"+cartpole.id;
-      this.create_animation_in_dom_elem("#"+divId, animation_div_dom_id, cartpole, display_args.img_width , display_args.img_height, display_args)
+      this.create_animation_in_dom_elem("#"+divId, animation_div_dom_id, cartpole, display_args.img_width, display_args.img_height, display_args)
 
       //insert counterfactual simulation animation
       //if(display_args.include_cfs)
@@ -48,6 +51,15 @@ class UI_Blocks {
 
     }
 
+  }
+
+
+  /**
+  TODO:Comment
+  **/
+  static animate_from_trace(cartpoleDiv, cartpole, sim_trace, display_args) {
+      var animation_div_dom_id = "drawing-"+cartpole.id;
+      this.create_animation_in_dom_elem(cartpoleDiv, animation_div_dom_id, cartpole, display_args.img_width, display_args.img_height, display_args)
   }
 
 

@@ -146,14 +146,15 @@ def compute_expected_actions(domain, theta):
     return expected_actions
 
 def get_human_reward(domain, theta, action, oracle_parameters=None):
-    # human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
+    human_reward = cartpole_oracle.ask_oracle_advice(domain, oracle_parameters, action)
+    print ("Oracle reward: " + str(human_reward))
     domain.env.render()
     print ("Last action: " + str(action))
     print ("Reward?")
-    try:
-        human_reward = input()
-    except KeyboardInterrupt:
-        sys.exit(0)
+    # try:
+    #     human_reward = input()
+    # except KeyboardInterrupt:
+    #     sys.exit(0)
 
     if human_reward == "v":
         print (state_histories)

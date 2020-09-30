@@ -162,7 +162,7 @@ class CartPoleSim {
       "degenerate" : true if next and/or future states are degenerate (go beyond thresholds)
   }
   **/
-  simulate_single_timestep(cartpole, action) {
+  simulate_single_timestep_private(cartpole, action) {
 
     //if action is null, then force is also 0. Otherwise LEFT = -1 and RIGHT = 1
     var force = action * this.forceMag
@@ -192,16 +192,17 @@ class CartPoleSim {
   /**
   Given the current state of the cartpole, will simulate for
   **/
-  simulation(cartpole, policy, maxTimesteps, numStepsToCoast = 0) {
+  simulation_from_policy(cartpole, policy, maxTimesteps, numStepsToCoast = 0) {
 
       //simuation with policy being applied
       for(let i = 0; i < maxTimesteps; i++) {
 
         //get action from policy
         let action = this.getAction(cartpole.getState(), policy)
+        console.log(action)
 
         //simulate next timestep
-        let next_state = this.simulate_single_timestep(cartpole, action)
+        let next_state = this.simulate_single_timestep_private(cartpole, action)
         cartpole.addSimTimestep(next_state,action)
 
         //check to see whether cartpole survived
@@ -212,7 +213,7 @@ class CartPoleSim {
 
       //coast for a few steps
       while(!this.isDone(cartpole) && numStepsToCoast > 0) {
-        let next_state = this.simulate_single_timestep(cartpole, null)
+        let next_state = this.simulate_single_timestep_private(cartpole, null)
         cartpole.addSimTimestep(next_state,null)
         numStepsToCoast--
       }
@@ -220,5 +221,42 @@ class CartPoleSim {
       return cartpole.getSimTrace()
   }
 
+  /**
+  Given the current state of the cartpole, will simulate for
+  **/
+  simulation_from_action_sequence(cartpole, action_sequence, numStepsToCoast = 0) {
+
+    console.log(action_sequence)
+      //simuation with policy being applied
+      for(let i = 0; i < action_sequence.length; i++) {
+
+        //get action from policy
+        let action = action_sequence[i]
+        if (action == 0) {
+          action = this.MOVE_LEFT
+        }
+        else {
+          action = this.MOVE_RIGHT
+        }
+
+        //simulate next timestep
+        let next_state = this.simulate_single_timestep_private(cartpole, action)
+        cartpole.addSimTimestep(next_state,action)
+
+        //check to see whether cartpole survived
+        if(this.isDone(cartpole))
+          break;
+
+      }
+
+      //coast for a few steps
+      while(!this.isDone(cartpole) && numStepsToCoast > 0) {
+        let next_state = this.simulate_single_timestep_private(cartpole, null)
+        cartpole.addSimTimestep(next_state,null)
+        numStepsToCoast--
+      }
+
+      return cartpole.getSimTrace()
+  }
 
 }
