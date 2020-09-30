@@ -151,7 +151,7 @@ class Cartpole_Viewer {
     /**
     populate SVG for a single timeslice
     **/
-    populate_svg_snapshot(svgObj, world_state, action, img_width, img_height, title="", pullOrPush = "pull") {
+    populate_svg_snapshot(svgObj, world_state, action, img_width, img_height, title="", pullOrPush = "pull", showVals=false) {
 
       var svg_positions = this.calc_svg_positions(world_state, action, img_width, img_height, pullOrPush)
       //========== Begin SVG ===================//
@@ -160,8 +160,11 @@ class Cartpole_Viewer {
       var arrow = this.draw_arrow(svgObj, svg_positions)
       var cart = this.draw_cart(svgObj, svg_positions)
 
-      svgObj.text(title)
-
+      svgObj.text(title).font("size","10").center(svg_positions.cart.x,svg_positions.cart.y+10).stroke("#DDD")
+      if(showVals) {
+        let readable_state = Util.roundElems(world_state,3).join(",")
+        svgObj.text(`(${readable_state})`).font("size","10").center(img_width*0.5,img_height-10).stroke("#DDD")
+      }
       return {
         track : track, arrow : arrow, cart : cart
       }
@@ -172,106 +175,76 @@ class Cartpole_Viewer {
 
     timestepDelayMS: default display speed = 50fps = 20ms/frame
     **/
-    populate_svg_simulation(cartpoleSVG, cartpole, img_width, img_height, timestepDelayMS = 20, showTitle=false) {
+    populate_svg_simulation(cartpoleSVG, cartpole, img_width, img_height, displayArgs, widgetsDomSelect=null) {
+
+      let title = (displayArgs.showCartpoleTitle) ? cartpole.getTitle() : ""
+      let self = this   //give access to the Cartpole_Viewer objects
+
 
       let simTrace = cartpole.getSimTrace()
+      let maxTime = simTrace.state_history.length
 
-      //animate the simulation by reusing the SVG object
-      let title = (showTitle) ? cartpole.getTitle() : ""
-
-      let max_time = simTrace.state_history.length
-
-      let self = this
-      let i = 0;
-      setInterval(function() {
-
-        //get current time
-        let t = i++ % max_time
-        //console.log(cartpole.title+": "+t + "( " + i +")")
-
-        cartpoleSVG.clear()
+      //function to animate cartpoles
+      let t = 0;        //counter to help keep track of time
+      function animateCartpole() {
 
         //get the timestep data
         let curr_state = simTrace.state_history[t]
         let action = simTrace.action_history[t]
+        if(widgetsDomSelect != null)
+          $(widgetsDomSelect+" input.gridslider").val(t)
 
         //draw cartpole
-        self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, title )
+        cartpoleSVG.clear()
+
+        self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, title+`t=${t}` )
 
         //create a 'flashing' element when cartpole resets
         //TOOD: make this better
-        if(t==0) {
+        if(t==0)
           cartpoleSVG.circle(500).fill('rgba(255,255,255,0.5)').center(img_width*0.5, img_height*0.5)
-        }
+        //loop around timer to 0
+        if(++t == maxTime)
+          t = 0
 
-      },timestepDelayMS)
+      }
+      //start cartpole animation
+      let cartpoleAnimHandle = setInterval(animateCartpole,displayArgs.timestepDelayMS)
+
+      //create widgets to help user control animations
+      if(widgetsDomSelect != null) {
+
+        //create timeline slider for this run
+        $(widgetsDomSelect).append(`<div class="gridslider">0<input type="range" min="0" max="${maxTime-1}" value="0" class="gridslider" data-show-value="true">${maxTime-1}<button class="stop">Stop</button><button class="play">Play</button></div>`)
+        $(widgetsDomSelect+" input.gridslider").on({
+
+          'input' : function() {
+            if($(this).val() != "") {
+              clearInterval(cartpoleAnimHandle)
+              t = $(this).val()
+              animateCartpole()
+            }},
+
+          'mousemove' : function() {
+
+          }
+        })
+
+
+        //stop button
+        $(widgetsDomSelect+" .gridslider .stop").click(function() {
+          clearInterval(cartpoleAnimHandle)
+        })
+
+        //play button to restart animation
+        $(widgetsDomSelect+" .gridslider .play").click(function() {
+          clearInterval(cartpoleAnimHandle)
+          cartpoleAnimHandle = setInterval(animateCartpole,displayArgs.timestepDelayMS)
+        })
+      }
+
 
     }
-
-
-/*
-    /**
-    Generates an SVG from a given world state
-
-    If animation is enabled, Faded cartpole representation represents orignal
-    @param {string} svgObj svgjs object
-    @param {array} world_state sim's state obj
-    @param {number} action 0 or 1 for left vs right
-    @param {array} next_state next state given the action
-    @param {array} future_state a hypothetical future state if the action was taken w/ no further actions
-    @param {number} img_width
-    @param {number} img_height
-    @param {object} animation_args if null, then static image. Paramters as defined here: https://svgjs.com/docs/3.0/animating/
-    **
-    populate_svg_pushAndCoastAnimation(svgObj, world_state, action, next_state, future_state = null, img_width, img_height, animation_args = null, pullOrPush = "pull") {
-
-        var svg_positions = this.calc_svg_positions(world_state, action, img_width, img_height, pullOrPush)
-        //========== Begin SVG ===================//
-        //create SVG
-        var track = this.draw_track(svgObj, svg_positions)
-        var arrow = this.draw_arrow(svgObj, svg_positions)
-        var cart = this.draw_cart(svgObj, svg_positions)
-        var faded_cart = this.draw_faded_cart(svgObj, svg_positions)
-
-        //if animating, faded cart represents original timestep
-        if(animation_args != null) {
-
-          var cart_est_future_x = this.calc_svg_xpos(future_state.x, img_width, this.world_width)
-          var future_state_theta_degrees = future_state.theta * 180 / Math.PI
-
-          if(animation_args.not_svgjs_show_title)
-            svgObj.text(this.sim.title).font({ fill: '#ddd'})
-
-          //put faded cart in original
-          faded_cart.box.center(svg_positions.cart.x,svg_positions.cart.y)
-          faded_cart.axle.center(svg_positions.cart.x,svg_positions.cart.y)
-          faded_cart.pole.center(svg_positions.cart.x,svg_positions.cart.y-svg_positions.pole.len/2)
-          faded_cart.pole.rotate(svg_positions.pole.theta_degrees,svg_positions.cart.x,svg_positions.cart.y)
-
-          //animate opaque cart
-          cart.pole.animate(animation_args).center(cart_est_future_x,svg_positions.cart.y-svg_positions.pole.len/2).rotate(future_state_theta_degrees-  svg_positions.pole.theta_degrees,svg_positions.cart.x,svg_positions.cart.y)
-          cart.box.animate(animation_args).center(cart_est_future_x,svg_positions.cart.y)
-          cart.axle.animate(animation_args).center(cart_est_future_x,svg_positions.cart.y)
-
-        //if static image, it's the next timestep
-        } else {
-
-          //draw est. amt cart traveled since last timetep
-          var cart_est_next_x = this.calc_svg_xpos(next_state.x, img_width, this.world_width)
-          var cart_est_next_track = svgObj.line(svg_positions.cart.x, svg_positions.cart.y, cart_est_next_x, svg_positions.cart.y)
-          cart_est_next_track.stroke({ color: 'rgba(96,175,255,0.25)', width: 7 })
-
-          //next_state.theta_degrees = next_state.theta * 180 / Math.PI
-
-          faded_cart.box.center(cart_est_next_x,svg_positions.cart.y)
-          //orig position of cart
-          faded_cart.axle.center(cart_est_next_x,svg_positions.cart.y)
-          //orig pole position
-          faded_cart.pole.center(cart_est_next_x,svg_positions.cart.y-svg_positions.pole.len/2)
-          faded_cart.pole.rotate(future_state_theta_degrees,svg_positions.cart.x,svg_positions.cart.y)
-        }
-    }
-    */
 
     //==============< END Methods to create whole SVGs =================//
 
