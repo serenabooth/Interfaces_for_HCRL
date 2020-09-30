@@ -7,6 +7,8 @@ class CartPole {
    */
   constructor(cartpole_thresholds, state_as_arr = null, title = null) {
 
+//https://mlpack.org/doc/mlpack-git/doxygen/classmlpack_1_1rl_1_1CartPole.html
+
     //cart characteristics©
     this.massCart = 1.0;
     this.massPole = 0.1;
@@ -42,7 +44,9 @@ class CartPole {
       state_as_arr = this.genRandomState()
 
     this.setState_privateMethod(state_as_arr)
-    this.initState = state_as_arr
+
+    //save init state
+    this.state_history = [state_as_arr]
 }
 
   //===========< BEGIN Static Methods >================//
@@ -52,7 +56,6 @@ class CartPole {
     for(let i = 0; i < 4; i++)
       //random number from [-1,1]
       policy.push((Math.random() * 2) - 1)
-
     return policy
 
   }
@@ -157,7 +160,6 @@ class CartPole {
   **/
   getSimTrace() {
     return {
-      initState : this.initState,
       action_history : this.action_history,
       state_history : this.state_history,
       maxT : this.state_history.length
@@ -225,9 +227,9 @@ class CartPole {
   */
 
   reset(new_state_as_arr = null) {
-    this.initState = (new_state_as_arr == null) ? this.genRandomState() : new_state_as_arr
-    this.setState_privateMethod(this.initState)
-    this.state_history = []
+    var initState = (new_state_as_arr == null) ? this.genRandomState() : new_state_as_arr
+    this.setState_privateMethod(initState)
+    this.state_history = [initState]
     this.action_history = []
   }
 
