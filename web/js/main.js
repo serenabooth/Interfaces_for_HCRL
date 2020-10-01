@@ -23,7 +23,7 @@ class Main {
                                   //height & width of an individual animation
                                   img_height: 100,
                                   img_width: 300,
-
+                                  showCartpoleTitle : false,
                                   timestepDelayMS : 100,   //20 is simulation standard at 50fps
 
                                   //will also display counterfactual future if true
