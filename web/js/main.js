@@ -62,8 +62,8 @@ class Main {
     **/
     run() {
       // this.sandbox_eg()
-      // this.sandbox_sc()
-      this.sandbox_equivalence_classes()
+      this.sandbox_sc()
+      // this.sandbox_equivalence_classes()
     }
 
 
