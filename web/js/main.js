@@ -1,12 +1,9 @@
-var grid_type = "FREEZE_DIM" // "RANDOM" | "FREEZE_DIM"
-
 // src: https://stackoverflow.com/questions/12303989/cartesian-product-of-multiple-arrays-in-javascript
 const f = (a, b) => [].concat(...a.map(d => b.map(e => [].concat(d, e))));
 const cartesian = (a, b, ...c) => (b ? cartesian(f(a, b), ...c) : a);
 
 
 class Main {
-
   //set default parameters
     constructor() {
 
@@ -40,9 +37,10 @@ class Main {
     **/
     createGrid(argument_list) {
       var mainObjct = argument_list[0]
+      var grid_type = argument_list[1]
       if (grid_type == "RANDOM") {
         mainObjct.createRandomGrid("#gridDiv", null)
-        mainObjct.update_cartpole_grid(20, mainObjct)
+        mainObjct.update_cartpole_grid(20)
       }
       else if (grid_type == "FREEZE_DIM") {
         var x_samples = Util.linspace(-mainObjct.cartpole_thresholds.x, mainObjct.cartpole_thresholds.x, 5, true)
@@ -51,7 +49,7 @@ class Main {
         var theta_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta_dot, mainObjct.cartpole_thresholds.theta_dot, 5, true)
 
         mainObjct.createDimCoverActionSpace("#gridDiv", x_samples, x_dot_samples, theta_samples, theta_dot_samples)
-        mainObjct.update_cartpole_grid(5, mainObjct)
+        mainObjct.update_cartpole_grid(5)
       }
     }
 
@@ -62,8 +60,8 @@ class Main {
     **/
     run() {
       // this.sandbox_eg()
-      this.sandbox_sc()
-      // this.sandbox_equivalence_classes()
+      // this.sandbox_sc()
+      this.sandbox_equivalence_classes()
     }
 
 
@@ -86,59 +84,71 @@ class Main {
     }
 
     /**
+    Process the contents of a message received from the python websocket
+
+    @mainObjct: corresponds to an instance of this class (Main)
+    @evt: a json message communicated through the websocket
+    **/
+    process_ws_payload(mainObjct, evt) {
+      var received_msg = JSON.parse(evt.data);
+      console.log("Received message: " + received_msg)
+      if (received_msg["msg_type"] == "policy_updated") {
+        mainObjct.update_cartpole_grid(5)
+      }
+      else if (received_msg["msg_type"] == "proposed_actions_cartpole_group") {
+        // logic for feedback cartpole
+        var cartpole = all_cartpoles["cart_feedback"]["cartpole"]
+        var feedbackDiv = received_msg["cart_feedback"]["divId"]
+        var proposed_actions = received_msg["cart_feedback"]["proposed_actions"]
+        $("#" + feedbackDiv).empty();
+        var sim_trace = mainObjct.cartpoleSim.simulation_from_action_sequence(cartpole, proposed_actions, null)
+        UI_Blocks.animate_from_trace("#" + feedbackDiv, cartpole, sim_trace, mainObjct.cartpole_display_args)
+
+        for (var idx in received_msg["ordered_cartpoles"]) {
+          var msg_payload = received_msg["ordered_cartpoles"][idx]
+          var cartpole = all_cartpoles[msg_payload["cartpoleId"]]["cartpole"]
+          var cartpoleDiv = msg_payload["divId"]
+          var proposed_actions = msg_payload["proposed_actions"]
+
+          // reorder
+          $('#' + cartpoleDiv).appendTo('#gridDiv');
+          //empty
+          $("#" + cartpoleDiv).empty();
+          //redraw
+          var sim_trace = mainObjct.cartpoleSim.simulation_from_action_sequence(cartpole, proposed_actions, null)
+          UI_Blocks.animate_from_trace("#" + cartpoleDiv, cartpole, sim_trace, mainObjct.cartpole_display_args)
+        }
+      }
+      else if (received_msg["msg_type"] == "user_assessment") {
+        all_user_responses += 1
+        correct_user_responses += received_msg["score"]
+        $("#userTestDiv"+" .user_score").html(correct_user_responses + " (correct responses)" + " / " + all_user_responses + " (total responses)")
+      }
+    }
+
+    /**
     A development playground for exploring the equivalence class idea
     **/
     sandbox_equivalence_classes() {
+      // this is some tomfoolery right here.
+      var mainObjct = this
+
+      var grid_type = "FREEZE_DIM" // "RANDOM" | "FREEZE_DIM"
+
+      mainObjct.testUserKnowledge()
+
       // open a websocket for talking to python
       this.python_ws = new WebSocket("ws://localhost:8000/echo")
       this.python_ws.onopen = () => this.python_ws.send(JSON.stringify("Connection established"));
 
-      // this is some tomfoolery right here.
-      var mainObjct = this
+      mainObjct.addSingleFeedbackCartAndButtons(mainObjct);
 
       // add cartpoles to screen
-      waitForSocketConnection(this.python_ws, mainObjct.createGrid, [mainObjct])
-
-      // add a policy update button to the page
-      var updateBtn = document.createElement("button");
-      updateBtn.innerHTML = "Update";
-      updateBtn.onclick = function(){
-        var msg = {
-          msg_type: "update_equivalence_classes",
-        }
-        msg = JSON.stringify(msg)
-        mainObjct.python_ws.send(msg);
-      }
-      var body = document.getElementById("feedbackButtons");
-      body.appendChild(updateBtn);
-
+      waitForSocketConnection(this.python_ws, mainObjct.createGrid, [mainObjct, grid_type])
       // process messages received from python
-      this.python_ws.onmessage = function (evt) {
-        var received_msg = JSON.parse(evt.data);
-        console.log("Received message: " + received_msg)
-
-        if (received_msg["msg_type"] == "policy_updated") {
-          mainObjct.update_cartpole_grid(5, this.python_ws)
-        }
-        else if (received_msg["msg_type"] == "proposed_actions_cartpole_group") {
-          for (var idx in received_msg["ordered_cartpoles"]) {
-            var msg_payload = received_msg["ordered_cartpoles"][idx]
-            var cartpole = all_cartpoles[msg_payload["cartpoleId"]]["cartpole"]
-            var cartpoleDiv = msg_payload["divId"]
-            var proposed_actions = msg_payload["proposed_actions"]
-
-            $('#' + cartpoleDiv).appendTo('#gridDiv');
-            $("#" + cartpoleDiv).empty();
-            var sim_trace = mainObjct.cartpoleSim.simulation_from_action_sequence(cartpole, proposed_actions, null)
-
-            UI_Blocks.animate_from_trace("#" + cartpoleDiv, cartpole, sim_trace, mainObjct.cartpole_display_args)
-          }
-
-        }
-
+      mainObjct.python_ws.onmessage = function (evt) {
+        mainObjct.process_ws_payload(mainObjct, evt)
       }
-
-
     }
 
     /**
@@ -176,7 +186,109 @@ class Main {
 
 //===========< BEGIN Helper Functions >=============//
 
-  update_cartpole_grid(num_steps, mainObjct) {
+  /**
+  Test user knowledge
+
+  @mainObjct : a Main class instance
+  **/
+  testUserKnowledge(mainObjct) {
+    var mainObjct = this
+
+    $("#userTestDiv"+" .title").html("User Knowledge Test")
+    $("#userTestDiv"+" .user_score").html(correct_user_responses + " (correct responses)" + " / " + all_user_responses + " (total responses)")
+
+    // add a toplevel cartpole for evaluation
+    var cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0]
+    this.cartpoleSim.simulation_from_action_sequence(cp, [], 0)
+    UI_Blocks.single_cartpole("#userTestDiv", cp, "user_test", this.cartpole_display_args);
+    // don't strictly need to add this
+    all_cartpoles[`user_test`] = {"divId": `user_test`,
+                                  "cartpole": cp}
+
+    // add a policy update button to the page
+    var left = document.createElement("button");
+    var right = document.createElement("button");
+
+    left.innerHTML = "Left";
+    left.onclick = function(){
+      var msg = {
+        msg_type: "user_test",
+        user_input: "left",
+        cp_state: all_cartpoles['user_test']["cartpole"].getState()
+      }
+      msg = JSON.stringify(msg)
+      mainObjct.python_ws.send(msg);
+    }
+    right.innerHTML = "Right";
+    right.onclick = function(){
+      var msg = {
+        msg_type: "user_test",
+        user_input: "right",
+        cp_state: all_cartpoles['user_test']["cartpole"].getState()
+      }
+      msg = JSON.stringify(msg)
+      mainObjct.python_ws.send(msg);
+    }
+    var body = document.getElementById("userTestButtons");
+    body.appendChild(left);
+    body.appendChild(right);
+  }
+
+
+
+  /**
+  Add a single cartpole to the top of the screen
+  Add this cartpole to the globally tracked all_cartpoles dict
+  Add a "Bad Robot" and a "Good Robot" button
+
+  @mainObjct : a Main class instance
+  **/
+  addSingleFeedbackCartAndButtons(mainObjct) {
+    $("#feedbackDiv"+" .title").html("Give Feedback to the Robot")
+
+    // add a toplevel cartpole for gathering feedback
+    var cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0]
+    this.cartpoleSim.simulation_from_action_sequence(cp, [], 0)
+    UI_Blocks.single_cartpole("#feedbackDiv", cp, "cart_feedback", this.cartpole_display_args);
+    all_cartpoles[`cart_feedback`] = {"divId": `cart_feedback`,
+                                      "cartpole": cp}
+
+    // add a policy update button to the page
+    var goodBtn = document.createElement("button");
+    var badBtn = document.createElement("button");
+
+    goodBtn.innerHTML = "Good Robot";
+    goodBtn.onclick = function(){
+      var msg = {
+        msg_type: "feedback",
+        reward: 1,
+      }
+      msg = JSON.stringify(msg)
+      mainObjct.python_ws.send(msg);
+    }
+    badBtn.innerHTML = "Bad Robot";
+    badBtn.onclick = function(){
+      var msg = {
+        msg_type: "feedback",
+        reward: -1,
+      }
+      msg = JSON.stringify(msg)
+      mainObjct.python_ws.send(msg);
+    }
+    var body = document.getElementById("feedbackButtons");
+    body.appendChild(badBtn);
+    body.appendChild(goodBtn);
+  }
+
+
+  /**
+  Send a message through the websocket to ask for proposed actions for each cartpole
+
+  @num_steps int, the number of policy steps to visualize
+  @mainObjct : a Main class instance
+  **/
+  update_cartpole_grid(num_steps) {
+      var mainObjct = this
       var python_ws = mainObjct.python_ws
       var cartpoles = {}
 
@@ -194,6 +306,149 @@ class Main {
 
       msg = JSON.stringify(msg)
       python_ws.send(msg);
+  }
+
+  /**
+  Takes 4 lists of x_samples, x_dot_samples, theta_samples, and theta_dot samples;
+  computes the cartesian product of these lists, and creates cartpoles for each new state.
+
+  @domSelect the DOM elemnent in which to add the resulting grid
+  @x_samples list of x values
+  @x_dot_samples list of xdot values
+  @theta_samples list of theta values
+  @theta_dot_samples list of thetadot values
+  **/
+  createDimCoverActionSpace(domSelect, x_samples, x_dot_samples, theta_samples, theta_dot_samples) {
+    var mainObjct = this;
+    $(domSelect+" .title").html("Communicate Policy Through Examples")
+
+    var cartpoles_tmp = cartesian(x_samples, x_dot_samples, theta_samples, theta_dot_samples);
+    var cartpoles = []
+    for (var i = 0; i < cartpoles_tmp.length; i++) {
+      var cp = new CartPole(mainObjct.cartpole_thresholds)
+      cp.reset(cartpoles_tmp[i])
+
+      all_cartpoles[cp.id] = {"divId": `cart_${i}`,
+                              "cartpole": cp}
+      cartpoles.push(cp)
+
+      this.cartpoleSim.simulation_from_action_sequence(cp, [], 0)
+    }
+
+    UI_Blocks.state_grid(domSelect+" .animation-container", cartpoles.length, 1, cartpoles, this.cartpole_display_args)
+  }
+
+
+
+  /**
+  Creates a grid of randomly generated cartpoles
+  **/
+  createRandomGrid(domSelect, policies) {
+
+    $(domSelect+" .title").html("Random Grid")
+
+    let numCols = 4
+    let numRows = 3
+
+    //generate & simulate random cartples
+    var cartpoles = Util.gen_rand_cartpoles(numCols*numRows, this.cartpole_thresholds)
+    for(let i =0; i < cartpoles.length; i++) {
+
+      // add any cartpoles to the global all_cartpoles list
+      all_cartpoles[cartpoles[i].id] = {"divId": `cart_${cartpoles[i].id}`,
+                                        "cartpole": cartpoles[i]}
+
+      //select random policy
+      if (policies != null) {
+        let policyName = Util.getRandomElemFromArray(Object.keys(policies))
+        //run simulation with policy
+        let cp = cartpoles[i]
+        cp.setTitle(i+"_"+policyName)
+        this.cartpoleSim.simulation_from_policy(cp, policies[policyName], this.cartpole_display_args.maxTimesteps)
+      }
+      else {
+        let cp = cartpoles[i]
+        cp.setTitle(i)
+        this.cartpoleSim.simulation_from_action_sequence(cp, [], 0)
+      }
+    }
+
+    UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args)
+  }
+
+  /**
+  **/
+  createRandomCorkboard(domSelect, corkboard_length, corkboard_width, policy, explanatoryText) {
+
+    $(domSelect+" .title").html("Cartpole Corkboard")
+
+    //num cartpoles
+    let n = 10
+    let maxTimesteps = 10
+    let timestepsToCoast = 10
+
+    //create cartpoles
+    var cartpoles = Util.gen_rand_cartpoles(n, this.cartpole_thresholds)
+
+    //define cartpole animation positions
+    var cartpole_positions = []
+    for(let i =0; i < cartpoles.length; i++) {
+
+      //run simulation with cartple
+      let cp = cartpoles[i]
+      cp.setTitle(""+i)
+      this.cartpoleSim.simulation_from_policy(cp, policy, maxTimesteps, timestepsToCoast)
+
+      //determine cartpole position
+      let cp_pos = {
+        'x' : i * 50,
+        'y' : i * 100
+      }
+      cartpole_positions.push(cp_pos)
+    }
+
+    UI_Blocks.state_corkboard(domSelect+" .animation-container", corkboard_length, corkboard_width, cartpoles, cartpole_positions, this.cartpole_display_args)
+
+    //text to describe grid
+    $("#corkboardDiv .policy").text(explanatoryText)
+
+  }
+
+  createHandpickedGrid(domSelect, policy = null, python_ws = null) {
+    $(domSelect+" .title").html("Handpicked Grid")
+
+    let hand_picked_states = []
+    hand_picked_states.push(["very left of center","still","upright","still"])
+    hand_picked_states.push(["left of center","still","upright","still"])
+    hand_picked_states.push(["center","still","upright","still"])
+    hand_picked_states.push(["right of center","still","upright","still"])
+    hand_picked_states.push(["very right of center","still","upright","still"])
+
+    hand_picked_states.push(["center","going left fast","upright","still"])
+    hand_picked_states.push(["center","going left","upright","still"])
+    hand_picked_states.push(["center","still","upright","still"])
+    hand_picked_states.push(["center","going right","upright","still"])
+    hand_picked_states.push(["center","going right fast","upright","still"])
+
+    let numCols = 3
+    let numRows = 2
+
+    var cartpoles = []
+
+    var i = 0
+    for(let human_readable_state of hand_picked_states) {
+
+      //instantiate cartpole & add to the list
+      let cp = new CartPole(this.cartpole_thresholds)
+      cp.setTitle(human_readable_state.toString())
+      //update the internal state to reflect defined states
+      let state_vals_as_arr = cp.getStateArrFromHumanReadableStates(human_readable_state)
+      cp.setState(state_vals_as_arr)
+      cartpoles.push(cp)
+    }
+
+    UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args, policy, python_ws)
+
   }
 
   /**
@@ -216,18 +471,6 @@ class Main {
     hand_picked_states2.push(["center",              "going left","upright","still"])
     hand_picked_states2.push(["right of center",     "going left","upright","still"])
     hand_picked_states2.push(["very right of center","going left","upright","still"])
-
-
-    //hand_picked_states.push(["center","going left fast",  "upright","still"])
-    //hand_picked_states.push(["center","going left",       "upright","still"])
-    //hand_picked_states.push(["center","still",            "upright","still"])
-    //hand_picked_states.push(["center","going right",      "upright","still"])
-    //hand_picked_states.push(["center","going right fast", "upright","still"])
-
-
-    // hand_picked_states.push(["center","still","upright","still"])
-    // hand_picked_states.push(["center","still","upright","still"])
-
 
     //create the cartpole instances from the hand-picked states
     var cartpoles = []
@@ -290,187 +533,6 @@ class Main {
       $("#corkboardDiv .policy").text(explanatoryText)
       UI_Blocks.state_corkboard(domSelect+" .animation-container", corkboard_length, corkboard_width, cartpoles, cartpole_positions, policy, this.cartpole_display_args, this.cartpole_display_args.animation_args)
     }
-
-  }
-
-  /**
-  **/
-  createRandomCorkboard(domSelect, corkboard_length, corkboard_width, policy, explanatoryText) {
-
-    $(domSelect+" .title").html("Cartpole Corkboard")
-
-    //num cartpoles
-    let n = 10
-    let maxTimesteps = 10
-    let timestepsToCoast = 10
-
-    //create cartpoles
-    var cartpoles = Util.gen_rand_cartpoles(n, this.cartpole_thresholds)
-
-    //define cartpole animation positions
-    var cartpole_positions = []
-    for(let i =0; i < cartpoles.length; i++) {
-
-      //run simulation with cartple
-      let cp = cartpoles[i]
-      cp.setTitle(""+i)
-      this.cartpoleSim.simulation_from_policy(cp, policy, maxTimesteps, timestepsToCoast)
-
-      //determine cartpole position
-      let cp_pos = {
-        'x' : i * 50,
-        'y' : i * 100
-      }
-      cartpole_positions.push(cp_pos)
-    }
-
-    UI_Blocks.state_corkboard(domSelect+" .animation-container", corkboard_length, corkboard_width, cartpoles, cartpole_positions, this.cartpole_display_args)
-
-    //text to describe grid
-    $("#corkboardDiv .policy").text(explanatoryText)
-
-  }
-
-
-  // createDimFreezeGrid(domSelect, state, x_samples, x_dot_samples, theta_samples, theta_dot_samples, numRows, numCols, policy = null, python_ws = null) {
-  //   var mainObjct = this;
-  //   $(domSelect+" .title").html("Frozen Dimension Grid")
-  //
-  //
-  //   var cartpoles = []
-  //   var dims = ["x", "x_dot", "theta", "theta_dot"]
-  //
-  //   for (var i = 0; i < dims.length; i++) {
-  //     let dim = dims[i]
-  //     console.log(dim)
-  //     for (var j = 0; j < x_samples.length; j++) {
-  //       var tmp_state = state
-  //       if (dim == "x") {
-  //         tmp_state[0] = x_samples[i]
-  //         cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
-  //       }
-  //       else if (dim == "x_dot") {
-  //         tmp_state[0] = x_dot_samples[i]
-  //         cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
-  //       }
-  //       else if (dim == "theta") {
-  //         tmp_state[0] = theta_samples[i]
-  //         cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
-  //       }
-  //       else if (dim == "theta_dot") {
-  //         tmp_state[0] = theta_dot_samples[i]
-  //         cartpoles.push(new CartPole(mainObjct.cartpole_thresholds, tmp_state))
-  //       }
-  //     }
-  //   }
-  //
-  //   console.log(cartpoles)
-  //
-  //   UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args, policy, python_ws)
-  // }
-  //
-  //
-
-  /**
-  Takes 4 lists of x_samples, x_dot_samples, theta_samples, and theta_dot samples;
-  computes the cartesian product of these lists, and creates cartpoles for each new state.
-  **/
-  createDimCoverActionSpace(domSelect, x_samples, x_dot_samples, theta_samples, theta_dot_samples) {
-    var mainObjct = this;
-    $(domSelect+" .title").html("Cover State Space")
-
-    var cartpoles_tmp = cartesian(x_samples, x_dot_samples, theta_samples, theta_dot_samples);
-    console.log(cartpoles_tmp)
-    var cartpoles = []
-    for (var i = 0; i < cartpoles_tmp.length; i++) {
-      var cp = new CartPole(mainObjct.cartpole_thresholds)
-      cp.reset(cartpoles_tmp[i])
-
-      all_cartpoles[cp.id] = {"divId": `cart_${i}`,
-                              "cartpole": cp}
-      cartpoles.push(cp)
-
-      this.cartpoleSim.simulation_from_action_sequence(cp, [], 0)
-    }
-    console.log(cartpoles)
-
-    UI_Blocks.state_grid(domSelect+" .animation-container", cartpoles.length, 1, cartpoles, this.cartpole_display_args)
-  }
-
-
-
-  /**
-  Creates a grid of randomly generated cartpoles
-  **/
-  createRandomGrid(domSelect, policies) {
-
-    $(domSelect+" .title").html("Random Grid")
-
-    let numCols = 4
-    let numRows = 3
-
-    //generate & simulate random cartples
-    var cartpoles = Util.gen_rand_cartpoles(numCols*numRows, this.cartpole_thresholds)
-    for(let i =0; i < cartpoles.length; i++) {
-
-      // add any cartpoles to the global all_cartpoles list
-      all_cartpoles[cartpoles[i].id] = {"divId": `cart_${cartpoles[i].id}`,
-                                        "cartpole": cartpoles[i]}
-
-      //select random policy
-      if (policies != null) {
-        let policyName = Util.getRandomElemFromArray(Object.keys(policies))
-        //run simulation with policy
-        let cp = cartpoles[i]
-        cp.setTitle(i+"_"+policyName)
-        this.cartpoleSim.simulation_from_policy(cp, policies[policyName], this.cartpole_display_args.maxTimesteps)
-      }
-      else {
-        let cp = cartpoles[i]
-        cp.setTitle(i)
-        this.cartpoleSim.simulation_from_action_sequence(cp, [], 0)
-      }
-    }
-
-
-    UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args)
-
-  }
-
-  createHandpickedGrid(domSelect, policy = null, python_ws = null) {
-    $(domSelect+" .title").html("Handpicked Grid")
-
-    let hand_picked_states = []
-    hand_picked_states.push(["very left of center","still","upright","still"])
-    hand_picked_states.push(["left of center","still","upright","still"])
-    hand_picked_states.push(["center","still","upright","still"])
-    hand_picked_states.push(["right of center","still","upright","still"])
-    hand_picked_states.push(["very right of center","still","upright","still"])
-
-    hand_picked_states.push(["center","going left fast","upright","still"])
-    hand_picked_states.push(["center","going left","upright","still"])
-    hand_picked_states.push(["center","still","upright","still"])
-    hand_picked_states.push(["center","going right","upright","still"])
-    hand_picked_states.push(["center","going right fast","upright","still"])
-
-    let numCols = 3
-    let numRows = 2
-
-    var cartpoles = []
-
-    var i = 0
-    for(let human_readable_state of hand_picked_states) {
-
-      //instantiate cartpole & add to the list
-      let cp = new CartPole(this.cartpole_thresholds)
-      cp.setTitle(human_readable_state.toString())
-      //update the internal state to reflect defined states
-      let state_vals_as_arr = cp.getStateArrFromHumanReadableStates(human_readable_state)
-      cp.setState(state_vals_as_arr)
-      cartpoles.push(cp)
-    }
-
-    UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args, policy, python_ws)
 
   }
 }

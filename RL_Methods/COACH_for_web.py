@@ -2,7 +2,7 @@ import sys
 sys.path.append("Domains/")
 from cartpole import CartPole
 
-import sys, random, torch, threading, time, json
+import sys, random, torch, threading, time, json, traceback
 import numpy as np
 import datetime, time
 from copy import deepcopy
@@ -64,6 +64,8 @@ class COACH():
     obs_size = None
 
     def __init__(self, obs_size, action_size, trace_set = [0.99], delay = 0, learning_rate = 0.05):
+        """
+        """
         self.obs_size = obs_size
         self.n_action = action_size
         self.weights = np.zeros((obs_size, action_size))
@@ -74,38 +76,56 @@ class COACH():
             self.eligibility_traces[trace_val] = np.zeros(self.weights.shape)
 
     def get_proposed_action(self, state, take_action = True, num_steps = 1, deterministic = False, verbose = False):
+        """
+        """
+        epsilon = 0.15
         proposed_action_list = []
         for _ in range(0, num_steps):
             state = np.array(state)
 
             action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(self.weights)))
-            action = np.random.choice(self.n_action, p=action_weights)
 
-            if verbose:
-                print (action_weights)
-                print ('action ', str(action))
+            if deterministic or random.random() > epsilon:
+                action = int(np.argmax(action_weights.numpy()))
+            else:
+                action = np.random.choice(self.n_action, p=action_weights)
+
             # compute gradient
             dsoftmax = softmax_grad(action_weights)[action]
             dlog = dsoftmax / action_weights[action].numpy()
             gradient = state[None,:].T.dot(dlog[None,:])
 
-            state = update_state(state, action)
-
+            # only edit the status for states where feedback is given.
             if take_action:
                 self.last_action = action
                 self.last_gradient = gradient
 
-            # if num_steps == 1:
-            #     return action
-            # else:
+            state = update_state(state, action)
+
             proposed_action_list.append(action)
+
+            if verbose:
+                # print ("action_weights", action_weights)
+                # print ('action ', str(action))
+                print (type(proposed_action_list[0]))
+                print (proposed_action_list)
+                print (type(proposed_action_list))
+
         return proposed_action_list, state
 
     def update_weights(self, reward, selected_trace = 0.99):
         """
-        """
-        # TODO - select trace automatically
+        Apply the COACH update procedure to update self.weights
 
+        Params:
+            self : a COACH object
+            reward : int
+            selected_trace : float, identifying lambda value of trace
+
+        Returns:
+            None
+        """
+        # TODO - select trace in a smart way
         if self.last_gradient.size == 0:
             print ("No gradient; cannot update weights")
             return
@@ -142,7 +162,7 @@ def order_cartpoles(cartpoles):
     return cartpoles_ordered
 
 clients = []
-class SimpleEcho(WebSocket):
+class COACH_WebSocket(WebSocket):
     """
     """
 
@@ -153,10 +173,13 @@ class SimpleEcho(WebSocket):
         # echo message back to client
         print ("Handling message")
         msg = json.loads(self.data)
-        print (msg)
+        # print (msg)
 
         if isinstance(msg,dict):
-            if "msg_type" in msg.keys() and msg["msg_type"] == "feedback":
+            assert ("msg_type" in msg.keys())
+
+            # update weights
+            if msg["msg_type"] == "feedback":
                 # Train COACH with feedback received
                 COACH_TRAINER.update_weights(msg['reward'])
 
@@ -167,15 +190,28 @@ class SimpleEcho(WebSocket):
                 response = json.dumps(response)
                 self.sendMessage(response)
 
-                # Communicate which action to take next
-                action, _ = COACH_TRAINER.get_proposed_action(msg['state'], take_action = True)
+            elif msg["msg_type"] == "user_test":
+                cp_state = msg["cp_state"]
+
+                # TODO: else, raise exception
+                if msg["user_input"] == "left":
+                    dir = 0
+                elif msg["user_input"] == "right":
+                    dir = 1
+                actions, last_state = COACH_TRAINER.get_proposed_action(cp_state,
+                                                                take_action = False,
+                                                                num_steps = 1,
+                                                                deterministic = True)
+                score = (actions[0] == dir)
                 response = {
-                    "msg_type" : "proposed_action",
-                    "action": action
+                    "msg_type": "user_assessment",
+                    "score":score
                 }
                 response = json.dumps(response)
                 self.sendMessage(response)
-            elif "msg_type" in msg.keys() and msg["msg_type"] == "get_actions_cartpole_group":
+
+            # get actions for each cartpole
+            elif msg["msg_type"] == "get_actions_cartpole_group":
                 proposed_actions = {"msg_type" : "proposed_actions_cartpole_group"}
 
 
@@ -183,32 +219,32 @@ class SimpleEcho(WebSocket):
                 for id in msg["cartpoles"].keys():
                     starting_state = np.array(msg["cartpoles"][id]["state"])
                     num_steps = msg["cartpoles"][id]["num_steps"]
+                    take_action = False
+                    if msg["cartpoles"][id]["divId"] == "cart_feedback":
+                        take_action = True
                     actions, last_state = COACH_TRAINER.get_proposed_action(starting_state,
-                                                                take_action = False,
+                                                                take_action = take_action,
                                                                 num_steps = num_steps,
                                                                 deterministic = True)
                     state_diff = np.subtract(starting_state, last_state).sum()
-                    cartpole_list[id] = {"cartpoleId": id,
+
+                    # special case - the cart for getting feedback
+                    if msg["cartpoles"][id]["divId"] == "cart_feedback" or \
+                       msg["cartpoles"][id]["divId"] == "user_test":
+                        proposed_actions["cart_feedback"] = {"proposed_actions":actions,
+                                                             "cartpoleId": "cart_feedback",
+                                                             "divId":msg["cartpoles"][id]["divId"],
+                                                             }
+                    else:
+                        cartpole_list[id] = {"cartpoleId": id,
                                          "divId": msg["cartpoles"][id]["divId"],
                                          "proposed_actions": actions,
                                          "state_diff": state_diff}
 
-
-                # TODO - make this order meaningful!
+                # Reorder cartpoles
                 proposed_actions["ordered_cartpoles"] = order_cartpoles(cartpole_list)
 
                 response = json.dumps(proposed_actions)
-                self.sendMessage(response)
-
-            elif "msg_type" in msg.keys() and msg["msg_type"] == "get_deterministic_action":
-                cartpole_id = msg["cartpole_id"]
-                action = COACH_TRAINER.get_proposed_action(msg['state'], take_action = False, deterministic = True)
-                response = {
-                    "msg_type": "proposed_action",
-                    "cartpole_id": cartpole_id,
-                    "action": action
-                }
-                response = json.dumps(response)
                 self.sendMessage(response)
 
     def handleConnected(self):
@@ -219,20 +255,19 @@ class SimpleEcho(WebSocket):
         clients.remove(self)
         print(self.address, 'closed')
 
+
 COACH_TRAINER = COACH(obs_size = 4, action_size = 2)
-
-
-
 if __name__ == "__main__":
+    # COACH_TRAINER.get_proposed_action([0,0,0,0], deterministic=True, verbose=True, take_action =False, num_steps=2)
+    # COACH_TRAINER.get_proposed_action([0,0,0,0], deterministic=False, verbose=True, take_action = False, num_steps=2)
     HOST, PORT = "localhost", 8080
 
-    server = SimpleWebSocketServer('', 8000, SimpleEcho)
-
-    server_thread = threading.Thread(target=server.serveforever)
-    server_thread.daemon = True
-    server_thread.start()
-
+    server = SimpleWebSocketServer('', 8000, COACH_WebSocket)
+    try:
+        server_thread = threading.Thread(target=server.serveforever)
+        server_thread.daemon = True
+        server_thread.start()
+    except:
+        traceback.print_exc()
     while True:
-        # for client in clients:
-        #     client.sendMessage("hello")
-        time.sleep(0.31)
+        time.sleep(0.5)

@@ -176,7 +176,8 @@ def COACH_CARTPOLE(domain,
                    delay = 0,
                    learning_rate = 0.05,
                    reward_fn = 0,
-                   oracle_parameters = None):
+                   oracle_parameters = None,
+                   epsilon = 0.15):
     """
     Implements COACH, a method for human-centered RL
 
@@ -234,7 +235,12 @@ def COACH_CARTPOLE(domain,
 
             # determine which action to take (probabilistic)
             action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(theta)))
-            action = np.random.choice(n_action, p=action_weights)
+            if random.random() > epsilon:
+                action = int(np.argmax(action_weights.numpy()))
+            else:
+                action = np.random.choice(self.n_action, p=action_weights)
+
+            # action = np.random.choice(n_action, p=action_weights)
 
             # compute gradient
             dsoftmax = softmax_grad(action_weights)[action]
@@ -276,7 +282,7 @@ def COACH_CARTPOLE(domain,
     return rewards_all_episodes, evaluated_episodes
 
 
-def COACH_GRIDWORLD(domain, num_episodes = 100, trace_set = [0.1], delay = 0, learning_rate = 0.05, reward_fn = 0):
+def COACH_GRIDWORLD(domain, num_episodes = 100, trace_set = [0.1], delay = 0, learning_rate = 0.05, reward_fn = 0, epsilon=0.2):
     """
     Implements COACH, a method for human-centered RL
 
@@ -328,10 +334,15 @@ def COACH_GRIDWORLD(domain, num_episodes = 100, trace_set = [0.1], delay = 0, le
             pi = torch.nn.Softmax(dim=-1)(torch.tensor(theta))
             action_weights = pi[state[0]][state[1]]
 
-            if random.random() < 0.8:
+            # if random.random() > epsilon:
+            #     action = randargmax(action_weights.numpy())
+            # else:
+            #     action = random.randint(0, domain.num_actions-1)
+
+            if random.random() > epsilon:
                 action = randargmax(action_weights.numpy())
             else:
-                action = random.randint(0, domain.num_actions-1)
+                action = np.random.choice(domain.num_actions, p=action_weights)
 
             # compute gradient
             jacobian = softmax_grad(pi)
@@ -366,7 +377,6 @@ def gridworld_test():
     domain = Gridworld()
 
     for reward_fn in [1]:
-
         total_num_steps, eval_episodes = COACH_GRIDWORLD(domain, trace_set = [0.1], reward_fn = reward_fn)
         log_mean_steps = np.log(np.mean(total_num_steps, axis = 1))
         log_num_steps_std = np.std(np.log(total_num_steps), axis=1)

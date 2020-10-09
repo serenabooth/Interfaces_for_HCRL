@@ -199,7 +199,6 @@ class CartPoleSim {
 
         //get action from policy
         let action = this.getAction(cartpole.getState(), policy)
-        console.log(action)
 
         //simulate next timestep
         let next_state = this.simulate_single_timestep_private(cartpole, action)
@@ -225,8 +224,6 @@ class CartPoleSim {
   Given the current state of the cartpole, will simulate for
   **/
   simulation_from_action_sequence(cartpole, action_sequence, numStepsToCoast = 0) {
-
-    console.log(action_sequence)
       //simuation with policy being applied
       for(let i = 0; i < action_sequence.length; i++) {
 

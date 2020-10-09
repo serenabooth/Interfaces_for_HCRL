@@ -1,4 +1,6 @@
 var all_cartpoles = {}
+var all_user_responses = 0
+var correct_user_responses = 0
 
 function waitForSocketConnection(socket, callback, argument_list){
     setTimeout(

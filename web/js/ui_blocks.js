@@ -53,7 +53,22 @@ class UI_Blocks {
 
   }
 
+  /**
+  Creates a single cartpole- simulations should have been run before calling this
 
+  @gridDivDomSelector: the div that contains the grid
+  @cartpole: a cartpole object
+  @divId: string. Set this to prevent collisions when producing the grid.
+  @display_args: an object containing arguments that configure animations
+  **/
+  static single_cartpole(gridDivDomSelector, cartpole, divId, display_args) {
+      //create div for the cart's gridcell
+      $(gridDivDomSelector).append(`<div id="${divId}"></div>`)
+
+      //insert simulation animation
+      var animation_div_dom_id = "drawing-"+divId;
+      this.create_animation_in_dom_elem("#"+divId, animation_div_dom_id, cartpole, display_args.img_width, display_args.img_height, display_args)
+  }
   /**
   TODO:Comment
   **/
@@ -113,10 +128,6 @@ class UI_Blocks {
       }
 
   //===== END Grid Helper Functions ======//
-
-  policy_comparison(viewer, domSelector) {
-
-  }
 
 
 }
