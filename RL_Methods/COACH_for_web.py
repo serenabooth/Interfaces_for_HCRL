@@ -7,6 +7,7 @@ import numpy as np
 import datetime, time
 from copy import deepcopy
 from operator import itemgetter
+from sklearn.cluster import KMeans
 
 import matplotlib.pyplot as plt
 from SimpleWebSocketServer import SimpleWebSocketServer, WebSocket
@@ -49,7 +50,7 @@ def update_state(state, action):
         print ("Warning: action took state out of bounds")
         cartpole.set_state(state)
 
-    return cartpole.last_observation
+    return cartpole.last_observation, done
 
 class COACH():
     weights = None
@@ -68,7 +69,7 @@ class COACH():
         """
         self.obs_size = obs_size
         self.n_action = action_size
-        self.weights = np.zeros((obs_size, action_size))
+        self.weights = np.random.rand(obs_size, action_size)
         self.trace_set = trace_set
         self.learning_rate = learning_rate
 
@@ -100,9 +101,10 @@ class COACH():
                 self.last_action = action
                 self.last_gradient = gradient
 
-            state = update_state(state, action)
+            state, done = update_state(state, action)
 
-            proposed_action_list.append(action)
+            if not done:
+                proposed_action_list.append(action)
 
             if verbose:
                 # print ("action_weights", action_weights)
@@ -147,7 +149,7 @@ class COACH():
         for trace_val in trace_set:
             self.eligibility_traces[trace_val] = np.zeros(self.weights.shape)
 
-def order_cartpoles(cartpoles):
+def order_cartpoles(cartpoles, criteria="length"):
     """
     Reorders a list of cartpoles using the state_diff property
 
@@ -157,8 +159,11 @@ def order_cartpoles(cartpoles):
     Returns:
         a list of ordered cartpoleIds [cart1, cart2, cart0]
     """
-    cartpoles_ordered = sorted(list(cartpoles.values()), key=lambda k: k['state_diff'], reverse=True)
-    print (cartpoles_ordered)
+    cartpoles_ordered = list(cartpoles.values())
+    if criteria == "length":
+        cartpoles_ordered = sorted(cartpoles_ordered, key=lambda k: len(k['proposed_actions']), reverse=True)
+    if criteria == "max_state_delta":
+        cartpoles_ordered = sorted(cartpoles_ordered, key=lambda k: k['state_diff'], reverse=True)
     return cartpoles_ordered
 
 clients = []
@@ -237,9 +242,10 @@ class COACH_WebSocket(WebSocket):
                                                              }
                     else:
                         cartpole_list[id] = {"cartpoleId": id,
-                                         "divId": msg["cartpoles"][id]["divId"],
-                                         "proposed_actions": actions,
-                                         "state_diff": state_diff}
+                                            "divId": msg["cartpoles"][id]["divId"],
+                                            "proposed_actions": actions,
+                                            "state_diff": state_diff,
+                                            }
 
                 # Reorder cartpoles
                 proposed_actions["ordered_cartpoles"] = order_cartpoles(cartpole_list)
