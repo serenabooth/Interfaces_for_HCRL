@@ -55,15 +55,17 @@ def record_random_trajectory(policy_weights, starting_state = None):
         state_history.append(state)
         action = select_action(policy_weights, state)
         _, done = cartpole.take_action(action)
-        cartpole.env.render()
+        # cartpole.env.render()
         state = cartpole.get_current_features()
-    cartpole.env.close()
+    # cartpole.env.close()
     return state_history
 
-policy_choice = "Rigid"
-policy_weights = policies[policy_choice]
-f = open(policy_choice + ".txt", "a+")
+# policy_choice = "Rigid"
+# policy_weights = policies[policy_choice]
+f = open("random_policies_same_start" + ".txt", "a+")
 for i in range(0,10):
-    state_history = record_random_trajectory(policy_weights)
+    policy_weights = np.random.rand(4)
+    state = [0,0,0,0]
+    state_history = record_random_trajectory(policy_weights, starting_state=state)
     f.write(str(state_history) + "\n\n\n\n")
 f.close()
