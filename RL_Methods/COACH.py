@@ -238,7 +238,7 @@ def COACH_CARTPOLE(domain,
             if random.random() > epsilon:
                 action = int(np.argmax(action_weights.numpy()))
             else:
-                action = np.random.choice(self.n_action, p=action_weights)
+                action = np.random.choice(n_action, p=action_weights)
 
             # action = np.random.choice(n_action, p=action_weights)
 
@@ -279,8 +279,7 @@ def COACH_CARTPOLE(domain,
             rewards_all_episodes.append(evaluate_COACH_CARTPOLE(domain, theta))
             evaluated_episodes.append(episode_id)
 
-    return rewards_all_episodes, evaluated_episodes
-
+    return rewards_all_episodes, evaluated_episodes, theta
 
 def COACH_GRIDWORLD(domain, num_episodes = 100, trace_set = [0.1], delay = 0, learning_rate = 0.05, reward_fn = 0, epsilon=0.2):
     """

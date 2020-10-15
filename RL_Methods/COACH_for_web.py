@@ -1,7 +1,5 @@
-import sys
-sys.path.append("Domains/")
+import COACH
 from cartpole import CartPole
-
 import sys, random, torch, threading, time, json, traceback
 import numpy as np
 import datetime, time
@@ -52,7 +50,7 @@ def update_state(state, action):
 
     return cartpole.last_observation, done
 
-class COACH():
+class COACH_FOR_WEB():
     weights = None
     eligibility_traces = {}
     trace_set = None
@@ -70,6 +68,7 @@ class COACH():
         self.obs_size = obs_size
         self.n_action = action_size
         self.weights = np.random.rand(obs_size, action_size)
+        domain = CartPole()
         self.trace_set = trace_set
         self.learning_rate = learning_rate
 
@@ -149,7 +148,7 @@ class COACH():
         for trace_val in trace_set:
             self.eligibility_traces[trace_val] = np.zeros(self.weights.shape)
 
-def order_cartpoles(cartpoles, criteria="length"):
+def order_cartpoles(cartpoles, criteria="longest"):
     """
     Reorders a list of cartpoles using the state_diff property
 
@@ -160,7 +159,7 @@ def order_cartpoles(cartpoles, criteria="length"):
         a list of ordered cartpoleIds [cart1, cart2, cart0]
     """
     cartpoles_ordered = list(cartpoles.values())
-    if criteria == "length":
+    if criteria == "longest":
         cartpoles_ordered = sorted(cartpoles_ordered, key=lambda k: len(k['proposed_actions']), reverse=True)
     if criteria == "max_state_delta":
         cartpoles_ordered = sorted(cartpoles_ordered, key=lambda k: k['state_diff'], reverse=True)
@@ -262,10 +261,8 @@ class COACH_WebSocket(WebSocket):
         print(self.address, 'closed')
 
 
-COACH_TRAINER = COACH(obs_size = 4, action_size = 2)
+COACH_TRAINER = COACH_FOR_WEB(obs_size = 4, action_size = 2)
 if __name__ == "__main__":
-    # COACH_TRAINER.get_proposed_action([0,0,0,0], deterministic=True, verbose=True, take_action =False, num_steps=2)
-    # COACH_TRAINER.get_proposed_action([0,0,0,0], deterministic=False, verbose=True, take_action = False, num_steps=2)
     HOST, PORT = "localhost", 8080
 
     server = SimpleWebSocketServer('', 8000, COACH_WebSocket)
@@ -275,5 +272,6 @@ if __name__ == "__main__":
         server_thread.start()
     except:
         traceback.print_exc()
+
     while True:
         time.sleep(0.5)
