@@ -80,10 +80,12 @@ class COACH_FOR_WEB():
         """
         epsilon = 0.15
         proposed_action_list = []
+        action_weights_list = []
         for _ in range(0, num_steps):
             state = np.array(state)
 
             action_weights = torch.nn.Softmax(dim=-1)(torch.tensor(state.dot(self.weights)))
+            action_weights_list.append( np.abs(0.5 - action_weights.data[0].float().detach().cpu().numpy() ))
 
             if deterministic or random.random() > epsilon:
                 action = int(np.argmax(action_weights.numpy()))
@@ -113,7 +115,7 @@ class COACH_FOR_WEB():
                 print (proposed_action_list)
                 print (type(proposed_action_list))
 
-        return proposed_action_list, state
+        return proposed_action_list, state, np.mean(action_weights_list)
 
     def update_weights(self, reward, selected_trace = 0.99):
         """
@@ -162,8 +164,10 @@ def order_cartpoles(cartpoles, criteria="longest"):
     cartpoles_ordered = list(cartpoles.values())
     if criteria == "longest":
         cartpoles_ordered = sorted(cartpoles_ordered, key=lambda k: len(k['proposed_actions']), reverse=True)
-    if criteria == "max_state_delta":
+    elif criteria == "max_state_delta":
         cartpoles_ordered = sorted(cartpoles_ordered, key=lambda k: k['state_diff'], reverse=True)
+    elif criteria == "confidence":
+        cartpoles_ordered = sorted(cartpoles_ordered, key=lambda k: k['avg_confidence'], reverse=False)
     return cartpoles_ordered
 
 clients = []
@@ -203,7 +207,7 @@ class COACH_WebSocket(WebSocket):
                     dir = 0
                 elif msg["user_input"] == "right":
                     dir = 1
-                actions, last_state = COACH_TRAINER.get_proposed_action(cp_state,
+                actions, last_state, avg_confidence = COACH_TRAINER.get_proposed_action(cp_state,
                                                                 take_action = False,
                                                                 num_steps = 1,
                                                                 deterministic = True)
@@ -227,7 +231,7 @@ class COACH_WebSocket(WebSocket):
                     take_action = False
                     if msg["cartpoles"][id]["divId"] == "cart_feedback":
                         take_action = True
-                    actions, last_state = COACH_TRAINER.get_proposed_action(starting_state,
+                    actions, last_state, avg_confidence = COACH_TRAINER.get_proposed_action(starting_state,
                                                                 take_action = take_action,
                                                                 num_steps = num_steps,
                                                                 deterministic = True)
@@ -245,6 +249,7 @@ class COACH_WebSocket(WebSocket):
                                             "divId": msg["cartpoles"][id]["divId"],
                                             "proposed_actions": actions,
                                             "state_diff": state_diff,
+                                            "avg_confidence": avg_confidence,
                                             }
 
                 # Reorder cartpoles
