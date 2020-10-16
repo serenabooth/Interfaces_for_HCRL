@@ -99,6 +99,7 @@ class COACH_FOR_WEB():
             if take_action:
                 self.last_action = action
                 self.last_gradient = gradient
+                take_action = False
 
             state, done = update_state(state, action)
 
