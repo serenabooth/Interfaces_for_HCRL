@@ -32,11 +32,11 @@ class Util {
   @param {int} n # of cartpoles
   @param {object} cartpole_thresholds min & max of each state variable
   **/
-  static gen_rand_cartpoles(n, cartpole_thresholds) {
+  static gen_rand_cartpoles(n, cartpole_thresholds, starting_state=false) {
     var cartpoles = []
     for(let i = 0; i < n; i++) {
       //create random state cartpoles
-      let cp = new CartPole(cartpole_thresholds)
+      let cp = new CartPole(cartpole_thresholds, null, null, starting_state)
       cartpoles.push(cp)
     }
     return cartpoles

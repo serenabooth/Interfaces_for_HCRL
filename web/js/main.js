@@ -38,18 +38,31 @@ class Main {
     createGrid(argument_list) {
       var mainObjct = argument_list[0]
       var grid_type = argument_list[1]
-      if (grid_type == "RANDOM") {
+      if (grid_type === "RANDOM") {
         mainObjct.createRandomGrid("#gridDiv", null)
         mainObjct.update_cartpole_grid(20)
       }
-      else if (grid_type == "FREEZE_DIM") {
+      else if (grid_type === "RANDOM_START") {
+        mainObjct.createRandomGrid("#gridDiv", null, true)
+        mainObjct.update_cartpole_grid(20)
+      }
+      else if (grid_type === "MULTI_START") {
+        var x_samples = Util.linspace(-mainObjct.cartpole_thresholds.x, mainObjct.cartpole_thresholds.x, 9, true)
+        var x_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.x_dot, mainObjct.cartpole_thresholds.x_dot, 3, true)
+        var theta_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta, mainObjct.cartpole_thresholds.theta, 3, true)
+        var theta_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta_dot, mainObjct.cartpole_thresholds.theta_dot, 3, true)
+
+        mainObjct.createDimCoverActionSpace("#gridDiv", x_samples, x_dot_samples, theta_samples, theta_dot_samples)
+        mainObjct.update_cartpole_grid(100)
+      }
+      else if (grid_type === "COVER_SPACE") {
         var x_samples = Util.linspace(-mainObjct.cartpole_thresholds.x, mainObjct.cartpole_thresholds.x, 5, true)
         var x_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.x_dot, mainObjct.cartpole_thresholds.x_dot, 5, true)
         var theta_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta, mainObjct.cartpole_thresholds.theta, 5, true)
         var theta_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta_dot, mainObjct.cartpole_thresholds.theta_dot, 5, true)
 
         mainObjct.createDimCoverActionSpace("#gridDiv", x_samples, x_dot_samples, theta_samples, theta_dot_samples)
-        mainObjct.update_cartpole_grid(5)
+        mainObjct.update_cartpole_grid(20)
       }
     }
 
@@ -92,15 +105,16 @@ class Main {
     process_ws_payload(mainObjct, evt) {
       var received_msg = JSON.parse(evt.data);
       console.log("Received message: " + received_msg)
-      if (received_msg["msg_type"] == "policy_updated") {
-        mainObjct.update_cartpole_grid(5)
+      if (received_msg["msg_type"] === "policy_updated") {
+        mainObjct.update_cartpole_grid(20)
       }
-      else if (received_msg["msg_type"] == "proposed_actions_cartpole_group") {
+      else if (received_msg["msg_type"] === "proposed_actions_cartpole_group") {
         // logic for feedback cartpole
         var cartpole = all_cartpoles["cart_feedback"]["cartpole"]
         var feedbackDiv = received_msg["cart_feedback"]["divId"]
         var proposed_actions = received_msg["cart_feedback"]["proposed_actions"]
         $("#" + feedbackDiv).empty();
+        cartpole.resetTrace()
         var sim_trace = mainObjct.cartpoleSim.simulation_from_action_sequence(cartpole, proposed_actions, null)
         UI_Blocks.animate_from_trace("#" + feedbackDiv, cartpole, sim_trace, mainObjct.cartpole_display_args)
 
@@ -114,9 +128,12 @@ class Main {
           $('#' + cartpoleDiv).appendTo('#gridDiv');
           //empty
           $("#" + cartpoleDiv).empty();
-          //redraw
-          var sim_trace = mainObjct.cartpoleSim.simulation_from_action_sequence(cartpole, proposed_actions, null)
-          UI_Blocks.animate_from_trace("#" + cartpoleDiv, cartpole, sim_trace, mainObjct.cartpole_display_args)
+          cartpole.resetTrace()
+          if (idx < 16) {
+            //redraw
+            var sim_trace = mainObjct.cartpoleSim.simulation_from_action_sequence(cartpole, proposed_actions, null)
+            UI_Blocks.animate_from_trace("#" + cartpoleDiv, cartpole, sim_trace, mainObjct.cartpole_display_args)
+          }
         }
       }
       else if (received_msg["msg_type"] == "user_assessment") {
@@ -133,7 +150,7 @@ class Main {
       // this is some tomfoolery right here.
       var mainObjct = this
 
-      var grid_type = "FREEZE_DIM" // "RANDOM" | "FREEZE_DIM"
+      var grid_type = "MULTI_START" // "RANDOM" | "RANDOM_START" | "COVER_SPACE" | "MULTI_START"
 
       mainObjct.testUserKnowledge()
 
@@ -343,7 +360,7 @@ class Main {
   /**
   Creates a grid of randomly generated cartpoles
   **/
-  createRandomGrid(domSelect, policies) {
+  createRandomGrid(domSelect, policies, starting_state=false) {
 
     $(domSelect+" .title").html("Random Grid")
 
@@ -351,7 +368,7 @@ class Main {
     let numRows = 3
 
     //generate & simulate random cartples
-    var cartpoles = Util.gen_rand_cartpoles(numCols*numRows, this.cartpole_thresholds)
+    var cartpoles = Util.gen_rand_cartpoles(numCols*numRows, this.cartpole_thresholds, starting_state)
     for(let i =0; i < cartpoles.length; i++) {
 
       // add any cartpoles to the global all_cartpoles list

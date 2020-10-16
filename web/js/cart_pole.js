@@ -166,6 +166,16 @@ class CartPole {
     }
   }
 
+  resetTrace() {
+    this.action_history = []
+    this.state_history = [this.state_history[0]]
+    return {
+      action_history : this.action_history,
+      state_history : this.state_history,
+      maxT : this.state_history.length
+    }
+  }
+
   getTitle() {
     return this.title
   }
