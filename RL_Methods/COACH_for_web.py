@@ -253,7 +253,8 @@ class COACH_WebSocket(WebSocket):
                                             }
 
                 # Reorder cartpoles
-                proposed_actions["ordered_cartpoles"] = order_cartpoles(cartpole_list)
+                ordered_cartpoles = order_cartpoles(cartpole_list)
+                proposed_actions["ordered_cartpoles"] = ordered_cartpoles
 
                 response = json.dumps(proposed_actions)
                 self.sendMessage(response)
