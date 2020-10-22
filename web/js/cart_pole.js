@@ -151,24 +151,21 @@ class CartPole {
   returns cartpole state
   **/
   getState() {
-    let state = [this.x, this.x_dot,this.theta,this.theta_dot ]
-    return state
+    return  [this.x, this.x_dot,this.theta,this.theta_dot ]
   }
+
+  /**
+   returns cartpole state
+   **/
+  getStartingState() {
+    return this.state_history[0]
+  }
+
 
   /**
   returns current sim trace data
   **/
   getSimTrace() {
-    return {
-      action_history : this.action_history,
-      state_history : this.state_history,
-      maxT : this.state_history.length
-    }
-  }
-
-  resetTrace() {
-    this.action_history = []
-    this.state_history = [this.state_history[0]]
     return {
       action_history : this.action_history,
       state_history : this.state_history,
@@ -209,14 +206,6 @@ class CartPole {
     let stateArr = this.genStartingState()
     this.setState(stateArr)
   }
-
-  /**
-   * Reset after entering a degenerate state or restarting.
-   */
-  reset() {
-    this.setStartingState()
-  }
-
 
   /**
    * Set the state of the cart-pole system according to an argument.

@@ -114,7 +114,8 @@ class Main {
         var feedbackDiv = received_msg["cart_feedback"]["divId"]
         var proposed_actions = received_msg["cart_feedback"]["proposed_actions"]
         $("#" + feedbackDiv).empty();
-        cartpole.resetTrace()
+        cartpole.reset(cartpole.getStartingState())
+        console.log("Starting state", "cart_feedback", cartpole.getStartingState())
         var sim_trace = mainObjct.cartpoleSim.simulation_from_action_sequence(cartpole, proposed_actions, null)
         UI_Blocks.animate_from_trace("#" + feedbackDiv, cartpole, sim_trace, mainObjct.cartpole_display_args)
 
@@ -126,9 +127,8 @@ class Main {
 
           // reorder
           $('#' + cartpoleDiv).appendTo('#gridDiv');
-          //empty
           $("#" + cartpoleDiv).empty();
-          cartpole.resetTrace()
+          cartpole.reset(cartpole.getStartingState())
           if (idx < 16) {
             //redraw
             var sim_trace = mainObjct.cartpoleSim.simulation_from_action_sequence(cartpole, proposed_actions, null)
@@ -310,8 +310,9 @@ class Main {
       var cartpoles = {}
 
       for (var id in all_cartpoles) {
+        console.log("ID", id, all_cartpoles[id]["cartpole"].getStartingState())
         cartpoles[id] = {"divId": all_cartpoles[id]["divId"],
-                         "state": all_cartpoles[id]["cartpole"].getState(),
+                         "state": all_cartpoles[id]["cartpole"].getStartingState(),
                          "num_steps": num_steps,
                         }
       }
