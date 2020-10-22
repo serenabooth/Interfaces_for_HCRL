@@ -1,5 +1,6 @@
 import sys
 import numpy as np
+import csv
 sys.path.append("../Domains")
 from cartpole import CartPole
 
@@ -62,10 +63,12 @@ def record_random_trajectory(policy_weights, starting_state = None):
 
 # policy_choice = "Rigid"
 # policy_weights = policies[policy_choice]
-f = open("random_policies_same_start" + ".txt", "a+")
 for i in range(0,10):
     policy_weights = np.random.rand(4)
     state = [0,0,0,0]
     state_history = record_random_trajectory(policy_weights, starting_state=state)
-    f.write(str(state_history) + "\n\n\n\n")
-f.close()
+    with open("../saved_trajectories/random_policies_same_start" + str(i) + ".csv", 'w', newline='') as csvfile:
+        writer = csv.writer(csvfile, delimiter=',',
+                                    quotechar='|', quoting=csv.QUOTE_MINIMAL)
+        for state in state_history:
+            writer.writerow(state)
