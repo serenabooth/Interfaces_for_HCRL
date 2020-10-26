@@ -31,7 +31,6 @@ class Main {
         this.cartpoleSim = new CartPoleSim(this.cartpole_thresholds)
 
     }
-
     /**
     TODO(SERENA) - comment
     **/
@@ -76,8 +75,8 @@ class Main {
     **/
     run() {
       // this.sandbox_eg()
-      // this.sandbox_sc()
-      this.sandbox_equivalence_classes()
+       this.sandbox_sc()
+      //this.sandbox_equivalence_classes()
     }
 
 
@@ -194,17 +193,30 @@ class Main {
         "Random" : CartPole.generateRandomPolicy(),
       }
 
-      //this.createRandomSimulatedGrid(simrun_params_list)
-
-
-      //console.log(cartpole.state_history)
-      //console.log(cartpole.action_history)
 
       //let explanatoryText = `${whichPolicy}: [${policies[whichPolicy]}]`
       //this.createRandomCorkboard( "#corkboardDiv", 900,900, policies[whichPolicy],explanatoryText )
 
-      //display cartpoles
-      this.createRandomGrid("#gridDiv", policies)
+      //display cartpole title
+      this.cartpole_display_args.showCartpoleTitle = true
+
+      //generate 2 cartpoles from same starting state and run & different policies
+      let starting_state = CartPole.genRandomState(this.cartpole_thresholds)
+      let policyToUse = ["Undulating","Rigid"]
+
+      let cartpoles = []
+      for(let i = 0; i < 2; i++) {
+        let policyName = policyToUse[i]
+        let cp_title = `${policyName[0]}` //set cp title to be first letter of policy name
+
+        //create cartpole and run simulation
+        let cp = new CartPole(this.cartpole_thresholds, starting_state, cp_title)
+        this.cartpoleSim.simulation_from_policy(cp, policies[policyName], this.cartpole_display_args.maxTimesteps)
+        cartpoles.push(cp)
+      }
+
+      //create a single animation in the main gridDiv
+      UI_Blocks.create_animation_in_dom_elem("#gridDiv", "test", cartpoles, this.cartpole_display_args.img_width, this.cartpole_display_args.img_height, this.cartpole_display_args)
 
       //timelines - not working
       //ui_blocks.timeline(viewer,"#animation",window.run_data,1,false)
@@ -446,7 +458,14 @@ class Main {
 
   }
 
-  createHandpickedGrid(domSelect, policy = null, python_ws = null) {
+}
+
+
+
+
+/*
+
+createHandpickedGrid(domSelect, policy = null, python_ws = null) {
     $(domSelect+" .title").html("Handpicked Grid")
 
     let hand_picked_states = []
@@ -484,7 +503,7 @@ class Main {
 
   /**
   Creates cartpoles from handpicked states & create grid
-  **/
+  **
   handpickedStates(domSelect, corkboard_length, corkboard_width, policy, explanatoryText, asGrid = false) {
     $(domSelect+" .title").html("Handpicked Corkboard")
 
@@ -565,4 +584,4 @@ class Main {
     }
 
   }
-}
+*/

@@ -1,11 +1,11 @@
 class Cartpole_Viewer {
 
-    constructor(cartpoleSim) {
-      this.sim = cartpoleSim
+    constructor(cartpoleObj) {
+      this.cartpoleObj = cartpoleObj
 
       //max/mins of the cartpole state vals
       this.state_var_thresholds = {}
-      Object.assign(this.state_var_thresholds, this.sim.cartpole_thresholds)
+      Object.assign(this.state_var_thresholds, this.cartpoleObj.cartpole_thresholds)
 
       this.world_width = this.state_var_thresholds.x*2 //put thresholds at edge of grid
 
@@ -29,7 +29,7 @@ class Cartpole_Viewer {
         pole : {},
         cart : {},
         arrow : {},
-        pullOrPush: pullOrPush
+        pullOrPush: pullOrPush,
       }
 
       let world_state = {
@@ -95,13 +95,19 @@ class Cartpole_Viewer {
 
     /**
     based on results from calc_svg_positions(), add cart to the SVG
+
+    @isDone if true then blacks out cart to signify dead cart
     **/
-    draw_cart(svgObj, svg_positions) {
+    draw_cart(svgObj, svg_positions, isDone) {
+
+      let boxColor = !isDone ? 'rgb(0,0,0)' : 'rgb(0,0,0)'
+      let poleColor = !isDone ? 'rgb(204,153,102)' : 'rgb(0,0,0)'
+      let axleColor = !isDone ? 'rgb(127,127,204)' : 'rgb(0,0,0)'
 
       //initialize cart 2nd so it can be on top
-      var box = svgObj.rect(svg_positions.cart.width, svg_positions.cart.height).fill('rgb(0,0,0)')
-      var pole = svgObj.rect(svg_positions.pole.width, svg_positions.pole.len).fill('rgb(204,153,102)')
-      var axle = svgObj.circle(svg_positions.pole.width*0.66).fill('rgb(127,127,204)')
+      var box = svgObj.rect(svg_positions.cart.width, svg_positions.cart.height).fill(boxColor)
+      var pole = svgObj.rect(svg_positions.pole.width, svg_positions.pole.len).fill(poleColor)
+      var axle = svgObj.circle(svg_positions.pole.width*0.66).fill(axleColor)
 
       this.move_cart(svg_positions.cart, svg_positions.pole, box, pole, axle)
 
@@ -151,14 +157,14 @@ class Cartpole_Viewer {
     /**
     populate SVG for a single timeslice
     **/
-    populate_svg_snapshot(svgObj, world_state, action, img_width, img_height, title="", pullOrPush = "pull", showVals=false) {
+    populate_svg_snapshot(svgObj, world_state, action, img_width, img_height, isDone, title="", pullOrPush = "pull", showVals=false) {
 
       var svg_positions = this.calc_svg_positions(world_state, action, img_width, img_height, pullOrPush)
       //========== Begin SVG ===================//
       //create SVG
       var track = this.draw_track(svgObj, svg_positions)
       var arrow = this.draw_arrow(svgObj, svg_positions)
-      var cart = this.draw_cart(svgObj, svg_positions)
+      var cart = this.draw_cart(svgObj, svg_positions, isDone)
 
       svgObj.text(title).font("size","10").center(svg_positions.cart.x,svg_positions.cart.y+10).stroke("#DDD")
       if(showVals) {
@@ -170,46 +176,63 @@ class Cartpole_Viewer {
       }
     }
 
+
     /**
     create animation of a simulation run in an existing SVG
 
     timestepDelayMS: default display speed = 50fps = 20ms/frame
     **/
-    populate_svg_simulation(cartpoleSVG, cartpole, img_width, img_height, displayArgs, widgetsDomSelect=null) {
-
-      let title = (displayArgs.showCartpoleTitle) ? cartpole.getTitle() : ""
+    populate_svg_simulations(cartpoleSVG, cartpoleArray, img_width, img_height, displayArgs, widgetsDomSelect=null) {
       let self = this   //give access to the Cartpole_Viewer objects
 
-
-      let simTrace = cartpole.getSimTrace()
-      let maxTime = simTrace.state_history.length
+      //save the cartpole traces to an array
+      let simTraceArray = []
+      let maxTime = 0
+      for (let cartpole of cartpoleArray) {
+        let simTrace = cartpole.getSimTrace()
+        simTraceArray.push(simTrace)
+        maxTime = Math.max(maxTime, simTrace.state_history.length)
+      }
 
       //function to animate cartpoles
       let t = 0;        //counter to help keep track of time
-      function animateCartpole() {
+      function animateCartpoles() {
 
-        //get the timestep data
-        let curr_state = simTrace.state_history[t]
-        let action = simTrace.action_history[t]
+        //clear last timestep
+        cartpoleSVG.clear()
+
+        //update slider
         if(widgetsDomSelect != null)
           $(widgetsDomSelect+" input.gridslider").val(t)
 
-        //draw cartpole
-        cartpoleSVG.clear()
+        //draw all cartpoles
+        for (let cartpole of cartpoleArray) {
 
-        self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, title+`t=${t}` )
+          //get the timestep data
+          let simTrace = cartpole.getSimTrace()
 
-        //create a 'flashing' element when cartpole resets
+          //check if is done
+          let isDone = (t >= simTrace.state_history.length-1)
+          let timestepToDisplay = !isDone ? t : simTrace.state_history.length-1
+
+          //add cartpole to animation
+          let curr_state = simTrace.state_history[timestepToDisplay]
+          let action = simTrace.action_history[timestepToDisplay]
+          let title = (displayArgs.showCartpoleTitle) ? cartpole.getTitle() : ""
+          self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, isDone, `${title}(${timestepToDisplay})` )
+        }
+
         //TOOD: make this better
         if(t==0)
           cartpoleSVG.circle(500).fill('rgba(255,255,255,0.5)').center(img_width*0.5, img_height*0.5)
         //loop around timer to 0
-        if(++t == maxTime)
+        if(++t == maxTime) {
           t = 0
+        }
 
       }
       //start cartpole animation
-      let cartpoleAnimHandle = setInterval(animateCartpole,displayArgs.timestepDelayMS)
+      let cartpoleAnimHandle = setInterval(animateCartpoles,displayArgs.timestepDelayMS)
 
       //create widgets to help user control animations
       if(widgetsDomSelect != null) {
@@ -222,7 +245,7 @@ class Cartpole_Viewer {
             if($(this).val() != "") {
               clearInterval(cartpoleAnimHandle)
               t = $(this).val()
-              animateCartpole()
+              animateCartpoles()
             }},
 
           'mousemove' : function() {
@@ -239,12 +262,13 @@ class Cartpole_Viewer {
         //play button to restart animation
         $(widgetsDomSelect+" .gridslider .play").click(function() {
           clearInterval(cartpoleAnimHandle)
-          cartpoleAnimHandle = setInterval(animateCartpole,displayArgs.timestepDelayMS)
+          cartpoleAnimHandle = setInterval(animateCartpoles,displayArgs.timestepDelayMS)
         })
       }
 
 
     }
+
 
     //==============< END Methods to create whole SVGs =================//
 

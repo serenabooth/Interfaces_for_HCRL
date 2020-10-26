@@ -143,7 +143,7 @@ class CartPoleSim {
      * @returns {bool} Whether the simulation is done.
      */
     isDone(cartpole) {
-      let cartpoleState = cartpole.getState()
+      let cartpoleState = Array.isArray(cartpole) ? cartpole : cartpole.getState()
       return this.exceedsThreshold(cartpoleState, "x") || this.exceedsThreshold(cartpoleState, "theta")
     }
 
