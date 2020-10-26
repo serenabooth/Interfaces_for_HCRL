@@ -73,10 +73,10 @@ class Util {
   For example, given params (-2.4, 2.4, 2, true), the resulting arr is [-0.8,0.8]
   Given (-2.4, 2.4, 2, false), the resulting arr is [-2.4, -0.8, 0.8, 2.4]
 
-  @param {float} low
-  @param {float} high end point of interval
+  @param {number} low
+  @param {number} high end point of interval
   @param {int} num_intervals number of segments to construct
-  @param {bool} exclude_edges whether to include low and high points
+  @param {boolean} exclude_edges whether to include low and high points
   ***/
   static linspace(low, high, num_intervals, exclude_edges = true) {
     var arr = [];
