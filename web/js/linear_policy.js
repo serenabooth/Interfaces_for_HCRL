@@ -1,8 +1,20 @@
 class Linear_Policy {
 
-  constructor(n_weights) {
-    this.weights = new Array(n_weights).fill(0.0);
+  constructor(n_weights, random_weights=false) {
+    this.weights = []
+    if (random_weights) {
+      for (var i = 0; i < n_weights; i++) {
+        this.weights.push(Math.random())
+      }
+    }
+    else {
+      this.weights = new Array(n_weights).fill(0.0);
+    }
     console.log(this.weights);
+  }
+
+  get_params() {
+    return this.weights
   }
 
   get_move(state){

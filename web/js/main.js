@@ -33,44 +33,6 @@ class Main {
     }
 
     /**
-    TODO(SERENA) - comment
-    **/
-    createGrid(argument_list) {
-      let mainObjct = argument_list[0]
-      let grid_type = argument_list[1]
-      let policy = argument_list[2]
-      if (grid_type === "RANDOM") {
-        mainObjct.createRandomGrid("#gridDiv", null)
-        mainObjct.update_cartpole_grid(20)
-      }
-      else if (grid_type === "RANDOM_START") {
-        mainObjct.createRandomGrid("#gridDiv", null, true)
-        mainObjct.update_cartpole_grid(20)
-      }
-      else if (grid_type === "MULTI_START") {
-        let x_samples = Util.linspace(-mainObjct.cartpole_thresholds.x, mainObjct.cartpole_thresholds.x, 9, true)
-        let x_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.x_dot, mainObjct.cartpole_thresholds.x_dot, 3, true)
-        let theta_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta, mainObjct.cartpole_thresholds.theta, 3, true)
-        let theta_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta_dot, mainObjct.cartpole_thresholds.theta_dot, 3, true)
-        console.log("Policy", policy)
-
-        mainObjct.createDimCoverActionSpace("#gridDiv", x_samples, x_dot_samples, theta_samples, theta_dot_samples, policy)
-
-        mainObjct.update_cartpole_grid(100)
-      }
-      else if (grid_type === "COVER_SPACE") {
-        let x_samples = Util.linspace(-mainObjct.cartpole_thresholds.x, mainObjct.cartpole_thresholds.x, 5, true)
-        let x_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.x_dot, mainObjct.cartpole_thresholds.x_dot, 5, true)
-        let theta_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta, mainObjct.cartpole_thresholds.theta, 5, true)
-        let theta_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta_dot, mainObjct.cartpole_thresholds.theta_dot, 5, true)
-
-        mainObjct.createDimCoverActionSpace("#gridDiv", x_samples, x_dot_samples, theta_samples, theta_dot_samples)
-        mainObjct.update_cartpole_grid(100)
-      }
-    }
-
-
-    /**
     The "main" function -
     let's try not to put any JS code in index.html
     **/
@@ -79,6 +41,7 @@ class Main {
       // this.sandbox_sc()
       // this.sandbox_equivalence_classes()
       this.compare_trajectories()
+      // this.sandbox_equivalence_classes()
     }
 
 
@@ -98,62 +61,81 @@ class Main {
 
       let explanatoryText = `${whichPolicy}: [${policies[whichPolicy]}]`
 
-      this.handpickedStates( "#corkboardDiv", 900, 900, policies[whichPolicy], explanatoryText)
     }
 
-    /**
-    Process the contents of a message received from the python websocket
+    add_to_workbench(cartpoles, color, id) {
+        console.log(cartpoles)
+        let div_id = Date.now()
+        let g = document.createElement('div');
+        g.setAttribute("id", div_id);
+        $("#workbenchDiv").append(g)
 
-    @mainObjct: corresponds to an instance of this class (Main)
-    @evt: a json message communicated through the websocket
-    **/
-    process_ws_payload(mainObjct, evt) {
-      let received_msg = JSON.parse(evt.data);
-      console.log("Received message: " + received_msg)
-      if (received_msg["msg_type"] === "policy_updated") {
-        mainObjct.update_cartpole_grid(20)
-      }
-      else if (received_msg["msg_type"] === "proposed_actions_cartpole_group") {
-        // logic for feedback cartpole
-        let cartpole = all_cartpoles["cart_feedback"]["cartpole"];
-        let feedbackDiv = received_msg["cart_feedback"]["divId"];
-        let proposed_actions = received_msg["cart_feedback"]["proposed_actions"];
-        $("#" + feedbackDiv).empty();
-        cartpole.reset(cartpole.getStartingState())
-        console.log("Starting state", "cart_feedback", cartpole.getStartingState())
-        let sim_trace = mainObjct.cartpoleSim.simulation_from_action_sequence(cartpole, proposed_actions, null);
-        UI_Blocks.animate_from_trace("#" + feedbackDiv, cartpole, sim_trace, mainObjct.cartpole_display_args)
 
-        for (let idx in received_msg["ordered_cartpoles"]) {
-          let msg_payload = received_msg["ordered_cartpoles"][idx];
-          cartpole = all_cartpoles[msg_payload["cartpoleId"]]["cartpole"];
-          let cartpoleDiv = msg_payload["divId"];
-          proposed_actions = msg_payload["proposed_actions"];
+        UI_Blocks.create_animation_in_dom_elem("#"+div_id,
+                                              "workbench_anim"+div_id,
+                                                                cartpoles,
+                                                                this.cartpole_display_args.img_width,
+                                                                this.cartpole_display_args.img_height,
+                                                                this.cartpole_display_args)
 
-          // reorder
-          $('#' + cartpoleDiv).appendTo('#grid-container animation-container');
-          $("#" + cartpoleDiv).empty();
-          cartpole.reset(cartpole.getStartingState())
-          if (idx < 16) {
-            //redraw
-            sim_trace = mainObjct.cartpoleSim.simulation_from_action_sequence(cartpole, proposed_actions, null);
-            UI_Blocks.animate_from_trace("#" + cartpoleDiv, cartpole, sim_trace, mainObjct.cartpole_display_args)
-          }
-        }
-      }
-      else if (received_msg["msg_type"] === "user_assessment") {
-        all_user_responses += 1
-        correct_user_responses += received_msg["score"]
-        $("#userTestDiv"+" .user_score").html(correct_user_responses + " (correct responses)" + " / " + all_user_responses + " (total responses)")
-      }
+        let div = document.getElementById(div_id);
+        var t = document.createTextNode("Your Past Preference: " + id);     // Create a text node
+        div.style.color = color
+        div.appendChild(t)
+
     }
+
+    comparison_trajectories(existing_cp=null, existing_policy=null) {
+      let mainObject = this;
+      let cartpoles = []
+      let policies = []
+
+      if (existing_cp != null && existing_policy != null) {
+        existing_cp.reset()
+        this.cartpoleSim.simulation_from_policy(existing_cp,existing_policy.get_params(),200,0)
+        cartpoles.push(existing_cp)
+        policies.push(existing_policy)
+      }
+
+      for (var i = cartpoles.length; i < 2; i++) {
+        let current_policy = new Linear_Policy(4, true)
+        let cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0];
+        cp.reset(cp.getState())
+        cp.color=this.getRandColor()
+        this.cartpoleSim.simulation_from_policy(cp,current_policy.get_params(),200,0)
+        cartpoles.push(cp)
+        policies.push(current_policy)
+      }
+
+      for (var i=0; i<cartpoles.length;i++) {
+        let cp = cartpoles[i]
+        let policy = policies[i]
+        let btn = document.createElement("button")
+        btn.innerHTML = cp.id;
+        btn.style.background=cp.color;
+        btn.onclick = function(){
+          console.log(btn.innerHTML)
+          $("#currentPreferenceDiv").empty()
+          $("#userTestButtons").empty()
+          mainObject.comparison_trajectories(cp, policy)
+          mainObject.add_to_workbench(cartpoles, cp.color, cp.id)
+        };
+        let body = document.getElementById("userTestButtons");
+        body.appendChild(btn);
+      }
+
+    UI_Blocks.create_animation_in_dom_elem("#currentPreferenceDiv", "test", cartpoles, this.cartpole_display_args.img_width, this.cartpole_display_args.img_height, this.cartpole_display_args)
+    }
+
 
     /**
      A development playground for exploring the equivalence class idea
      **/
     compare_trajectories() {
-      let current_policy = this.random_policy()
-      console.log(current_policy)
+      $("#workbenchDiv"+" .title").html("Workbench")
+      // add trajectories for comparing policies
+      this.comparison_trajectories()
+
     }
 
     /**
@@ -204,17 +186,30 @@ class Main {
         "Random" : CartPole.generateRandomPolicy(),
       }
 
-      //this.createRandomSimulatedGrid(simrun_params_list)
-
-
-      //console.log(cartpole.state_history)
-      //console.log(cartpole.action_history)
 
       //let explanatoryText = `${whichPolicy}: [${policies[whichPolicy]}]`
       //this.createRandomCorkboard( "#corkboardDiv", 900,900, policies[whichPolicy],explanatoryText )
 
-      //display cartpoles
-      this.createRandomGrid("#gridDiv", policies)
+      //display cartpole title
+      this.cartpole_display_args.showCartpoleTitle = true
+
+      //generate 2 cartpoles from same starting state and run & different policies
+      let starting_state = CartPole.genRandomState(this.cartpole_thresholds)
+      let policyToUse = ["Undulating","Rigid"]
+
+      let cartpoles = []
+      for(let i = 0; i < 2; i++) {
+        let policyName = policyToUse[i]
+        let cp_title = `${policyName[0]}` //set cp title to be first letter of policy name
+
+        //create cartpole and run simulation
+        let cp = new CartPole(this.cartpole_thresholds, starting_state, cp_title)
+        this.cartpoleSim.simulation_from_policy(cp, policies[policyName], this.cartpole_display_args.maxTimesteps)
+        cartpoles.push(cp)
+      }
+
+      //create a single animation in the main gridDiv
+      UI_Blocks.create_animation_in_dom_elem("#gridDiv", "test", cartpoles, this.cartpole_display_args.img_width, this.cartpole_display_args.img_height, this.cartpole_display_args)
 
       //timelines - not working
       //ui_blocks.timeline(viewer,"#animation",window.run_data,1,false)
@@ -223,11 +218,93 @@ class Main {
     }
 
 //===========< BEGIN Helper Functions >=============//
+  getRandColor(){
+    var rgb = [parseInt(Math.random() * 256),
+               parseInt(Math.random() * 256),
+               parseInt(Math.random() * 256)];
+    return "rgb(" + rgb.join(",") + ")";
+  }
 
-  random_policy() {
-    let policy = []
-    for(let i = 0; i<4; i++) {policy.push(Math.random())}
-    return policy
+  /**
+  Process the contents of a message received from the python websocket
+
+  @mainObjct: corresponds to an instance of this class (Main)
+  @evt: a json message communicated through the websocket
+  **/
+  process_ws_payload(mainObjct, evt) {
+    let received_msg = JSON.parse(evt.data);
+    console.log("Received message: " + received_msg)
+    if (received_msg["msg_type"] === "policy_updated") {
+      mainObjct.update_cartpole_grid(20)
+    }
+    else if (received_msg["msg_type"] === "proposed_actions_cartpole_group") {
+      // logic for feedback cartpole
+      let cartpole = all_cartpoles["cart_feedback"]["cartpole"];
+      let feedbackDiv = received_msg["cart_feedback"]["divId"];
+      let proposed_actions = received_msg["cart_feedback"]["proposed_actions"];
+      $("#" + feedbackDiv).empty();
+      cartpole.reset(cartpole.getStartingState())
+      console.log("Starting state", "cart_feedback", cartpole.getStartingState())
+      let sim_trace = mainObjct.cartpoleSim.simulation_from_action_sequence(cartpole, proposed_actions, null);
+      UI_Blocks.animate_from_trace("#" + feedbackDiv, cartpole, sim_trace, mainObjct.cartpole_display_args)
+
+      for (let idx in received_msg["ordered_cartpoles"]) {
+        let msg_payload = received_msg["ordered_cartpoles"][idx];
+        cartpole = all_cartpoles[msg_payload["cartpoleId"]]["cartpole"];
+        let cartpoleDiv = msg_payload["divId"];
+        proposed_actions = msg_payload["proposed_actions"];
+
+        // reorder
+        $('#' + cartpoleDiv).appendTo('#grid-container animation-container');
+        $("#" + cartpoleDiv).empty();
+        cartpole.reset(cartpole.getStartingState())
+        if (idx < 16) {
+            //redraw
+            sim_trace = mainObjct.cartpoleSim.simulation_from_action_sequence(cartpole, proposed_actions, null);
+            UI_Blocks.animate_from_trace("#" + cartpoleDiv, cartpole, sim_trace, mainObjct.cartpole_display_args)
+        }
+      }
+    }
+    else if (received_msg["msg_type"] === "user_assessment") {
+      all_user_responses += 1
+      correct_user_responses += received_msg["score"]
+      $("#userTestDiv"+" .user_score").html(correct_user_responses + " (correct responses)" + " / " + all_user_responses + " (total responses)")
+    }
+  }
+
+
+    /**
+    TODO(SERENA) - comment
+  **/
+  createGrid(argument_list) {
+      let mainObjct = argument_list[0]
+      let grid_type = argument_list[1]
+      let policy = argument_list[2]
+      if (grid_type === "RANDOM") {
+          mainObjct.createRandomGrid("#gridDiv", null)
+          mainObjct.update_cartpole_grid(20)
+      } else if (grid_type === "RANDOM_START") {
+          mainObjct.createRandomGrid("#gridDiv", null, true)
+          mainObjct.update_cartpole_grid(20)
+      } else if (grid_type === "MULTI_START") {
+          let x_samples = Util.linspace(-mainObjct.cartpole_thresholds.x, mainObjct.cartpole_thresholds.x, 9, true)
+          let x_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.x_dot, mainObjct.cartpole_thresholds.x_dot, 3, true)
+          let theta_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta, mainObjct.cartpole_thresholds.theta, 3, true)
+          let theta_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta_dot, mainObjct.cartpole_thresholds.theta_dot, 3, true)
+          console.log("Policy", policy)
+
+          mainObjct.createDimCoverActionSpace("#gridDiv", x_samples, x_dot_samples, theta_samples, theta_dot_samples, policy)
+
+          mainObjct.update_cartpole_grid(100)
+      } else if (grid_type === "COVER_SPACE") {
+          let x_samples = Util.linspace(-mainObjct.cartpole_thresholds.x, mainObjct.cartpole_thresholds.x, 5, true)
+          let x_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.x_dot, mainObjct.cartpole_thresholds.x_dot, 5, true)
+          let theta_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta, mainObjct.cartpole_thresholds.theta, 5, true)
+          let theta_dot_samples = Util.linspace(-mainObjct.cartpole_thresholds.theta_dot, mainObjct.cartpole_thresholds.theta_dot, 5, true)
+
+          mainObjct.createDimCoverActionSpace("#gridDiv", x_samples, x_dot_samples, theta_samples, theta_dot_samples)
+          mainObjct.update_cartpole_grid(100)
+      }
   }
 
   /**
@@ -360,7 +437,7 @@ class Main {
   @theta_samples list of theta values
   @theta_dot_samples list of thetadot values
   **/
-  createDimCoverActionSpace(domSelect, x_samples, x_dot_samples, theta_samples, theta_dot_samples, comparison_policy=None) {
+  createDimCoverActionSpace(domSelect, x_samples, x_dot_samples, theta_samples, theta_dot_samples, comparison_policy=null) {
     let mainObjct = this;
     $(domSelect+" .title").html("Communicate Policy Through Examples")
 
@@ -371,7 +448,7 @@ class Main {
       let cp = new CartPole(mainObjct.cartpole_thresholds);
       cp.reset(cartpoles_tmp[Math.floor(i/2)])
 
-      if (i % 2 == 0) {
+      if (i % 2 === 0) {
         all_cartpoles[cp.id] = {"divId": `cart_${i}`,
           "cartpole": cp}
         this.cartpoleSim.simulation_from_action_sequence(cp, [], 0)
@@ -424,161 +501,42 @@ class Main {
     UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args)
   }
 
-  /**
-  **/
-  createRandomCorkboard(domSelect, corkboard_length, corkboard_width, policy, explanatoryText) {
+  // /**
+  // **/
+  // createRandomCorkboard(domSelect, corkboard_length, corkboard_width, policy, explanatoryText) {
+  //
+  //   $(domSelect+" .title").html("Cartpole Corkboard")
+  //
+  //   //num cartpoles
+  //   let n = 10
+  //   let maxTimesteps = 10
+  //   let timestepsToCoast = 10
+  //
+  //   //create cartpoles
+  //   let cartpoles = Util.gen_rand_cartpoles(n, this.cartpole_thresholds);
+  //
+  //   //define cartpole animation positions
+  //   let cartpole_positions = [];
+  //   for(let i =0; i < cartpoles.length; i++) {
+  //
+  //     //run simulation with cartple
+  //     let cp = cartpoles[i]
+  //     cp.setTitle(""+i)
+  //     this.cartpoleSim.simulation_from_policy(cp, policy, maxTimesteps, timestepsToCoast)
+  //
+  //     //determine cartpole position
+  //     let cp_pos = {
+  //       'x' : i * 50,
+  //       'y' : i * 100
+  //     }
+  //     cartpole_positions.push(cp_pos)
+  //   }
+  //
+  //   UI_Blocks.state_corkboard(domSelect+" .animation-container", corkboard_length, corkboard_width, cartpoles, cartpole_positions, this.cartpole_display_args)
+  //
+  //   //text to describe grid
+  //   $("#corkboardDiv .policy").text(explanatoryText)
+  //
+  // }
 
-    $(domSelect+" .title").html("Cartpole Corkboard")
-
-    //num cartpoles
-    let n = 10
-    let maxTimesteps = 10
-    let timestepsToCoast = 10
-
-    //create cartpoles
-    let cartpoles = Util.gen_rand_cartpoles(n, this.cartpole_thresholds);
-
-    //define cartpole animation positions
-    let cartpole_positions = [];
-    for(let i =0; i < cartpoles.length; i++) {
-
-      //run simulation with cartple
-      let cp = cartpoles[i]
-      cp.setTitle(""+i)
-      this.cartpoleSim.simulation_from_policy(cp, policy, maxTimesteps, timestepsToCoast)
-
-      //determine cartpole position
-      let cp_pos = {
-        'x' : i * 50,
-        'y' : i * 100
-      }
-      cartpole_positions.push(cp_pos)
-    }
-
-    UI_Blocks.state_corkboard(domSelect+" .animation-container", corkboard_length, corkboard_width, cartpoles, cartpole_positions, this.cartpole_display_args)
-
-    //text to describe grid
-    $("#corkboardDiv .policy").text(explanatoryText)
-
-  }
-
-  createHandpickedGrid(domSelect, policy = null, python_ws = null) {
-    $(domSelect+" .title").html("Handpicked Grid")
-
-    let hand_picked_states = []
-    hand_picked_states.push(["very left of center","still","upright","still"])
-    hand_picked_states.push(["left of center","still","upright","still"])
-    hand_picked_states.push(["center","still","upright","still"])
-    hand_picked_states.push(["right of center","still","upright","still"])
-    hand_picked_states.push(["very right of center","still","upright","still"])
-
-    hand_picked_states.push(["center","going left fast","upright","still"])
-    hand_picked_states.push(["center","going left","upright","still"])
-    hand_picked_states.push(["center","still","upright","still"])
-    hand_picked_states.push(["center","going right","upright","still"])
-    hand_picked_states.push(["center","going right fast","upright","still"])
-
-    let numCols = 3
-    let numRows = 2
-
-    let cartpoles = [];
-
-    for(let human_readable_state of hand_picked_states) {
-
-      //instantiate cartpole & add to the list
-      let cp = new CartPole(this.cartpole_thresholds)
-      cp.setTitle(human_readable_state.toString())
-      //update the internal state to reflect defined states
-      let state_vals_as_arr = cp.getStateArrFromHumanReadableStates(human_readable_state)
-      cp.setState(state_vals_as_arr)
-      cartpoles.push(cp)
-    }
-
-    UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args, policy, python_ws)
-
-  }
-
-  /**
-  Creates cartpoles from handpicked states & create grid
-  **/
-  handpickedStates(domSelect, corkboard_length, corkboard_width, policy, explanatoryText, asGrid = false) {
-    $(domSelect+" .title").html("Handpicked Corkboard")
-
-    //create human readable states
-    let hand_picked_states1 = []
-    hand_picked_states1.push(["very left of center", "still","upright","still"])
-    hand_picked_states1.push(["left of center",      "still","upright","still"])
-    hand_picked_states1.push(["center",              "still","upright","still"])
-    hand_picked_states1.push(["right of center",     "still","upright","still"])
-    hand_picked_states1.push(["very right of center","still","upright","still"])
-    let hand_picked_states2 = []
-    hand_picked_states2.push(["very left of center", "going left","upright","still"])
-    hand_picked_states2.push(["left of center",      "going left","upright","still"])
-    hand_picked_states2.push(["center",              "going left","upright","still"])
-    hand_picked_states2.push(["right of center",     "going left","upright","still"])
-    hand_picked_states2.push(["very right of center","going left","upright","still"])
-
-    //create the cartpole instances from the hand-picked states
-    let cartpoles = [];
-    let cartpole_positions = [];
-
-    let i = 0;
-    for(let human_readable_state of hand_picked_states1) {
-
-      //instantiate cartpole & add to the list
-      let state_vals_as_arr = CartPole.getStateArrFromHumanReadableStates(human_readable_state, this.cartpole_thresholds)
-
-      //update the internal state to reflect defined states
-      let cp = new CartPoleOld(this.cartpole_thresholds, state_vals_as_arr)
-      cp.setTitle(human_readable_state.toString())
-      cartpoles.push(cp)
-
-      //set position of animation on the corkboard
-      let cp_pos = {
-        'x' : 50, //i * 50,
-        'y' : i * 75
-      }
-      i++
-      cartpole_positions.push(cp_pos)
-
-    }
-
-    i = 0;
-    for(let human_readable_state of hand_picked_states2) {
-
-      //instantiate cartpole & add to the list
-      let cp = new CartPole(this.cartpole_thresholds)
-      cp.setTitle(human_readable_state.toString())
-      //update the internal state to reflect defined states
-      let state_vals_as_arr = cp.getStateArrFromHumanReadableStates(human_readable_state)
-      cp.setState(state_vals_as_arr)
-      console.log('human readable state',human_readable_state,'state vals',state_vals_as_arr,'action', cp.getAction(policy))
-      cartpoles.push(cp)
-
-      //set position of animation on the corkboard
-      let cp_pos = {
-        'x' : 250, //i * 50,
-        'y' : i * 75
-      }
-      i++
-      cartpole_positions.push(cp_pos)
-
-    }
-
-    //change the default display parameters
-    this.cartpole_display_args.img_height = 75
-    this.cartpole_display_args.img_width = 150
-
-    //choose display method
-    if(asGrid) {
-      let numCols = 5
-      let numRows = 2
-      UI_Blocks.state_grid(domSelect+" .animation-container", numRows,numCols,cartpoles, this.cartpole_display_args, policy)
-    } else {
-
-      $("#corkboardDiv .policy").text(explanatoryText)
-      UI_Blocks.state_corkboard(domSelect+" .animation-container", corkboard_length, corkboard_width, cartpoles, cartpole_positions, policy, this.cartpole_display_args, this.cartpole_display_args.animation_args)
-    }
-
-  }
 }

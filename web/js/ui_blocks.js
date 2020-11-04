@@ -100,7 +100,6 @@ class UI_Blocks {
       }
 
 
-
       /**
       Creates an animation svg and places it within a dom object
 
@@ -113,8 +112,10 @@ class UI_Blocks {
       @img_height
       @animation_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
       **/
-      static create_animation_in_dom_elem(containerDomSelect, animation_div_dom_id, cartpole, img_width, img_height, display_args) {
+      static create_animation_in_dom_elem(containerDomSelect, animation_div_dom_id, cartpoleObjOrArray, img_width, img_height, display_args) {
 
+        //if cartpole is an object, then convert to array
+        let cartpoleArray = Array.isArray(cartpoleObjOrArray) ? cartpoleObjOrArray : [cartpoleObjOrArray]
         //create animation's div
         $(containerDomSelect).append(`<div id="${animation_div_dom_id}"></div>`)
 
@@ -123,7 +124,7 @@ class UI_Blocks {
 
         //create svg inside the div & populate it
         var svgObj = Util.gen_empty_svg("#"+animation_div_dom_id, img_width, img_height)
-        cartpole.viewer.populate_svg_simulation(svgObj, cartpole, img_width, img_height, display_args,"#"+widgetsDivId)
+        cartpoleArray[0].viewer.populate_svg_simulations(svgObj, cartpoleArray, img_width, img_height, display_args,"#"+widgetsDivId)
 
       }
 
