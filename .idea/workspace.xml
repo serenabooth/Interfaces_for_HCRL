@@ -21,8 +21,7 @@
   <component name="ChangeListManager">
     <list default="true" id="2e279474-4fc7-4317-bccc-b21bd9e30a3c" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/js/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/main.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/js/util.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/util.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/coach.html" beforeDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -63,6 +62,8 @@
       <workItem from="1603159880372" duration="4000" />
       <workItem from="1603386346644" duration="2858000" />
       <workItem from="1603723730414" duration="4472000" />
+      <workItem from="1604509895690" duration="100000" />
+      <workItem from="1604510002273" duration="86000" />
     </task>
     <servers />
   </component>
@@ -80,5 +81,11 @@
       </map>
     </option>
     <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="477" y="572" width="424" height="491" key="FileChooserDialogImpl" timestamp="1604509902940">
+      <screen x="72" y="29" width="2488" height="1571" />
+    </state>
+    <state x="477" y="572" width="424" height="491" key="FileChooserDialogImpl/72.29.2488.1571@72.29.2488.1571" timestamp="1604509902940" />
   </component>
 </project>
