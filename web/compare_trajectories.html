@@ -1,42 +1,49 @@
 <HTML>
-  <HEAD>
+<HEAD>
     <meta charset="UTF-8">
+
+    <!-- 3rd party libs -->
     <script src="./offline_lib/jquery-3.4.1.js"></script>
     <script src="./offline_lib/jquery.csv.min.js"></script>
     <script src="./offline_lib/math.min.js"></script>
-
     <script src="./offline_lib/svgjs/svg.js"></script>
 
+    <!-- code for viz -->
     <script src="./js/util.js"></script>
     <script src="./js/cart_pole.js"></script>
     <script src="./js/cartpole_viewer.js"></script>
+    <script src="./js/cartpole_sim.js"></script>
     <script src="./js/ui_blocks.js"></script>
-
-    <script src="./sim_runs/data0.js"></script>
-    <script src="./js/main.js"></script>
-
-    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>
-
     <link rel="stylesheet" href="./css/cartpole.css">
+
+    <!-- code for analysis -->
+    <!--<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>-->
+    <script src="./sim_runs/data0.js"></script>
+    <script src="./js/RL_Methods/COACH.js"></script>
+    <script src="./js/linear_policy.js"></script>
+
+
+    <script src="./js/main.js"></script>
   </HEAD>
   <BODY>
 
       <h2>Compare Trajectories</h2>
-      
+
+      <div id="animationDiv">
+          <h2 class="title"></h2>
+          <h4 class="policy"></h4>
+          <b class="descript"></b>
+          <div class="animation-container"></div>
+      </div>
+
       <div id=CurrentPreference></div>
 
-      <div id=Workbench>
-        <h2 class="title"></h2>
-        <h4 class="policy"></h4>
-        <b class="descript"></b>
-        <div class="grid-container animation-container"></div>
-      </div>
+      <div id=Workbench></div>
 
 
       <script>
 
           $(document).ready(function() {
-
             let main = new Main()
             main.run()
           });

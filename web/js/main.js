@@ -77,8 +77,10 @@ class Main {
     run() {
       // this.sandbox_eg()
       // this.sandbox_sc()
-      this.sandbox_equivalence_classes()
+      // this.sandbox_equivalence_classes()
+      this.compare_trajectories()
     }
+
 
 
     /**
@@ -144,6 +146,14 @@ class Main {
         correct_user_responses += received_msg["score"]
         $("#userTestDiv"+" .user_score").html(correct_user_responses + " (correct responses)" + " / " + all_user_responses + " (total responses)")
       }
+    }
+
+    /**
+     A development playground for exploring the equivalence class idea
+     **/
+    compare_trajectories() {
+      let current_policy = this.random_policy()
+      console.log(current_policy)
     }
 
     /**
@@ -213,6 +223,12 @@ class Main {
     }
 
 //===========< BEGIN Helper Functions >=============//
+
+  random_policy() {
+    let policy = []
+    for(let i = 0; i<4; i++) {policy.push(Math.random())}
+    return policy
+  }
 
   /**
   Test user knowledge
