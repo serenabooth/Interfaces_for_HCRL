@@ -22,12 +22,8 @@
     <list default="true" id="2e279474-4fc7-4317-bccc-b21bd9e30a3c" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/compare_trajectories.html" beforeDir="false" afterPath="$PROJECT_DIR$/web/compare_trajectories.html" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/js/cart_pole.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/cart_pole.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/js/cartpole_sim.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/cartpole_sim.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/js/cartpole_viewer.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/cartpole_viewer.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/js/linear_policy.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/linear_policy.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/css/cartpole.css" beforeDir="false" afterPath="$PROJECT_DIR$/web/css/cartpole.css" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/js/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/main.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/js/ui_blocks.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/ui_blocks.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -69,7 +65,7 @@
       <workItem from="1603386346644" duration="2858000" />
       <workItem from="1603723730414" duration="4472000" />
       <workItem from="1604509895690" duration="100000" />
-      <workItem from="1604510002273" duration="18221000" />
+      <workItem from="1604510002273" duration="23085000" />
     </task>
     <servers />
   </component>

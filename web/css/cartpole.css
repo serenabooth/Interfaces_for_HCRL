@@ -24,6 +24,7 @@ https://www.w3schools.com/css/css_grid_container.asp
 
 
 
+
 /* https://www.w3schools.com/howto/tryit.asp?filename=tryhow_css_js_rangeslider_round */
 
 div.gridslider {
@@ -101,4 +102,14 @@ https://www.w3schools.com/css/css_tooltip.asp
   top: 90%;
   left: 50%;
   margin-left: -50px;
+}
+
+#workbenchDiv {
+  width: 50%;
+  float: left;
+}
+
+#preferenceSelectionAreaDiv {
+  width: 50%;
+  float: right;
 }

@@ -2,7 +2,6 @@
 const f = (a, b) => [].concat(...a.map(d => b.map(e => [].concat(d, e))));
 const cartesian = (a, b, ...c) => (b ? cartesian(f(a, b), ...c) : a);
 
-
 class Main {
   //set default parameters
     constructor() {
@@ -64,28 +63,29 @@ class Main {
     }
 
     add_to_workbench(cartpoles, color, id) {
-        console.log(cartpoles)
+
         let div_id = Date.now()
         let g = document.createElement('div');
-        g.setAttribute("id", div_id);
+        g.setAttribute("id", String(div_id));
         $("#workbenchDiv").append(g)
 
 
         UI_Blocks.create_animation_in_dom_elem("#"+div_id,
-                                              "workbench_anim"+div_id,
+                                              "workbench_anim_"+div_id,
                                                                 cartpoles,
                                                                 this.cartpole_display_args.img_width,
                                                                 this.cartpole_display_args.img_height,
                                                                 this.cartpole_display_args)
 
-        let div = document.getElementById(div_id);
-        var t = document.createTextNode("Your Past Preference: " + id);     // Create a text node
+        let div = document.getElementById(String(div_id));
+        let t = document.createTextNode("Your Past Preference: " + id);     // Create a text node
         div.style.color = color
         div.appendChild(t)
 
     }
 
     comparison_trajectories(existing_cp=null, existing_policy=null) {
+      let i;
       let mainObject = this;
       let cartpoles = []
       let policies = []
@@ -97,34 +97,33 @@ class Main {
         policies.push(existing_policy)
       }
 
-      for (var i = cartpoles.length; i < 2; i++) {
+      for (i = cartpoles.length; i < 2; i++) {
         let current_policy = new Linear_Policy(4, true)
         let cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0];
-        cp.reset(cp.getState())
         cp.color=this.getRandColor()
         this.cartpoleSim.simulation_from_policy(cp,current_policy.get_params(),200,0)
         cartpoles.push(cp)
         policies.push(current_policy)
       }
 
-      for (var i=0; i<cartpoles.length;i++) {
+    UI_Blocks.create_animation_in_dom_elem("#currentPreferenceDiv", "test", cartpoles, this.cartpole_display_args.img_width, this.cartpole_display_args.img_height, this.cartpole_display_args)
+
+    for (i=0; i<cartpoles.length;i++) {
         let cp = cartpoles[i]
         let policy = policies[i]
         let btn = document.createElement("button")
         btn.innerHTML = cp.id;
         btn.style.background=cp.color;
         btn.onclick = function(){
-          console.log(btn.innerHTML)
-          $("#currentPreferenceDiv").empty()
-          $("#userTestButtons").empty()
-          mainObject.comparison_trajectories(cp, policy)
-          mainObject.add_to_workbench(cartpoles, cp.color, cp.id)
+            console.log(btn.innerHTML)
+            $("#currentPreferenceDiv").empty()
+            $("#userTestButtons").empty()
+            mainObject.add_to_workbench(cartpoles, cp.color, cp.id)
+            mainObject.comparison_trajectories(cp, policy)
         };
-        let body = document.getElementById("userTestButtons");
+        let body = document.getElementById("currentPreferenceDiv");
         body.appendChild(btn);
-      }
-
-    UI_Blocks.create_animation_in_dom_elem("#currentPreferenceDiv", "test", cartpoles, this.cartpole_display_args.img_width, this.cartpole_display_args.img_height, this.cartpole_display_args)
+    }
     }
 
 
@@ -132,10 +131,9 @@ class Main {
      A development playground for exploring the equivalence class idea
      **/
     compare_trajectories() {
-      $("#workbenchDiv"+" .title").html("Workbench")
-      // add trajectories for comparing policies
-      this.comparison_trajectories()
-
+        $("#workbenchDiv"+" .title").html("Workbench")
+        // add trajectories for comparing policies
+        this.comparison_trajectories()
     }
 
     /**
@@ -219,10 +217,10 @@ class Main {
 
 //===========< BEGIN Helper Functions >=============//
   getRandColor(){
-    var rgb = [parseInt(Math.random() * 256),
-               parseInt(Math.random() * 256),
-               parseInt(Math.random() * 256)];
-    return "rgb(" + rgb.join(",") + ")";
+      let rgb = [parseInt(Math.random() * 256),
+          parseInt(Math.random() * 256),
+          parseInt(Math.random() * 256)];
+      return "rgb(" + rgb.join(",") + ")";
   }
 
   /**
