@@ -67,6 +67,7 @@ class Util {
     return roundedArr
   }
 
+  
   /***
   A helper function to create a linspace over an interval
 

@@ -176,7 +176,6 @@ class Cartpole_Viewer {
       }
     }
 
-
     /**
     create animation of a simulation run in an existing SVG
 
@@ -202,8 +201,9 @@ class Cartpole_Viewer {
         cartpoleSVG.clear()
 
         //update slider
-        if(widgetsDomSelect != null)
+        if(widgetsDomSelect != null) {
           $(widgetsDomSelect+" input.gridslider").val(t)
+        }
 
         //draw all cartpoles
         for (let cartpole of cartpoleArray) {
@@ -230,9 +230,11 @@ class Cartpole_Viewer {
           t = 0
         }
 
-      }
+      } //end animateCartpoles()
+
       //start cartpole animation
       let cartpoleAnimHandle = setInterval(animateCartpoles,displayArgs.timestepDelayMS)
+      window.cartpoleAnimHandles[widgetsDomSelect] = cartpoleAnimHandle
 
       //create widgets to help user control animations
       if(widgetsDomSelect != null) {
@@ -253,7 +255,6 @@ class Cartpole_Viewer {
           }
         })
 
-
         //stop button
         $(widgetsDomSelect+" .gridslider .stop").click(function() {
           clearInterval(cartpoleAnimHandle)
@@ -263,12 +264,13 @@ class Cartpole_Viewer {
         $(widgetsDomSelect+" .gridslider .play").click(function() {
           clearInterval(cartpoleAnimHandle)
           cartpoleAnimHandle = setInterval(animateCartpoles,displayArgs.timestepDelayMS)
+          //save this so we can clear it later
+          window.cartpoleAnimHandles[widgetsDomSelect] = cartpoleAnimHandle
         })
       }
 
-
+      return cartpoleAnimHandle
     }
-
 
     //==============< END Methods to create whole SVGs =================//
 
