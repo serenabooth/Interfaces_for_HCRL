@@ -49,17 +49,21 @@ class CartPole {
 
     //save init state
     this.state_history = [state_as_arr]
+
+    this.past_traces = {}
 }
 
   //===========< BEGIN Static Methods >================//
 
+  /*
+   * Create a random policy
+   */
   static generateRandomPolicy() {
     let policy = []
     for(let i = 0; i < 4; i++)
       //random number from [-1,1]
       policy.push((Math.random() * 2) - 1)
     return policy
-
   }
 
   /**
@@ -113,39 +117,43 @@ class CartPole {
   /**
   returns current sim trace data
   **/
-  getSimTrace() {
-    return {
-      action_history : this.action_history,
-      state_history : this.state_history,
-      maxT : this.state_history.length
+  getSimTrace(trace_id = null) {
+    if (trace_id == null) {
+      return {
+        action_history : this.action_history,
+        state_history : this.state_history,
+        // maxT : this.state_history.length
+      }
     }
+    else {
+      return {
+        action_history: this.past_traces[trace_id]["action_history"],
+        state_history: this.past_traces[trace_id]["state_history"],
+        // maxT : this.past_traces[trace_id]["state_history"].length,
+      }
+    }
+
   }
 
   getTitle() {
     return this.title
   }
 
-
-    /**
-     * Get current state as a tf.Tensor of shape [1, 4].
-    getStateTensor() {
-      return tf.tensor2d([[this.x, this.x_dot, this.theta, this.theta_dot]]);
-    }
-    */
-
-    reset(new_state_as_arr = null) {
-      var initState = (new_state_as_arr == null) ? CartPole.genRandomState(this.cartpole_thresholds) : new_state_as_arr
-      this.setState_privateMethod(initState)
-      this.state_history = [initState]
-      this.action_history = []
-    }
-
+  save_trace(trace_id) {
+    this.past_traces[trace_id] = {"state_history": [...this.state_history],
+                                  "action_history": [...this.action_history],}
+  }
   /**
-   * Set the starting state of the cart-pole system randomly.
+   * Reset cartpole, including state and action traces
+   *
+   * @param{array or obj} new_state_as_arr initial state, if specified
    */
-  setStartingState() {
-    let stateArr = this.genStartingState()
-    this.setState(stateArr)
+  reset(new_state_as_arr = null) {
+
+    var initState = (new_state_as_arr == null) ? CartPole.genRandomState(this.cartpole_thresholds) : new_state_as_arr
+    this.setState_privateMethod(initState)
+    this.state_history = [initState]
+    this.action_history = []
   }
 
   /**

@@ -62,7 +62,7 @@ class Main {
 
     }
 
-    add_to_workbench(cartpoles, color, id) {
+    add_to_workbench(cartpoles, trace_id, color, id) {
 
         let div_id = Date.now()
         let g = document.createElement('div');
@@ -75,7 +75,8 @@ class Main {
                                                                 cartpoles,
                                                                 this.cartpole_display_args.img_width,
                                                                 this.cartpole_display_args.img_height,
-                                                                this.cartpole_display_args)
+                                                                this.cartpole_display_args,
+                                                                trace_id)
 
         let div = document.getElementById(String(div_id));
         let t = document.createTextNode("Your Past Preference: " + id);     // Create a text node
@@ -89,9 +90,11 @@ class Main {
       let mainObject = this;
       let cartpoles = []
       let policies = []
+      let initial_state = CartPole.genRandomState(this.cartpole_thresholds)
+      console.log("Starting state", initial_state)
 
       if (existing_cp != null && existing_policy != null) {
-        existing_cp.reset()
+        existing_cp.reset(initial_state)
         this.cartpoleSim.simulation_from_policy(existing_cp,existing_policy.get_params(),200,0)
         cartpoles.push(existing_cp)
         policies.push(existing_policy)
@@ -100,6 +103,7 @@ class Main {
       for (i = cartpoles.length; i < 2; i++) {
         let current_policy = new Linear_Policy(4, true)
         let cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0];
+        cp.reset(initial_state)
         cp.color=this.getRandColor()
         this.cartpoleSim.simulation_from_policy(cp,current_policy.get_params(),200,0)
         cartpoles.push(cp)
@@ -107,6 +111,11 @@ class Main {
       }
 
     UI_Blocks.create_animation_in_dom_elem("#currentPreferenceDiv", "test", cartpoles, this.cartpole_display_args.img_width, this.cartpole_display_args.img_height, this.cartpole_display_args)
+
+    let trace_id = String(Date.now())
+    for (i=0; i<cartpoles.length; i++) {
+        cartpoles[i].save_trace(trace_id)
+    }
 
     for (i=0; i<cartpoles.length;i++) {
         let cp = cartpoles[i]
@@ -118,7 +127,8 @@ class Main {
             console.log(btn.innerHTML)
             $("#currentPreferenceDiv").empty()
             $("#userTestButtons").empty()
-            mainObject.add_to_workbench(cartpoles, cp.color, cp.id)
+
+            mainObject.add_to_workbench(cartpoles, trace_id, cp.color, cp.id)
             mainObject.comparison_trajectories(cp, policy)
         };
         let body = document.getElementById("currentPreferenceDiv");

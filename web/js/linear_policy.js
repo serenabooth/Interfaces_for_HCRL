@@ -10,7 +10,6 @@ class Linear_Policy {
     else {
       this.weights = new Array(n_weights).fill(0.0);
     }
-    console.log(this.weights);
   }
 
   get_params() {

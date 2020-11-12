@@ -188,14 +188,15 @@ class Cartpole_Viewer {
 
     timestepDelayMS: default display speed = 50fps = 20ms/frame
     **/
-    populate_svg_simulations(cartpoleSVG, cartpoleArray, img_width, img_height, displayArgs, widgetsDomSelect=null) {
+    populate_svg_simulations(cartpoleSVG, cartpoleArray, img_width, img_height, displayArgs, widgetsDomSelect=null, trace_id = null) {
       let self = this   //give access to the Cartpole_Viewer objects
 
       //save the cartpole traces to an array
       let simTraceArray = []
       let maxTime = 0
-      for (let cartpole of cartpoleArray) {
-        let simTrace = cartpole.getSimTrace()
+      for (var i = 0; i < cartpoleArray.length; i++) {
+        let cartpole = cartpoleArray[i]
+        let simTrace = cartpole.getSimTrace(trace_id)
         simTraceArray.push(simTrace)
         maxTime = Math.max(maxTime, simTrace.state_history.length)
       }
@@ -215,7 +216,7 @@ class Cartpole_Viewer {
         for (let cartpole of cartpoleArray) {
 
           //get the timestep data
-          let simTrace = cartpole.getSimTrace()
+          let simTrace = cartpole.getSimTrace(trace_id)
           let color = cartpole.color
 
           //check if is done
