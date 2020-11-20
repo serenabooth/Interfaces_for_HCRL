@@ -68,22 +68,33 @@ class CartPole {
 
   /**
    * Set the state of the cart-pole system randomly.
+   * This sets the control-theory state variables of the cart-pole system.
+   * @param array cartpole_thresholds
+   * @param boolean starting_state
    */
-  static genRandomState(cartpole_thresholds) {
+  static genRandomState(cartpole_thresholds, starting_state = false) {
+    let x, x_dot, theta, theta_dot;
 
-    // The control-theory state variables of the cart-pole system.
-    // Cart position, meters.
-    //let x = Math.random() - 0.5;  was in original code...
-    let x = Util.genRandomFloat(-cartpole_thresholds["x"]/2,cartpole_thresholds["x"]/2)
-    // Cart velocity.
-    let x_dot = (Math.random() - 0.5) * 1;
+    if (starting_state) {
+      x = Util.genRandomFloat(-0.05, 0.05)
+      x_dot = Util.genRandomFloat(-0.05, 0.05)
+      theta = Util.genRandomFloat(-0.05, 0.05)
+      theta_dot = Util.genRandomFloat(-0.05, 0.05)
+    }
+    else {
+      // Cart position, meters.
+      //let x = Math.random() - 0.5;  was in original code...
+      x = Util.genRandomFloat(-cartpole_thresholds["x"]/2,cartpole_thresholds["x"]/2)
+      // Cart velocity.
+      x_dot = (Math.random() - 0.5) * 1;
 
-    // Pole angle, radians.
-    //let theta = (Math.random() - 0.5) * 2 * (6 / 360 * 2 * Math.PI);   was in original code...
-    let theta  = Util.genRandomFloat(-cartpole_thresholds["theta"]/2,cartpole_thresholds["theta"]/2)
+      // Pole angle, radians.
+      //let theta = (Math.random() - 0.5) * 2 * (6 / 360 * 2 * Math.PI);   was in original code...
+      theta  = Util.genRandomFloat(-cartpole_thresholds["theta"]/2,cartpole_thresholds["theta"]/2)
 
-    // Pole angle velocity.
-    let theta_dot =  (Math.random() - 0.5) * 0.5;
+      // Pole angle velocity.
+      theta_dot =  (Math.random() - 0.5) * 0.5;
+    }
 
     return [x,x_dot, theta, theta_dot]
   }

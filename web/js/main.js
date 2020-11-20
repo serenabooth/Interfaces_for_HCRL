@@ -85,55 +85,150 @@ class Main {
 
     }
 
-    comparison_trajectories(existing_cp=null, existing_policy=null) {
-      let i;
-      let mainObject = this;
-      let cartpoles = []
-      let policies = []
-      let initial_state = CartPole.genRandomState(this.cartpole_thresholds)
-      console.log("Starting state", initial_state)
-
-      if (existing_cp != null && existing_policy != null) {
-        existing_cp.reset(initial_state)
-        this.cartpoleSim.simulation_from_policy(existing_cp,existing_policy.get_params(),200,0)
-        cartpoles.push(existing_cp)
-        policies.push(existing_policy)
-      }
-
-      for (i = cartpoles.length; i < 2; i++) {
-        let current_policy = new Linear_Policy(4, true)
-        let cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0];
-        cp.reset(initial_state)
-        cp.color=this.getRandColor()
-        this.cartpoleSim.simulation_from_policy(cp,current_policy.get_params(),200,0)
-        cartpoles.push(cp)
-        policies.push(current_policy)
-      }
-
-    UI_Blocks.create_animation_in_dom_elem("#currentPreferenceDiv", "test", cartpoles, this.cartpole_display_args.img_width, this.cartpole_display_args.img_height, this.cartpole_display_args)
-
-    let trace_id = String(Date.now())
-    for (i=0; i<cartpoles.length; i++) {
-        cartpoles[i].save_trace(trace_id)
+    find_indices_of_top_N(inp, count) {
+        var outp = [];
+        for (var i = 0; i < inp.length; i++) {
+            outp.push(i); // add index to output array
+            if (outp.length > count) {
+                outp.sort(function(a, b) { return inp[b] - inp[a]; }); // descending sort the output array
+                outp.pop(); // remove the last index (index of smallest element in output array)
+            }
+        }
+        return outp;
     }
 
-    for (i=0; i<cartpoles.length;i++) {
-        let cp = cartpoles[i]
-        let policy = policies[i]
-        let btn = document.createElement("button")
-        btn.innerHTML = cp.id;
-        btn.style.background=cp.color;
-        btn.onclick = function(){
-            console.log(btn.innerHTML)
-            $("#currentPreferenceDiv").empty()
-            $("#userTestButtons").empty()
 
-            mainObject.add_to_workbench(cartpoles, trace_id, cp.color, cp.id)
-            mainObject.comparison_trajectories(cp, policy)
-        };
+    get_top_N_divergent_starting_states(N, policies) {
+        let action_steps_0, action_steps_1, diff_score;
+        let tmp_cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0];
+        let x_samples = Util.linspace(-this.cartpole_thresholds.x, this.cartpole_thresholds.x, 8, true)
+        let x_dot_samples = Util.linspace(-this.cartpole_thresholds.x_dot, this.cartpole_thresholds.x_dot, 8, true)
+        let theta_samples = Util.linspace(-this.cartpole_thresholds.theta, this.cartpole_thresholds.theta, 8, true)
+        let theta_dot_samples = Util.linspace(-this.cartpole_thresholds.theta_dot, this.cartpole_thresholds.theta_dot, 8, true)
+
+        let set_of_states =  cartesian(x_samples, x_dot_samples, theta_samples, theta_dot_samples);
+        let diff_scores = []
+
+
+        for (let state_idx in set_of_states) {
+            tmp_cp.reset(set_of_states[state_idx])
+            this.cartpoleSim.simulation_from_policy(tmp_cp, policies[0].get_params(), 200, 0)
+            action_steps_0 = [...tmp_cp.action_history]
+
+            tmp_cp.reset(set_of_states[state_idx])
+            this.cartpoleSim.simulation_from_policy(tmp_cp, policies[1].get_params(), 200, 0)
+            action_steps_1 = [...tmp_cp.action_history]
+
+            diff_score = 0
+            for (var i = 0; i < Math.min(action_steps_0.length, action_steps_1.length); i++) {
+                if (action_steps_0[i] != action_steps_1[i]) {
+                    diff_score += 1
+                }
+            }
+            diff_scores.push(diff_score)
+        }
+
+        let top_N = this.find_indices_of_top_N(diff_scores, N)
+        let ret_states = []
+        for (let idx in top_N) {
+            ret_states.push(set_of_states[top_N[idx]])
+        }
+
+        return ret_states
+    }
+
+    comparison_trajectories(existing_cp=null, existing_policy=null, num_comps =4) {
+        let i, state_idx, cp, policy, btn, trace_id, new_cp, new_policy;
+        let mainObject = this;
+        let cartpoles = []
+        let policies = []
+        let states = []
         let body = document.getElementById("currentPreferenceDiv");
+
+        // add one "normal" starting state
+        // states.push(CartPole.genRandomState(this.cartpole_thresholds, true))
+
+        let traces = []
+        for (i = 0; i < num_comps; i++) {
+            traces.push(String(Date.now()) + String(i))
+        }
+        console.log(traces)
+
+        // construct any new cartpoles and policies
+        for (i = 0; i < 2; i++) {
+            if (i == 0 && existing_cp != null && existing_policy != null) {
+                cartpoles.push(existing_cp)
+                policies.push(existing_policy)
+            }
+            else {
+                policy = new Linear_Policy(4, true)
+                cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0];
+                cp.color=this.getRandColor()
+                cartpoles.push(cp)
+                policies.push(policy)
+                new_cp = cp
+                new_policy = policy
+            }
+        }
+
+        // add N starting states which show divergent behaviors
+        let top_N_states = this.get_top_N_divergent_starting_states(num_comps-states.length, policies)
+        for (state_idx in top_N_states) {
+            states.push(top_N_states[state_idx])
+        }
+
+        // for each state/cartpole pair, simulate the behavior and save the trace
+        for (state_idx in states) {
+            let parent = document.getElementById("currentPreferenceDiv");
+            let state_div = document.createElement("div");
+            state_div.id = String(Date.now()) + String(state_idx)
+            parent.append(state_div)
+            trace_id = traces[state_idx]
+
+            for (i = 0; i < cartpoles.length; i++) {
+                cp = cartpoles[i]
+                policy = policies[i]
+                cp.reset(states[state_idx])
+                this.cartpoleSim.simulation_from_policy(cp, policy.get_params(), 200, 0)
+                cp.save_trace(trace_id)
+
+                // add a button to select this preference
+                btn = document.createElement("button")
+                btn.innerHTML = cp.id;
+                btn.style.background=cp.color;
+                btn.onclick = function(){
+                    // console.log(btn.innerHTML)
+                    // $("#currentPreferenceDiv").empty()
+                    // $("#userTestButtons").empty()
+
+                    mainObject.add_to_workbench(cartpoles, trace_id, cp.color, cp.id)
+                    // mainObject.comparison_trajectories(cp, policy)
+                };
+                body.appendChild(btn);
+            }
+
+
+            // for each state/cartpole pair, add them to the currentPreferenceDiv Screen
+            UI_Blocks.create_animation_in_dom_elem("#"+state_div.id,
+                                                  "test_" + trace_id,
+                                                                    cartpoles,
+                                                                    this.cartpole_display_args.img_width,
+                                                                    this.cartpole_display_args.img_height,
+                                                                    this.cartpole_display_args,
+                                                                    trace_id)
+        }
+
+        btn = document.createElement("button")
+        btn.innerHTML = "Submit";
+        btn.onclick = function(){
+            // console.log(btn.innerHTML)
+            $("#currentPreferenceDiv").empty()
+            // $("#userTestButtons").empty()
+            mainObject.comparison_trajectories(new_cp, new_policy)
+        };
+        body.appendChild(document.createElement("div"));
         body.appendChild(btn);
-    }
+
     }
 
 

@@ -25,10 +25,7 @@
     <list default="true" id="2e279474-4fc7-4317-bccc-b21bd9e30a3c" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/js/cart_pole.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/cart_pole.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/js/cartpole_viewer.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/cartpole_viewer.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/js/linear_policy.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/linear_policy.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/js/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/main.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/js/ui_blocks.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/ui_blocks.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -107,9 +104,10 @@
       <screen x="72" y="29" width="2488" height="1571" />
     </state>
     <state x="172" y="129" width="2288" height="1371" key="dock-window-1/72.29.2488.1571@72.29.2488.1571" timestamp="1604518377671" />
-    <state x="979" y="390" width="672" height="678" key="search.everywhere.popup" timestamp="1605197652732">
-      <screen x="72" y="29" width="2488" height="1571" />
+    <state x="979" y="388" width="672" height="679" key="search.everywhere.popup" timestamp="1605798487133">
+      <screen x="72" y="27" width="2488" height="1573" />
     </state>
+    <state x="979" y="388" width="672" height="679" key="search.everywhere.popup/72.27.2488.1573@72.27.2488.1573" timestamp="1605798487133" />
     <state x="979" y="390" width="672" height="678" key="search.everywhere.popup/72.29.2488.1571@72.29.2488.1571" timestamp="1605197652732" />
   </component>
 </project>
