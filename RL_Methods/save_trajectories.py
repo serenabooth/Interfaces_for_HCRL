@@ -53,9 +53,13 @@ def record_random_trajectory(policy_weights, starting_state = None):
 
     done = False
     while not done:
-        state_history.append(state)
         action = select_action(policy_weights, state)
+        #save the actions along with the state
+        state_history.append(np.append(state, action))
+
         _, done = cartpole.take_action(action)
+
+
         # cartpole.env.render()
         state = cartpole.get_current_features()
     # cartpole.env.close()

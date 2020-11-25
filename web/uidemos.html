@@ -1,0 +1,61 @@
+<HTML>
+  <HEAD>
+    <meta charset="UTF-8">
+
+    <!-- 3rd party libs -->
+    <script src="./offline_lib/jquery-3.4.1.js"></script>
+    <script src="./offline_lib/jquery.csv.min.js"></script>
+    <script src="./offline_lib/math.min.js"></script>
+    <script src="./offline_lib/svgjs/svg.js"></script>
+
+    <!-- code for viz -->
+    <script src="./js/util.js"></script>
+    <script src="./js/cart_pole.js"></script>
+    <script src="./js/cartpole_viewer.js"></script>
+    <script src="./js/cartpole_sim.js"></script>
+    <script src="./js/ui_blocks.js"></script>
+    <link rel="stylesheet" href="./css/cartpole.css">
+
+    <script src="./js/ui_demos.js"></script>
+
+  </HEAD>
+  <BODY>
+    <!--
+      <h2>Animation</h2>
+      <div id="animation"></div>
+      <br/>
+      Click & drag mouse. Or click slider & use keyboard 'right' or 'left' arrow keys. Todo: play & stop buttons, label slider
+      <hr/>
+
+      <h2>Click to toggle actions</h2>
+      <div id="timeline"></div>
+      <br/>
+      Same as above except w/ 5 grid cells
+      <hr/>
+-->
+
+      <p>Select local CSV File:</p>
+      <input id="csv" type="file">
+
+      <output id="out">
+          file contents will appear here
+      </output>
+
+      <!-- main div for app -->
+      <div id="app">
+      </div>
+
+      <!--<h5>State Data [x,xDot,theta,thetaDot]</h5>
+      <div id="randomgrid_states"></div>
+      -->
+      <script>
+
+      //try not to put any JS code here... make mods in main.js
+      $(document).ready(function() {
+        let uidemos = new UIDemos()
+        uidemos.run()
+      })
+
+      </script>
+  </BODY>
+</HTML>

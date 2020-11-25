@@ -29,6 +29,10 @@ class Main {
 
         this.cartpoleSim = new CartPoleSim(this.cartpole_thresholds)
 
+        //create a global variable to save cartpole anim handles
+        if(window.cartpoleAnimHandles == null) {
+            window.cartpoleAnimHandles = {}
+        }
     }
 
     /**
