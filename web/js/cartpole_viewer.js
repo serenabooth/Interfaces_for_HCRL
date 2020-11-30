@@ -82,7 +82,7 @@ class Cartpole_Viewer {
         return;
 
       //draw an arrow shoing a push (or pull) force on the cart
-      var arrow_triangle = svgObj.polygon(`${svg_positions.arrow.x},${svg_positions.arrow.y_top},${svg_positions.arrow.x},${svg_positions.arrow.y_bottom}, ${svg_positions.arrow.point_x},${svg_positions.arrow.y_mid}`).fill('rgba(255,0,0,1)')
+      var arrow_triangle = svgObj.polygon(`${svg_positions.arrow.x},${svg_positions.arrow.y_top},${svg_positions.arrow.x},${svg_positions.arrow.y_bottom}, ${svg_positions.arrow.point_x},${svg_positions.arrow.y_mid}`).fill('rgb(255,0,0)')
       var arrow_line = svgObj.line(svg_positions.arrow.point_x, svg_positions.arrow.y_mid, svg_positions.cart.x - svg_positions.arrow.x_direction_const*svg_positions.cart.width/2, svg_positions.arrow.y_mid)
       arrow_line.stroke({ color: 'rgba(255,0,0,1)', width: 1.5/*, dasharray : "5,5"*/})
 

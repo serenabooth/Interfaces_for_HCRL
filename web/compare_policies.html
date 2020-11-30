@@ -1,10 +1,44 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+<HTML>
+<HEAD>
+    <meta charset="UTF-8">
+
+    <!-- 3rd party libs -->
+    <script src="./offline_lib/jquery-3.4.1.js"></script>
+    <script src="./offline_lib/jquery.csv.min.js"></script>
+    <script src="./offline_lib/math.min.js"></script>
+    <script src="./offline_lib/svgjs/svg.js"></script>
+
+    <!-- code for viz -->
+    <script src="./js/util.js"></script>
+    <script src="./js/cart_pole.js"></script>
+    <script src="./js/cartpole_viewer.js"></script>
+    <script src="./js/cartpole_sim.js"></script>
+    <script src="./js/ui_blocks.js"></script>
+    <link rel="stylesheet" href="./css/cartpole.css">
+
+    <!-- code for analysis -->
+    <!--<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@2.0.0/dist/tf.min.js"></script>-->
+    <script src="./sim_runs/data0.js"></script>
+    <script src="./js/RL_Methods/COACH.js"></script>
+    <script src="./js/linear_policy.js"></script>
+
+
+    <script src="./js/main.js"></script>
+</HEAD>
+<BODY>
+
+
+<div id=comparePoliciesDiv>
+    <h2 class="title">Compare Policies</h2>
+</div>
+
+<script>
+
+    $(document).ready(function() {
+        let main = new Main()
+        main.run()
+    });
+
+</script>
+</BODY>
+</HTML>

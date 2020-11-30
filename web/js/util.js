@@ -95,4 +95,71 @@ class Util {
     return arr;
   }
 
+  /***
+   * A helper function to find the indices of top values in an array.
+   *
+   * @param {array} inp - an input array
+   * @param {number} count - the number of indices to find
+   * @returns {[]} a list of indices
+   */
+  static find_indices_of_top_N(inp, count) {
+    var outp = [];
+    for (var i = 0; i < inp.length; i++) {
+      outp.push(i); // add index to output array
+      if (outp.length > count) {
+        outp.sort(function(a, b) { return inp[b] - inp[a]; }); // descending sort the output array
+        outp.pop(); // remove the last index (index of smallest element in output array)
+      }
+    }
+    return outp;
+  }
+
+  /***
+   * A helper function to return the top N starting states,
+   * based on how divergent policies are.
+   *
+   * @param {number} N - the number of starting states to find
+   * @param {array} policies - a list of policies
+   * @param
+   * @returns {[]} a list of states
+   */
+  static get_top_N_divergent_starting_states(N, policies, cartpole_thresholds, cartpoleSim) {
+    let action_steps_0, action_steps_1, diff_score;
+    let tmp_cp = Util.gen_rand_cartpoles(1, cartpole_thresholds)[0];
+    let x_samples = Util.linspace(-cartpole_thresholds.x, cartpole_thresholds.x, 8, true)
+    let x_dot_samples = Util.linspace(-cartpole_thresholds.x_dot, cartpole_thresholds.x_dot, 8, true)
+    let theta_samples = Util.linspace(-cartpole_thresholds.theta, cartpole_thresholds.theta, 8, true)
+    let theta_dot_samples = Util.linspace(-cartpole_thresholds.theta_dot, cartpole_thresholds.theta_dot, 8, true)
+
+    let set_of_states =  cartesian(x_samples, x_dot_samples, theta_samples, theta_dot_samples);
+    let diff_scores = []
+
+
+    for (let state_idx in set_of_states) {
+      tmp_cp.reset(set_of_states[state_idx])
+      cartpoleSim.simulation_from_policy(tmp_cp, policies[0].get_params(), 200, 0)
+      action_steps_0 = [...tmp_cp.action_history]
+
+      tmp_cp.reset(set_of_states[state_idx])
+      cartpoleSim.simulation_from_policy(tmp_cp, policies[1].get_params(), 200, 0)
+      action_steps_1 = [...tmp_cp.action_history]
+
+      diff_score = 0
+      for (var i = 0; i < Math.min(action_steps_0.length, action_steps_1.length); i++) {
+        if (action_steps_0[i] != action_steps_1[i]) {
+          diff_score += 1
+        }
+      }
+      diff_scores.push(diff_score)
+    }
+
+    let top_N = Util.find_indices_of_top_N(diff_scores, N)
+    let ret_states = []
+    for (let idx in top_N) {
+      ret_states.push(set_of_states[top_N[idx]])
+    }
+
+    return ret_states
+  }
+
 }

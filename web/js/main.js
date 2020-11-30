@@ -40,14 +40,13 @@ class Main {
     let's try not to put any JS code in index.html
     **/
     run() {
-      // this.sandbox_eg()
-      // this.sandbox_sc()
-      // this.sandbox_equivalence_classes()
-      this.compare_trajectories()
-      // this.sandbox_equivalence_classes()
+        // this.sandbox_eg()
+        // this.sandbox_sc()
+        // this.sandbox_equivalence_classes()
+        this.compare_trajectories()
+        // this.compare_policies()
+        // this.sandbox_equivalence_classes()
     }
-
-
 
     /**
     Elena's run sandbox
@@ -89,58 +88,6 @@ class Main {
 
     }
 
-    find_indices_of_top_N(inp, count) {
-        var outp = [];
-        for (var i = 0; i < inp.length; i++) {
-            outp.push(i); // add index to output array
-            if (outp.length > count) {
-                outp.sort(function(a, b) { return inp[b] - inp[a]; }); // descending sort the output array
-                outp.pop(); // remove the last index (index of smallest element in output array)
-            }
-        }
-        return outp;
-    }
-
-
-    get_top_N_divergent_starting_states(N, policies) {
-        let action_steps_0, action_steps_1, diff_score;
-        let tmp_cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0];
-        let x_samples = Util.linspace(-this.cartpole_thresholds.x, this.cartpole_thresholds.x, 8, true)
-        let x_dot_samples = Util.linspace(-this.cartpole_thresholds.x_dot, this.cartpole_thresholds.x_dot, 8, true)
-        let theta_samples = Util.linspace(-this.cartpole_thresholds.theta, this.cartpole_thresholds.theta, 8, true)
-        let theta_dot_samples = Util.linspace(-this.cartpole_thresholds.theta_dot, this.cartpole_thresholds.theta_dot, 8, true)
-
-        let set_of_states =  cartesian(x_samples, x_dot_samples, theta_samples, theta_dot_samples);
-        let diff_scores = []
-
-
-        for (let state_idx in set_of_states) {
-            tmp_cp.reset(set_of_states[state_idx])
-            this.cartpoleSim.simulation_from_policy(tmp_cp, policies[0].get_params(), 200, 0)
-            action_steps_0 = [...tmp_cp.action_history]
-
-            tmp_cp.reset(set_of_states[state_idx])
-            this.cartpoleSim.simulation_from_policy(tmp_cp, policies[1].get_params(), 200, 0)
-            action_steps_1 = [...tmp_cp.action_history]
-
-            diff_score = 0
-            for (var i = 0; i < Math.min(action_steps_0.length, action_steps_1.length); i++) {
-                if (action_steps_0[i] != action_steps_1[i]) {
-                    diff_score += 1
-                }
-            }
-            diff_scores.push(diff_score)
-        }
-
-        let top_N = this.find_indices_of_top_N(diff_scores, N)
-        let ret_states = []
-        for (let idx in top_N) {
-            ret_states.push(set_of_states[top_N[idx]])
-        }
-
-        return ret_states
-    }
-
     comparison_trajectories(existing_cp=null, existing_policy=null, num_comps =4) {
         let i, state_idx, cp, policy, btn, trace_id, new_cp, new_policy;
         let mainObject = this;
@@ -176,7 +123,7 @@ class Main {
         }
 
         // add N starting states which show divergent behaviors
-        let top_N_states = this.get_top_N_divergent_starting_states(num_comps-states.length, policies)
+        let top_N_states = Util.get_top_N_divergent_starting_states(num_comps-states.length, policies, this.cartpole_thresholds, this.cartpoleSim)
         for (state_idx in top_N_states) {
             states.push(top_N_states[state_idx])
         }
