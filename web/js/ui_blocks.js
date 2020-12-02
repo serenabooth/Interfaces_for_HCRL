@@ -2,32 +2,6 @@
 class UI_Blocks {
 
 
-  // redrawCartpole(divId, cartpole, img_width, img_height, action) {
-  //   $(divId).empty()
-  //   cartpole.viewer.gen_img(divId, cartpole.getState(false), img_width, img_height, action)
-  // }
-
-
-  //https://stackoverflow.com/questions/29393064/reading-in-a-local-csv-file-in-javascript
-  static enableFileUploader(uploaderDomId, handlerFunc, argObj) {
-    var fileInput = document.getElementById(uploaderDomId),
-
-        readFile = function () {
-            var reader = new FileReader();
-            reader.onload = function (readerEvt) {
-              //alert(readerEvt.target.fileName)
-              if(handlerFunc != null)
-                handlerFunc(reader.result, argObj)
-            };
-
-            // start reading the file. When it is done, calls the onload event defined above.
-            reader.readAsBinaryString(fileInput.files[0]);
-        };
-
-    fileInput.addEventListener('change', readFile);
-  }
-
-
   /**
   Creates a grid of cartpole animations - simulations should have been run before calling this
 
@@ -68,6 +42,8 @@ class UI_Blocks {
   }
 
   /**
+  Clears a single gridcell of a cartpole animation as well as the timeline widget
+
   @gridcell_domSelector dom selector of the div that contains the gridcell
   @animation_div_dom_id id of the div that contains the animation svg
   **/
@@ -77,9 +53,13 @@ class UI_Blocks {
     $(gridcell_domSelector).empty()
 
     //if the cell had an auto-advancing timeline, then make sure that it's stopped
+    //  otherwise the timeline won't work correctly if this gridcell is repopulated
     let widget_div_domSelect = "#"+UI_Blocks.get_animation_widget_div_id(animation_div_dom_id)
     if (widget_div_domSelect in window.cartpoleAnimHandles) {
+      //stop the timeline animation
       clearInterval(window.cartpoleAnimHandles[widget_div_domSelect])
+      //remove key from the timeline animation lookup b/c we have cleared the timeline
+      delete window.cartpoleAnimHandles[widget_div_domSelect]
     }
 
   }
@@ -100,6 +80,7 @@ class UI_Blocks {
       var animation_div_dom_id = "drawing-"+divId;
       this.create_animation_in_dom_elem("#"+divId, animation_div_dom_id, cartpole, display_args.img_width, display_args.img_height, display_args)
   }
+
   /**
   TODO:Comment
   **/
@@ -110,25 +91,6 @@ class UI_Blocks {
 
 
   //===== BEGIN Grid Helper Functions ======//
-
-      /**
-      @svg: the parent svg
-      @x: x position of this animation within parent SVG
-      @y: x position of this animation within parent SVG
-      @cartpole: a cartpole object w/ the state values defined
-      @img_width:
-      @img_height
-      @display_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
-      **/
-      static embed_animation_svg_in_another_svg(parentSVG, x, y, cartpole, img_width, img_height, display_args) {
-
-        //create svg inside the div
-        var svgObj = parentSVG.nested(x,y)
-        svgObj.attr('x', x)
-        svgObj.attr('y', y)
-
-        cartpole.viewer.populate_svg_simulation(svgObj, cartpole, img_width, img_height, display_args)
-      }
 
 
       /**
@@ -148,6 +110,11 @@ class UI_Blocks {
         //if cartpole is an object, then convert to array
         let cartpoleArray = Array.isArray(cartpoleObjOrArray) ? cartpoleObjOrArray : [cartpoleObjOrArray]
 
+
+        //create upper text div
+        let upperTextDivId = animation_div_dom_id+"upper_text"
+        $(containerDomSelect).append(`<div id="${upperTextDivId}" class='lightgrey'></div>`)
+
         //create animation's div
         $(containerDomSelect).append(`<div id="${animation_div_dom_id}"></div>`)
 
@@ -157,14 +124,38 @@ class UI_Blocks {
         //create svg inside the div & populate it
         var svgObj = Util.gen_empty_svg("#"+animation_div_dom_id, img_width, img_height)
         var viewer = cartpoleArray[0].viewer
-        return viewer.populate_svg_simulations(svgObj, cartpoleArray, img_width, img_height, display_args,"#"+widgetsDivId)
+        return viewer.populate_svg_simulations(svgObj, cartpoleArray, img_width, img_height, display_args,"#"+widgetsDivId, "#"+upperTextDivId)
 
       }
 
+      /**
+      Standardize the naming convention of the animation timeline
+      **/
       static get_animation_widget_div_id(animation_div_dom_id) {
         let widgetsDivId = `${animation_div_dom_id}_widgets`
         return widgetsDivId
       }
+
+      /**
+      @svg: the parent svg
+      @x: x position of this animation within parent SVG
+      @y: x position of this animation within parent SVG
+      @cartpole: a cartpole object w/ the state values defined
+      @img_width:
+      @img_height
+      @display_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
+      **
+      static embed_animation_svg_in_another_svg(parentSVG, x, y, cartpole, img_width, img_height, display_args) {
+
+        //create svg inside the div
+        var svgObj = parentSVG.nested(x,y)
+        svgObj.attr('x', x)
+        svgObj.attr('y', y)
+
+        cartpole.viewer.populate_svg_simulation(svgObj, cartpole, img_width, img_height, display_args)
+      }
+      */
+
   //===== END Grid Helper Functions ======//
 
 

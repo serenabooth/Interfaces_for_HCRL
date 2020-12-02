@@ -1,13 +1,13 @@
 class Cartpole_Viewer {
 
-    constructor(cartpoleObj) {
-      this.cartpoleObj = cartpoleObj
+    constructor(cartpole_thresholds) {
 
       //max/mins of the cartpole state vals
-      this.state_var_thresholds = {}
-      Object.assign(this.state_var_thresholds, this.cartpoleObj.cartpole_thresholds)
+      this.cartpole_thresholds = cartpole_thresholds
 
-      this.world_width = this.state_var_thresholds.x*2 //put thresholds at edge of grid
+      //put thresholds near edge of grid
+      // sim stops when pole reaches threshold (as opposed to edge of cart)
+      this.world_width = this.cartpole_thresholds.x*2.25
 
     }
 
@@ -111,6 +111,17 @@ class Cartpole_Viewer {
 
       this.move_cart(svg_positions.cart, svg_positions.pole, box, pole, axle)
 
+
+      var upper_bound = svgObj.rect(1, svg_positions.pole.len).fill('rgba(212,212,212,0.75)').stroke({dasharray: '5,5'})
+      var upper_bound_degrees = this.cartpole_thresholds.theta * 180/Math.PI
+      upper_bound.center(svg_positions.cart.x,svg_positions.cart.y-svg_positions.pole.len/2)
+      upper_bound.rotate(upper_bound_degrees, svg_positions.cart.x,svg_positions.cart.y)
+
+      var lower_bound = svgObj.rect(1, svg_positions.pole.len).fill('rgba(212,212,212,0.75)').stroke({dasharray: '5,5'})
+      var lower_bound_degrees = -this.cartpole_thresholds.theta * 180/Math.PI
+      lower_bound.center(svg_positions.cart.x,svg_positions.cart.y-svg_positions.pole.len/2)
+      lower_bound.rotate(lower_bound_degrees, svg_positions.cart.x,svg_positions.cart.y)
+
       return {"box" :box, "pole" : pole, "axle" : axle}
     }
 
@@ -181,7 +192,7 @@ class Cartpole_Viewer {
 
     timestepDelayMS: default display speed = 50fps = 20ms/frame
     **/
-    populate_svg_simulations(cartpoleSVG, cartpoleArray, img_width, img_height, displayArgs, widgetsDomSelect=null) {
+    populate_svg_simulations(cartpoleSVG, cartpoleArray, img_width, img_height, displayArgs, widgetsDomSelect=null, upperTextDomSelect=null) {
       let self = this   //give access to the Cartpole_Viewer objects
 
       //save the cartpole traces to an array
@@ -193,17 +204,19 @@ class Cartpole_Viewer {
         maxTime = Math.max(maxTime, simTrace.state_history.length)
       }
 
-      //function to animate cartpoles
+      //function to animate cartpoles - will be called by setInterval
       let t = 0;        //counter to help keep track of time
       function animateCartpoles() {
 
         //clear last timestep
         cartpoleSVG.clear()
+        let cartpoleHTML = ""
 
         //update slider
         if(widgetsDomSelect != null) {
           $(widgetsDomSelect+" input.gridslider").val(t)
         }
+
 
         //draw all cartpoles
         for (let cartpole of cartpoleArray) {
@@ -220,9 +233,14 @@ class Cartpole_Viewer {
           let action = simTrace.action_history[timestepToDisplay]
           let title = (displayArgs.showCartpoleTitle) ? cartpole.getTitle() : ""
           self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, isDone, `${title}(${timestepToDisplay})` )
+
+          //display text
+          cartpoleHTML += title+": "+Util.roundElems(curr_state,3).join(",")+"<br>"
         }
 
-        //TOOD: make this better
+        $(upperTextDomSelect).html(cartpoleHTML )
+
+        //TOOD: make this reset animation better
         if(t==0)
           cartpoleSVG.circle(500).fill('rgba(255,255,255,0.5)').center(img_width*0.5, img_height*0.5)
         //loop around timer to 0
@@ -232,8 +250,11 @@ class Cartpole_Viewer {
 
       } //end animateCartpoles()
 
+
       //start cartpole animation
       let cartpoleAnimHandle = setInterval(animateCartpoles,displayArgs.timestepDelayMS)
+      //save the setInterval handle for this cartpole widget
+      //it needs to be global so that
       window.cartpoleAnimHandles[widgetsDomSelect] = cartpoleAnimHandle
 
       //create widgets to help user control animations
@@ -267,6 +288,7 @@ class Cartpole_Viewer {
           //save this so we can clear it later
           window.cartpoleAnimHandles[widgetsDomSelect] = cartpoleAnimHandle
         })
+
       }
 
       return cartpoleAnimHandle

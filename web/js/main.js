@@ -30,6 +30,11 @@ class Main {
 
         this.cartpoleSim = new CartPoleSim(this.cartpole_thresholds)
 
+        //create a global variable to save cartpole anim handles
+        if(window.cartpoleAnimHandles == null) {
+          window.cartpoleAnimHandles = {}
+        }
+
     }
     /**
     TODO(SERENA) - comment
@@ -194,9 +199,9 @@ class Main {
       }
 
 
-      //let explanatoryText = `${whichPolicy}: [${policies[whichPolicy]}]`
-      //this.createRandomCorkboard( "#corkboardDiv", 900,900, policies[whichPolicy],explanatoryText )
+      this.createRandomGrid("#gridDiv", policies) 
 
+/*
       //display cartpole title
       this.cartpole_display_args.showCartpoleTitle = true
 
@@ -218,6 +223,7 @@ class Main {
       //create a single animation in the main gridDiv
       UI_Blocks.create_animation_in_dom_elem("#gridDiv", "test", cartpoles, this.cartpole_display_args.img_width, this.cartpole_display_args.img_height, this.cartpole_display_args)
 
+*/
       //timelines - not working
       //ui_blocks.timeline(viewer,"#animation",window.run_data,1,false)
       //ui_blocks.timeline(viewer,"#timeline",window.run_data)
