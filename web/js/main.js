@@ -43,8 +43,8 @@ class Main {
         // this.sandbox_eg()
         // this.sandbox_sc()
         // this.sandbox_equivalence_classes()
-        // this.compare_trajectories()
-        this.compare_policies()
+        this.compare_trajectories()
+        // this.compare_policies()
         // this.sandbox_equivalence_classes()
     }
 
@@ -200,60 +200,60 @@ class Main {
         let body = document.getElementById("comparePoliciesDiv");
 
         let num_state_dims = 4
-        let num_policies = 2
+        let num_policies = 10
 
         let set_of_states = Util.get_cartesian_space(num_state_dims, this.cartpole_thresholds)
         let set_of_policies = []
+        let cartpoles = []
+        let trace_ids = []
         for (let i = 0; i < num_policies; i++) {
             set_of_policies.push(new Linear_Policy(4, true))
+            cartpoles.push(Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0]);
         }
 
 
-        let tmp_cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0];
-
-        let div_id;
-        let policies_on_states = []
+        let tmp_cp, div_id;
         for (let i = 0; i < set_of_states.length; i++) {
             let this_state = set_of_states[i]
             let policy_comparisons_on_this_state = []
-            let state_text = document.createElement("div");
-            state_text.innerHTML += "Starting State: " + String(this_state);
-            body.append(state_text)
+
+            div_id = document.createElement("div");
+            div_id.id = Util.hash(String(this_state))
+            body.append(div_id)
+            trace_ids.push(div_id.id)
 
             for (let j = 0; j < set_of_policies.length; j++) {
+                tmp_cp = cartpoles[j];
                 let this_policy_params = set_of_policies[j].get_params()
-                div_id = document.createElement("div");
-                div_id.id = Util.hash(String(this_policy_params) + "_" + String(this_state))
-                body.append(div_id)
+
 
                 tmp_cp.reset(this_state)
                 let rollout = this.cartpoleSim.simulation_from_policy(tmp_cp, this_policy_params, 200, 0)
                 tmp_cp.save_trace(div_id.id)
                 policy_comparisons_on_this_state.push(rollout)
 
-                UI_Blocks.create_animation_in_dom_elem("#"+div_id.id,
-                        "test_" + div_id.id,
-                        tmp_cp,
-                        this.cartpole_display_args.img_width,
-                        this.cartpole_display_args.img_height,
-                        this.cartpole_display_args,
-                        div_id.id)
+                // UI_Blocks.create_animation_in_dom_elem("#"+div_id.id,
+                //         "test_" + div_id.id,
+                //         tmp_cp,
+                //         this.cartpole_display_args.img_width,
+                //         this.cartpole_display_args.img_height,
+                //         this.cartpole_display_args,
+                //         div_id.id)
             }
         }
 
         console.log("Number of states",  set_of_states.length)
         console.log("Number of policies", set_of_policies.length)
 
-        // let trace_ids = Object.keys(tmp_cp.past_traces)
-        // for (let i = 0; i < trace_ids.length; i++) {
-        //     UI_Blocks.create_animation_in_dom_elem("#"+div_id.id,
-        //         "test_" + trace_ids[i],
-        //         tmp_cp,
-        //         this.cartpole_display_args.img_width,
-        //         this.cartpole_display_args.img_height,
-        //         this.cartpole_display_args,
-        //         trace_ids[i])
-        // }
+        for (let i = 0; i < trace_ids.length; i++) {
+            UI_Blocks.create_animation_in_dom_elem("#"+div_id.id,
+                "test_" + trace_ids[i],
+                cartpoles,
+                this.cartpole_display_args.img_width,
+                this.cartpole_display_args.img_height,
+                this.cartpole_display_args,
+                trace_ids[i])
+        }
     }
 
 
