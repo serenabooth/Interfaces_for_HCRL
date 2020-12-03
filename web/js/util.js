@@ -115,6 +115,23 @@ class Util {
   }
 
   /***
+   * Get a cartesian product of states covering the state space
+   *
+   * @param {number} N - the interval spacing
+   * @param {object} cartpole_thresholds
+   * @returns {[]} a cartesian product list of states covering the space
+   */
+  static get_cartesian_space(N, cartpole_thresholds) {
+    let x_samples = Util.linspace(-cartpole_thresholds.x, cartpole_thresholds.x, N, true)
+    let x_dot_samples = Util.linspace(-cartpole_thresholds.x_dot, cartpole_thresholds.x_dot, N, true)
+    let theta_samples = Util.linspace(-cartpole_thresholds.theta, cartpole_thresholds.theta, N, true)
+    let theta_dot_samples = Util.linspace(-cartpole_thresholds.theta_dot, cartpole_thresholds.theta_dot, N, true)
+
+    return cartesian(x_samples, x_dot_samples, theta_samples, theta_dot_samples);
+  }
+
+
+  /***
    * A helper function to return the top N starting states,
    * based on how divergent policies are.
    *
@@ -126,12 +143,8 @@ class Util {
   static get_top_N_divergent_starting_states(N, policies, cartpole_thresholds, cartpoleSim) {
     let action_steps_0, action_steps_1, diff_score;
     let tmp_cp = Util.gen_rand_cartpoles(1, cartpole_thresholds)[0];
-    let x_samples = Util.linspace(-cartpole_thresholds.x, cartpole_thresholds.x, 8, true)
-    let x_dot_samples = Util.linspace(-cartpole_thresholds.x_dot, cartpole_thresholds.x_dot, 8, true)
-    let theta_samples = Util.linspace(-cartpole_thresholds.theta, cartpole_thresholds.theta, 8, true)
-    let theta_dot_samples = Util.linspace(-cartpole_thresholds.theta_dot, cartpole_thresholds.theta_dot, 8, true)
 
-    let set_of_states =  cartesian(x_samples, x_dot_samples, theta_samples, theta_dot_samples);
+    let set_of_states =  Util.get_cartesian_space(8, cartpole_thresholds);
     let diff_scores = []
 
 
@@ -160,6 +173,12 @@ class Util {
     }
 
     return ret_states
+  }
+
+
+  static hash(str) {
+    return str.split('').reduce((prevHash, currVal) =>
+        (((prevHash << 5) - prevHash) + currVal.charCodeAt(0))|0, 0);
   }
 
 }
