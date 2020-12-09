@@ -3,9 +3,12 @@
   <component name="ChangeListManager">
     <list default="true" id="6a9f2da2-8354-422e-a5f4-42e3d5d794ea" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+<<<<<<< Updated upstream
       <change beforePath="$PROJECT_DIR$/web/js/cartpole_viewer.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/cartpole_viewer.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/js/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/main.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/js/ui_blocks.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/ui_blocks.js" afterDir="false" />
+=======
+>>>>>>> Stashed changes
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

@@ -207,4 +207,45 @@ class Util {
         (((prevHash << 5) - prevHash) + currVal.charCodeAt(0))|0, 0);
   }
 
+  /***
+   * An implementation of dynamic time warping. Returns the DTW Cost Matrix.
+   * Source: https://towardsdatascience.com/dynamic-time-warping-3933f25fcdd
+   *
+   * @param s_traj
+   * @param t_traj
+   * @param window
+   * @returns {*[]}
+   */
+  static dtw(s_traj, t_traj, window = 3) {
+    let n = s_traj.length
+    let m = t_traj.length
+    let w = Math.max(window, Math.abs(n-m))
+
+    let dtw_matrix = Array(n+1).fill().map(() => Array(m+1).fill(0))
+
+    for (let i = 0; i < n+1; i++) {
+      for (let j = 0; j < m+1; j++) {
+        dtw_matrix[i][j] = Infinity
+        dtw_matrix[0][0] = 0
+      }
+    }
+
+    for (let i = 1; i < n+1; i++) {
+      for (let j = Math.max(1, i-w); j < Math.min(m, i+w)+1; j++) {
+        dtw_matrix[i][j] = 0
+      }
+    }
+
+    for (let i = 1; i < n+1; i++) {
+      for (let j = Math.max(1, i-w); j < Math.min(m, i+w)+1; j++) {
+        let cost = Math.abs(s_traj[i-1] - t_traj[j-1])
+        // take last min from a square box
+        let last_min = Math.min(dtw_matrix[i-1][j], dtw_matrix[i][j-1], dtw_matrix[i-1][j-1])
+        dtw_matrix[i][j] = cost + last_min
+      }
+    }
+
+    return dtw_matrix
+  }
+
 }
