@@ -19,6 +19,30 @@ Static utility functions
 **/
 class Util {
 
+  /**
+  A helper function that ties an event handler to a file upload element
+  **/
+  //https://stackoverflow.com/questions/29393064/reading-in-a-local-csv-file-in-javascript
+  static enableFileUploader(uploaderDomId, handlerFunc, argObj) {
+    var fileInput = document.getElementById(uploaderDomId),
+
+        readFile = function () {
+            var reader = new FileReader();
+            reader.onload = function (readerEvt) {
+              //alert(readerEvt.target.fileName)
+              if(handlerFunc != null)
+                handlerFunc(reader.result, argObj)
+            };
+
+            // start reading the file. When it is done, calls the onload event defined above.
+            reader.readAsBinaryString(fileInput.files[0]);
+        };
+
+    fileInput.addEventListener('change', readFile);
+  }
+
+
+
   // a global variable for sharing websocket communcations
 
   /**
@@ -62,12 +86,14 @@ class Util {
   //truncates each float in the array and returns new array
   static roundElems(floatArr, numDecPlaces) {
     let roundedArr = []
-    for(let f of floatArr)
+    for(let f of floatArr) {
       roundedArr.push(f.toFixed(numDecPlaces))
+    }
+
     return roundedArr
   }
 
-  
+
   /***
   A helper function to create a linspace over an interval
 

@@ -23,9 +23,16 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="2e279474-4fc7-4317-bccc-b21bd9e30a3c" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/web/offline_lib/plotly.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/Domains/cartpole_oracle.py" beforeDir="false" afterPath="$PROJECT_DIR$/Domains/cartpole_oracle.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/js/cart_pole.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/cart_pole.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/js/cartpole_viewer.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/cartpole_viewer.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/js/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/main.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/js/ui_blocks.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/ui_blocks.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/js/ui_demos.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/ui_demos.js" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/web/js/util.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/util.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/uidemos.html" beforeDir="false" afterPath="$PROJECT_DIR$/web/uidemos.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />

@@ -38,7 +38,7 @@ class CartPole {
     this.action_history = []
 
 
-    this.viewer = new Cartpole_Viewer(this)
+    this.viewer = new Cartpole_Viewer(cartpole_thresholds)
     this.id = CartPole.id++
     this.title = title ? title : ""
 

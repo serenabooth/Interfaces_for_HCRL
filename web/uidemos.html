@@ -7,6 +7,7 @@
     <script src="./offline_lib/jquery.csv.min.js"></script>
     <script src="./offline_lib/math.min.js"></script>
     <script src="./offline_lib/svgjs/svg.js"></script>
+    <script src="./offline_lib/plotly.js"></script>
 
     <!-- code for viz -->
     <script src="./js/util.js"></script>
@@ -38,16 +39,18 @@
       <input id="csv" type="file">
 
       <output id="out">
-          file contents will appear here
       </output>
 
       <!-- main div for app -->
+      <div id="csvdisplay">
+      </div>
+
       <div id="app">
       </div>
 
-      <!--<h5>State Data [x,xDot,theta,thetaDot]</h5>
-      <div id="randomgrid_states"></div>
-      -->
+      <div id="app2">
+      </div>
+
       <script>
 
       //try not to put any JS code here... make mods in main.js
