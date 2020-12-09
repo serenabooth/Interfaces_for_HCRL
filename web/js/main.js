@@ -43,8 +43,8 @@ class Main {
         // this.sandbox_eg()
         // this.sandbox_sc()
         // this.sandbox_equivalence_classes()
-        this.compare_trajectories()
-        // this.compare_policies()
+        // this.compare_trajectories()
+        this.compare_policies()
         // this.sandbox_equivalence_classes()
     }
 
