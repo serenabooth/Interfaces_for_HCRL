@@ -252,7 +252,8 @@ class Main {
                 this.cartpole_display_args.img_width,
                 this.cartpole_display_args.img_height,
                 this.cartpole_display_args,
-                trace_ids[i])
+                trace_ids[i],
+                false)
         }
     }
 

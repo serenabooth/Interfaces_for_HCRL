@@ -199,7 +199,8 @@ class Cartpole_Viewer {
     timestepDelayMS: default display speed = 50fps = 20ms/frame
     **/
 
-    populate_svg_simulations(cartpoleSVG, cartpoleArray, img_width, img_height, displayArgs, widgetsDomSelect=null, upperTextDomSelect=null, trace_id = null) {
+    populate_svg_simulations(cartpoleSVG, cartpoleArray, img_width, img_height, displayArgs, widgetsDomSelect=null,
+                             upperTextDomSelect=null, trace_id = null, display_text = true) {
       let self = this   //give access to the Cartpole_Viewer objects
 
       //save the cartpole traces to an array
@@ -245,7 +246,9 @@ class Cartpole_Viewer {
           self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, isDone, `${title}(${timestepToDisplay})` )
 
           //display text
-          cartpoleHTML += title+": "+Util.roundElems(curr_state,3).join(",")+"<br>"
+          if (display_text) {
+            cartpoleHTML += title+": "+Util.roundElems(curr_state,3).join(",")+"<br>"
+          }
         }
 
         $(upperTextDomSelect).html(cartpoleHTML )
