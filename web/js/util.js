@@ -49,6 +49,18 @@ class Util {
       return Math.random() * (max - min) + min;
   }
 
+  /**
+  Given an array of carpoles that have simulation tracces, get max sim length
+  **/
+  static getMaxSimTime(cartpoleArray, trace_id = null) {
+    let maxTime = 0
+    for (var i = 0; i < cartpoleArray.length; i++) {
+      let simTrace = cartpoleArray[i].getSimTrace(trace_id)
+      maxTime = Math.max(maxTime, simTrace.state_history.length)
+    }
+    return maxTime
+  }
+
   static getRandomElemFromArray(array) {
     const i = Math.floor(Math.random() * array.length);
     return array[i]
@@ -67,7 +79,7 @@ class Util {
     return roundedArr
   }
 
-  
+
   /***
   A helper function to create a linspace over an interval
 

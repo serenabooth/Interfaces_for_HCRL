@@ -20,11 +20,39 @@ class Main {
                                   img_height: 100,
                                   img_width: 300,
                                   showCartpoleTitle : false,
+                                  showVals: false,
                                   timestepDelayMS : 100,   //20 is simulation standard at 50fps
+
+                                  //if null, then will use individual timelines
+                                  //if set, then will create a global timeline where
+                                  //   all cartpoles in the cartpoles_display_list
+                                  //   will be tied to the global timeline
+                                  global_time_dom_id : "global-timeline",
+
+                                  /*
+                                    Contains list of SVGs and the cartpole data
+                                    all of these SVGs will be tied to the global timeline
+
+                                    SVGcontainerDomSelect => {
+                                        //array of cartpole objs
+                                        cartpoleArray
+
+                                        //handle to SVG obj
+                                        svgObj
+
+                                        //all cartpoles in the given SVG will
+                                        //  use the same trace_id
+                                        trace_id
+
+                                    }
+                                  */
+                                  cartpoles_display_list : {
+                                  },
 
                                   //will also display counterfactual future if true
                                   //include_cfs: true,
                                   maxTimesteps: 1000,
+
                                 }
 
         this.cartpoleSim = new CartPoleSim(this.cartpole_thresholds)
@@ -33,6 +61,7 @@ class Main {
         if(window.cartpoleAnimHandles == null) {
             window.cartpoleAnimHandles = {}
         }
+
     }
 
     /**
@@ -41,18 +70,25 @@ class Main {
     **/
     run() {
         // this.sandbox_eg()
-        // this.sandbox_sc()
+         this.sandbox_sc()
         // this.sandbox_equivalence_classes()
         // this.compare_trajectories()
-        this.compare_policies()
+
+
+        //this.compare_policies()
+
+        //clear old timeline & cartpole animations
+
+        //animate all carts
+        //begin animation
         // this.sandbox_equivalence_classes()
     }
 
     /**
     Elena's run sandbox
     **/
-    sandbox_eg() {
-
+    sandbox_sc() {
+/*
       let whichPolicy = "Undulating"
       //policies from the dropbox paper
       let policies = {
@@ -62,6 +98,33 @@ class Main {
       }
 
       let explanatoryText = `${whichPolicy}: [${policies[whichPolicy]}]`
+*/
+
+
+      //this.compare_policies() calls UI_Blocks.create_animation_in_dom_elem a bunch of times
+      //if this.cartpole_display_args.global_time_dom_id is set to an existing DOM element in the HTML
+      //  then the UI_Blocks.create_animation_in_dom_elem will merely book-keep the gridcell data
+      //  for later rendering
+      this.compare_policies()
+
+      //once you have setup all your gridcell data, then you can call UI_Blocks.refresh_global_time_animations
+      UI_Blocks.refresh_global_time_animations("#"+this.cartpole_display_args.global_time_dom_id, this.cartpole_display_args)
+
+      alert("Notice max timeline now vs. after you click OK")
+
+      //for demonstration, I added another entry to this.cartpole_display_args.cartpoles_display_list
+      let rigid_policy = [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
+      let cp = new CartPole(this.cartpole_thresholds)
+      this.cartpoleSim.simulation_from_policy(cp, rigid_policy, this.cartpole_display_args.maxTimesteps)
+      this.cartpole_display_args.cartpoles_display_list["#test"] = {
+        "cartpoleArray" : [cp],
+        "svgObj" : Util.gen_empty_svg("#test", this.cartpole_display_args.img_width, this.cartpole_display_args.img_height),
+        "trace_id" : null,
+      }
+
+      //once you have updated the list of gridcells & the cartpole data inside them, then call the refresh method
+      // this will update the timeline and render all cartpoles that are tied to the global timeline
+      UI_Blocks.refresh_global_time_animations("#"+this.cartpole_display_args.global_time_dom_id, this.cartpole_display_args)
 
     }
 
@@ -290,51 +353,6 @@ class Main {
       }
     }
 
-    /**
-    Sarah's run sandbox
-    **/
-    sandbox_sc() {
-
-      //choose a policy
-      let whichPolicy = "Undulating"
-      //policies from the dropbox paper
-      let policies = {
-        //NOTE: assumes tau of 0.02???
-        "Undulating" : [-0.28795545, 0.4220686, -0.55905958, 0.79609386],
-        "Rigid" : [-0.06410089, 0.18941857, 0.43170927, 0.30863926],
-        "Random" : CartPole.generateRandomPolicy(),
-      }
-
-
-      //let explanatoryText = `${whichPolicy}: [${policies[whichPolicy]}]`
-      //this.createRandomCorkboard( "#corkboardDiv", 900,900, policies[whichPolicy],explanatoryText )
-
-      //display cartpole title
-      this.cartpole_display_args.showCartpoleTitle = true
-
-      //generate 2 cartpoles from same starting state and run & different policies
-      let starting_state = CartPole.genRandomState(this.cartpole_thresholds)
-      let policyToUse = ["Undulating","Rigid"]
-
-      let cartpoles = []
-      for(let i = 0; i < 2; i++) {
-        let policyName = policyToUse[i]
-        let cp_title = `${policyName[0]}` //set cp title to be first letter of policy name
-
-        //create cartpole and run simulation
-        let cp = new CartPole(this.cartpole_thresholds, starting_state, cp_title)
-        this.cartpoleSim.simulation_from_policy(cp, policies[policyName], this.cartpole_display_args.maxTimesteps)
-        cartpoles.push(cp)
-      }
-
-      //create a single animation in the main gridDiv
-      UI_Blocks.create_animation_in_dom_elem("#gridDiv", "test", cartpoles, this.cartpole_display_args.img_width, this.cartpole_display_args.img_height, this.cartpole_display_args)
-
-      //timelines - not working
-      //ui_blocks.timeline(viewer,"#animation",window.run_data,1,false)
-      //ui_blocks.timeline(viewer,"#timeline",window.run_data)
-
-    }
 
 //===========< BEGIN Helper Functions >=============//
   getRandColor(){

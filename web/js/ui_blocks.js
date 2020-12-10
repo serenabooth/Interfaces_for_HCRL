@@ -150,16 +150,148 @@ class UI_Blocks {
           //create animation's div
           $(containerDomSelect).append(`<div id="${animation_div_dom_id}"></div>`)
 
-          let widgetsDivId = UI_Blocks.get_animation_widget_div_id(animation_div_dom_id) //`${animation_div_dom_id}_widgets`
-          $(containerDomSelect).append(`<div id="${widgetsDivId}"></div>`)
-
           //create svg inside the div & populate it
           var svgObj = Util.gen_empty_svg("#"+animation_div_dom_id, img_width, img_height)
+          console.log(containerDomSelect)
 
-          var viewer = cartpoleArray[0].viewer
-          return viewer.populate_svg_simulations(svgObj, cartpoleArray, img_width, img_height, display_args,"#"+widgetsDivId, trace_id)
+          //if we don't have a global timeline, then use local timelines for each SVG
+          if(display_args.global_time_dom_id == null) {
+            let widgetsDivId = UI_Blocks.get_animation_widget_div_id(animation_div_dom_id) //`${animation_div_dom_id}_widgets`
+            $(containerDomSelect).append(`<div id="${widgetsDivId}"></div>`)
+            var viewer = cartpoleArray[0].viewer
+            return viewer.populate_svg_simulations(svgObj, cartpoleArray, img_width, img_height, display_args,"#"+widgetsDivId, trace_id)
 
+          //otherwise book-keep this cartpole(s) for a global animation
+          //the svgs themselves will be populated later by refresh_global_time_animations(...)
+          } else {
+            display_args.cartpoles_display_list[containerDomSelect] = {
+              "cartpoleArray" : cartpoleArray,
+              "svgObj" : svgObj,
+              "trace_id" : trace_id,
+            }
+          }
       }
+
+
+      //animate all cartpoles that are tied to the global timeline
+      static refresh_global_time_animations(widgetsDomSelect, displayArgs, trace_id = null) {
+
+          //list of gridcells that will be tied to the global timeline
+          let cartpoles_display_list = displayArgs.cartpoles_display_list
+
+
+          //get max time across all cartpoles to be controlled by global timeline
+          function getMaxT(cartpoles_display_list) {
+            let maxT = 0
+            for(let containerDomSelect in cartpoles_display_list) {
+              let currCell = cartpoles_display_list[containerDomSelect]
+              let max_cell_t = Util.getMaxSimTime(currCell.cartpoleArray, trace_id)
+              if( max_cell_t > maxT)
+                maxT = max_cell_t
+            }
+            return maxT
+          }
+
+
+          //current time - this variable gets incremented everytime
+          //animateAllCarpoles() is called. we will use setInterval()
+          //to call animateAllCarpoles() an infinite number of times
+          let t = 0;
+
+          //max time across all current cartpole simulations
+          //used to set the max value of the global timeline
+          let max_t = getMaxT(cartpoles_display_list)
+
+          //function to animate all cartpoles & update timeline slider
+          function animateAllCartpoles() {
+
+            //refresh local list of current cartpoles
+            cartpoles_display_list = displayArgs.cartpoles_display_list
+
+            //update the timeline widget w/ new time
+            if(widgetsDomSelect != null) {
+              $(widgetsDomSelect+" input.gridslider").val(t)
+              max_t = getMaxT(cartpoles_display_list)
+            }
+
+            //update individual gridcells w/ current t
+            for(let containerDomSelect in cartpoles_display_list) {
+              let currCell = cartpoles_display_list[containerDomSelect]
+
+              let cartpoleSVG = currCell.svgObj
+              let trace_id = currCell.trace_id
+
+              //clear last timestep
+              cartpoleSVG.clear()
+
+              //draw all cartpoles to SVG
+              for (let cartpole of currCell.cartpoleArray) {
+                cartpole.viewer.add_cartpole_to_svg(cartpoleSVG, cartpole, t, displayArgs, trace_id)
+                //TODO: make a better graphical 'flash' when things reset
+                if(t==0)
+                  cartpoleSVG.circle(500).fill('rgba(255,255,255,0.5)').center(displayArgs.img_width*0.5, displayArgs.img_height*0.5)
+              }
+            }
+
+            //once we have updated all SVGs, increment t
+            //loop around timer to 0 once we hit the max time
+            if(++t == max_t)
+              t = 0
+
+          } //end animateCartpoles()
+
+
+          //create/refresh the global timeline given the new set of carts to display
+          if(widgetsDomSelect != null) {
+
+            //if timeline already was created, then we should remove old one
+            //  & and stop the old setInterval
+            let timelineDivDomSelect =  widgetsDomSelect + " .gridslider"
+            if ($(timelineDivDomSelect).length)  {
+              $(timelineDivDomSelect).remove()
+              clearInterval(window.cartpoleAnimHandles[widgetsDomSelect])
+            }
+
+            //create timeline slider for this run
+            //TODO: don't add via HTML, use the jquery API
+            $(widgetsDomSelect).append(`<div class="gridslider">0<input type="range" min="0" max="${max_t-1}" value="0" class="gridslider" data-show-value="true">${max_t-1}<button class="stop">Stop</button><button class="play">Play</button></div>`)
+
+            //handles when user clicks on timeline. we want to update the
+            //SVG's based on current t. But we don't want timeline to
+            //continue incrementing on its own (until user hits play)
+            $(widgetsDomSelect+" input.gridslider").on({
+
+              'input' : function() {
+                if($(this).val() != "") {
+                  clearInterval(cartpoleAnimHandle)
+                  t = $(this).val()
+                  animateAllCartpoles()
+                }},
+
+              'mousemove' : function() {
+              }
+            })
+
+            //stop button - so slider doesn't increment by itself
+            $(widgetsDomSelect+" .gridslider .stop").click(function() {
+              clearInterval(cartpoleAnimHandle)
+            })
+
+            //play button to restart the automatic timeline increment
+            $(widgetsDomSelect+" .gridslider .play").click(function() {
+              clearInterval(cartpoleAnimHandle)
+              cartpoleAnimHandle = setInterval(animateAllCartpoles,displayArgs.timestepDelayMS)
+              //save this so we can stop the auto incrementing later
+              window.cartpoleAnimHandles[widgetsDomSelect] = cartpoleAnimHandle
+            })
+          }
+
+
+          //start initial cartpole animations & timeline auto incrementing
+          let cartpoleAnimHandle = setInterval(animateAllCartpoles,displayArgs.timestepDelayMS)
+          window.cartpoleAnimHandles[widgetsDomSelect] = cartpoleAnimHandle
+      }
+
 
       static get_animation_widget_div_id(animation_div_dom_id) {
           let widgetsDivId = `${animation_div_dom_id}_widgets`

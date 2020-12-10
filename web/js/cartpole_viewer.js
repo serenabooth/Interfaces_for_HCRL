@@ -160,8 +160,28 @@ class Cartpole_Viewer {
 
   //==============< BEGIN Methods to create whole SVGs =================//
 
+  /**
+  Add a single cartpole to an SVG
+  **/
+  add_cartpole_to_svg(cartpoleSVG, cartpole, t, displayArgs, trace_id = null) {
+    //get the timestep data
+    let simTrace = cartpole.getSimTrace(trace_id)
+    let color = cartpole.color
+
+    //check if is done
+    let isDone = (t >= simTrace.state_history.length-1)
+    let timestepToDisplay = !isDone ? t : simTrace.state_history.length-1
+
+    //add cartpole to animation
+    let curr_state = simTrace.state_history[timestepToDisplay]
+    let action = simTrace.action_history[timestepToDisplay]
+    let title = (displayArgs.showCartpoleTitle) ? cartpole.getTitle() : ""
+    this.populate_svg_snapshot(cartpoleSVG, curr_state, action, displayArgs.img_width, displayArgs.img_height, isDone, `${title}(${timestepToDisplay})`, "pull", displayArgs.showVals, color)
+
+  }
+
     /**
-    populate SVG for a single timeslice
+    populate SVG for a single timeslice given the raw data
     **/
     populate_svg_snapshot(svgObj, world_state, action, img_width, img_height, isDone, title="", pullOrPush = "pull", showVals=false, color=null) {
 
@@ -182,8 +202,10 @@ class Cartpole_Viewer {
       }
     }
 
+
     /**
-    create animation of a simulation run in an existing SVG
+    create a self-contained animation of a simulation run in an existing SVG
+    include the timeline
 
     timestepDelayMS: default display speed = 50fps = 20ms/frame
     **/
@@ -214,20 +236,7 @@ class Cartpole_Viewer {
 
         //draw all cartpoles
         for (let cartpole of cartpoleArray) {
-
-          //get the timestep data
-          let simTrace = cartpole.getSimTrace(trace_id)
-          let color = cartpole.color
-
-          //check if is done
-          let isDone = (t >= simTrace.state_history.length-1)
-          let timestepToDisplay = !isDone ? t : simTrace.state_history.length-1
-
-          //add cartpole to animation
-          let curr_state = simTrace.state_history[timestepToDisplay]
-          let action = simTrace.action_history[timestepToDisplay]
-          let title = (displayArgs.showCartpoleTitle) ? cartpole.getTitle() : ""
-          self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, isDone, `${title}(${timestepToDisplay})`, "pull", false, color)
+          self.add_cartpole_to_svg(cartpoleSVG, cartpole, t, displayArgs, trace_id)
         }
 
         //TOOD: make this better
@@ -279,6 +288,8 @@ class Cartpole_Viewer {
 
       return cartpoleAnimHandle
     }
+
+
 
     //==============< END Methods to create whole SVGs =================//
 
