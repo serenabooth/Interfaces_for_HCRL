@@ -133,14 +133,12 @@ class CartPole {
       return {
         action_history : this.action_history,
         state_history : this.state_history,
-        // maxT : this.state_history.length
       }
     }
     else {
       return {
         action_history: this.past_traces[trace_id]["action_history"],
         state_history: this.past_traces[trace_id]["state_history"],
-        // maxT : this.past_traces[trace_id]["state_history"].length,
       }
     }
 

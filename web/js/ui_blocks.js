@@ -38,8 +38,60 @@ class UI_Blocks {
       var animation_div_dom_id = "drawing-"+cartpole.id;
       this.create_animation_in_dom_elem("#"+divId, animation_div_dom_id, cartpole, display_args.img_width, display_args.img_height, display_args)
     }
-
   }
+
+
+    /**
+     Creates a grid of cartpole animations - simulations should have been run before calling this
+
+     @gridDivDomSelector: the div that contains the grid
+     @numRows : number of rows in the grid
+     @numCols : number of columns in the grid
+     @cartpole_array: array of cartpoles. Each cartpole should be set to the desired state to display
+     @cartpole_display_args: an object containing arguments that configure animations
+     @traces: array of trace_ids
+     **/
+    static behavior_grid(gridDivDomSelector, numRows, numCols, cartpole_arrays, display_args, traces) {
+        console.log("Num cartpole arrays", cartpole_arrays.length)
+        //check to see whether we have enough traces
+        if( numRows*numCols > cartpole_arrays[0].length * traces.length) {
+            console.log("ui_blocks.state_grid(): Not enough traces for the number of grid cells")
+            return
+        }
+
+        //change CSS in grid to reflect correct # of columns
+        let cssVals = Array.from({length:numCols}).map(x => "auto")
+        $(gridDivDomSelector).css("grid-template-columns", cssVals.join(" "))
+
+
+        console.log("Num cartpoles", cartpole_arrays.length)
+        console.log("First elem", cartpole_arrays[0].length)
+        //create a gridcell for group of cartpoles
+        for(let i = 0; i < traces.length; i++) {
+
+            let trace_id = traces[i]
+            for (let k = 0; k < cartpole_arrays[i].length; k++) {
+                let cartpole_subset = cartpole_arrays[i][k]
+                //create div for the cart's gridcell
+                let divId = `cart_${i}_${k}`
+                $(gridDivDomSelector).append(`<div id="${divId}"></div>`)
+
+                //insert table of state values
+                // $("#"+divId).append(cartpole.getTitle())
+
+                //insert simulation animation
+                var animation_div_dom_id = "drawing-"+i+"_"+k;
+                this.create_animation_in_dom_elem("#"+divId,
+                    animation_div_dom_id,
+                    cartpole_subset,
+                    display_args.img_width,
+                    display_args.img_height,
+                    display_args,
+                    trace_id)
+            }
+
+        }
+    }
 
   /**
   Clears a single gridcell of a cartpole animation as well as the timeline widget

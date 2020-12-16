@@ -217,10 +217,10 @@ class Main {
             let this_state = set_of_states[i]
             let policy_comparisons_on_this_state = []
 
-            div_id = document.createElement("div");
-            div_id.id = Util.hash(String(this_state))
-            body.append(div_id)
-            trace_ids.push(div_id.id)
+            // div_id = document.createElement("div");
+            // div_id.id = Util.hash(String(this_state))
+            // body.append(div_id)
+            trace_ids.push(Util.hash(String(this_state)))
 
             for (let j = 0; j < set_of_policies.length; j++) {
                 tmp_cp = cartpoles[j];
@@ -229,32 +229,46 @@ class Main {
 
                 tmp_cp.reset(this_state)
                 let rollout = this.cartpoleSim.simulation_from_policy(tmp_cp, this_policy_params, 200, 0)
-                tmp_cp.save_trace(div_id.id)
+                tmp_cp.save_trace(Util.hash(String(this_state)))
                 policy_comparisons_on_this_state.push(rollout)
-
-                // UI_Blocks.create_animation_in_dom_elem("#"+div_id.id,
-                //         "test_" + div_id.id,
-                //         tmp_cp,
-                //         this.cartpole_display_args.img_width,
-                //         this.cartpole_display_args.img_height,
-                //         this.cartpole_display_args,
-                //         div_id.id)
             }
         }
 
         console.log("Number of states",  set_of_states.length)
         console.log("Number of policies", set_of_policies.length)
 
-        for (let i = 0; i < trace_ids.length; i++) {
-            UI_Blocks.create_animation_in_dom_elem("#"+div_id.id,
-                "test_" + trace_ids[i],
-                cartpoles,
-                this.cartpole_display_args.img_width,
-                this.cartpole_display_args.img_height,
-                this.cartpole_display_args,
-                trace_ids[i],
-                false)
+        let dtw_performance_matrix = Array(set_of_states.length).fill().map(() => Array(cartpoles.length).fill(0))
+
+        let cartpole_arrays = []
+        for (let state_idx = 0; state_idx < set_of_states.length; state_idx++) {
+            let trace_id = Util.hash(String(set_of_states[state_idx]))
+            let reference_traj = cartpoles[0].getSimTrace(trace_id)["state_history"]
+
+            for (let cartpole_idx = 1; cartpole_idx < cartpoles.length; cartpole_idx++) {
+                let inspect_traj = cartpoles[cartpole_idx].getSimTrace(trace_id)["state_history"]
+                dtw_performance_matrix[state_idx][cartpole_idx] = Util.dtw(reference_traj, inspect_traj)["cost"]
+            }
+
+            let alphas = []
+            let alpha_ids = Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 5)
+            for (let i = 0; i < alpha_ids.length; i++) {
+                alphas.push(cartpoles[alpha_ids[i]])
+            }
+
+            let betas = []
+            let betas_ids = Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 5, "min")
+            for (let i = 0; i < betas_ids.length; i++) {
+                betas.push(cartpoles[betas_ids[i]])
+            }
+
+
+            cartpole_arrays.push([alphas, betas])
         }
+
+        console.log(dtw_performance_matrix)
+        let domSelect = "#gridDiv"
+        UI_Blocks.behavior_grid(domSelect+" .animation-container", trace_ids.length, 2,cartpole_arrays, this.cartpole_display_args, trace_ids)
+
     }
 
 
@@ -339,6 +353,11 @@ class Main {
     }
 
 //===========< BEGIN Helper Functions >=============//
+  /***
+  * Generate a random color as a string for use in html "rgb(x,y,z)"
+  *
+  * @returns {string}
+  */
   getRandColor(){
       let rgb = [parseInt(Math.random() * 256),
           parseInt(Math.random() * 256),
@@ -622,42 +641,5 @@ class Main {
     UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args)
   }
 
-  // /**
-  // **/
-  // createRandomCorkboard(domSelect, corkboard_length, corkboard_width, policy, explanatoryText) {
-  //
-  //   $(domSelect+" .title").html("Cartpole Corkboard")
-  //
-  //   //num cartpoles
-  //   let n = 10
-  //   let maxTimesteps = 10
-  //   let timestepsToCoast = 10
-  //
-  //   //create cartpoles
-  //   let cartpoles = Util.gen_rand_cartpoles(n, this.cartpole_thresholds);
-  //
-  //   //define cartpole animation positions
-  //   let cartpole_positions = [];
-  //   for(let i =0; i < cartpoles.length; i++) {
-  //
-  //     //run simulation with cartple
-  //     let cp = cartpoles[i]
-  //     cp.setTitle(""+i)
-  //     this.cartpoleSim.simulation_from_policy(cp, policy, maxTimesteps, timestepsToCoast)
-  //
-  //     //determine cartpole position
-  //     let cp_pos = {
-  //       'x' : i * 50,
-  //       'y' : i * 100
-  //     }
-  //     cartpole_positions.push(cp_pos)
-  //   }
-  //
-  //   UI_Blocks.state_corkboard(domSelect+" .animation-container", corkboard_length, corkboard_width, cartpoles, cartpole_positions, this.cartpole_display_args)
-  //
-  //   //text to describe grid
-  //   $("#corkboardDiv .policy").text(explanatoryText)
-  //
-  // }
 
 }
