@@ -76,8 +76,8 @@ class UI_Blocks {
                 let divId = `cart_${i}_${k}`
                 $(gridDivDomSelector).append(`<div id="${divId}"></div>`)
 
-                //insert table of state values
-                // $("#"+divId).append(cartpole.getTitle())
+                // insert table of state values
+                $("#"+divId).append(trace_id)
 
                 //insert simulation animation
                 var animation_div_dom_id = "drawing-"+i+"_"+k;
