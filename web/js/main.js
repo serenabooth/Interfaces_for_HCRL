@@ -1,19 +1,17 @@
-// src: https://stackoverflow.com/questions/12303989/cartesian-product-of-multiple-arrays-in-javascript
-const f = (a, b) => [].concat(...a.map(d => b.map(e => [].concat(d, e))));
-const cartesian = (a, b, ...c) => (b ? cartesian(f(a, b), ...c) : a);
-
 class Main {
-  //set default parameters
-    constructor() {
 
-      //thesholds for x & theta (radians)
-      //goes from (-val, +val)
+    /***
+     * Set the default parameters.
+     * Including cartpole thresholds, display args, simulation, etc.
+     */
+    constructor() {
+      //thesholds for x & theta (radians) goes from (-val, +val)
       this.cartpole_thresholds = { x : 2.4,
-                                    theta : 24 * Math.PI / 180, // = 0.41887902047863906
-                                    //max velocity would span world in 1 timestep
-                                    x_dot : 2*2.4,
-                                    theta_dot : 2* 24 * Math.PI / 180
-                                  }
+                                   theta : 24 * Math.PI / 180, // = 0.41887902047863906
+                                   //max velocity would span world in 1 timestep
+                                   x_dot : 2*2.4,
+                                   theta_dot : 2* 24 * Math.PI / 180
+                                 }
 
       this.cartpole_display_args = {
                                   //height & width of an individual animation
@@ -40,7 +38,6 @@ class Main {
     let's try not to put any JS code in index.html
     **/
     run() {
-        // this.sandbox_eg()
         // this.sandbox_sc()
         // this.sandbox_equivalence_classes()
         // this.compare_trajectories()
@@ -49,29 +46,32 @@ class Main {
     }
 
     /**
-    Elena's run sandbox
-    **/
-    sandbox_eg() {
-
-      let whichPolicy = "Undulating"
-      //policies from the dropbox paper
-      let policies = {
-        //NOTE: assumes tau of 0.02???
-        "Undulating" : [-0.28795545, 0.4220686, -0.55905958, 0.79609386],
-        "Rigid" : [-0.06410089, 0.18941857, 0.43170927, 0.30863926]
-      }
-
-      let explanatoryText = `${whichPolicy}: [${policies[whichPolicy]}]`
-
+     A development playground for exploring the workbench, trajectory comparisons idea
+     **/
+    compare_trajectories() {
+        $("#workbenchDiv"+" .title").html("Workbench")
+        // add trajectories for comparing policies
+        this.comparison_trajectories()
     }
 
+    /***
+     * Add one or more cartpole examples to the workbench
+     *
+     * @param cartpoles
+     * @param trace_id
+     * @param color
+     * @param id
+     */
     add_to_workbench(cartpoles, trace_id, color, id) {
+        if (document.getElementById("#workbenchDiv") == null) {
+            console.log("You can only call add_to_workbench if you have a workbenchDiv in your DOM")
+            return
+        }
 
         let div_id = Date.now()
         let g = document.createElement('div');
         g.setAttribute("id", String(div_id));
         $("#workbenchDiv").append(g)
-
 
         UI_Blocks.create_animation_in_dom_elem("#"+div_id,
                                               "workbench_anim_"+div_id,
@@ -88,6 +88,12 @@ class Main {
 
     }
 
+    /***
+     *
+     * @param existing_cp
+     * @param existing_policy
+     * @param num_comps
+     */
     comparison_trajectories(existing_cp=null, existing_policy=null, num_comps =4) {
         let i, state_idx, cp, policy, btn, trace_id, new_cp, new_policy;
         let mainObject = this;
@@ -114,7 +120,7 @@ class Main {
             else {
                 policy = new Linear_Policy(4, true)
                 cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0];
-                cp.color=this.getRandColor()
+                cp.color= Util.getRandColor()
                 cartpoles.push(cp)
                 policies.push(policy)
                 new_cp = cp
@@ -184,73 +190,61 @@ class Main {
 
 
     /**
-     A development playground for exploring the workbench, trajectory comparisons idea
-     **/
-    compare_trajectories() {
-        $("#workbenchDiv"+" .title").html("Workbench")
-        // add trajectories for comparing policies
-        this.comparison_trajectories()
-    }
-
-
-    /**
      A development playground for exploring the equivalence class idea
      **/
     compare_policies() {
-        let body = document.getElementById("comparePoliciesDiv");
+        let NUM_DIMS = 4
+        let NUM_POLICIES = 25
 
-        let num_state_dims = 4
-        let num_policies = 10
-
-        let set_of_states = Util.get_cartesian_space(num_state_dims, this.cartpole_thresholds)
         let set_of_policies = []
+        let set_of_states = State.get_cartesian_state_space_cover(NUM_DIMS, this.cartpole_thresholds)
+
         let cartpoles = []
         let trace_ids = []
-        for (let i = 0; i < num_policies; i++) {
-            set_of_policies.push(new Linear_Policy(4, true))
-            cartpoles.push(Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0]);
+
+        // generate random policies and cartpoles
+        for (let i = 0; i < NUM_POLICIES; i++) {
+            let tmp_policy = new Linear_Policy(this.cartpole_thresholds, 4, true, true)
+            set_of_policies.push(tmp_policy)
+            cartpoles.push(new CartPole(this.cartpole_thresholds))
         }
 
-
-        let tmp_cp, div_id;
+        // rollout each policy on each state
+        let tmp_cp, this_state, policy_comparisons_on_this_state;
         for (let i = 0; i < set_of_states.length; i++) {
-            let this_state = set_of_states[i]
-            let policy_comparisons_on_this_state = []
+            this_state = set_of_states[i]
+            policy_comparisons_on_this_state = []
 
-            // div_id = document.createElement("div");
-            // div_id.id = Util.hash(String(this_state))
-            // body.append(div_id)
             trace_ids.push(Util.hash(String(this_state)))
 
             for (let j = 0; j < set_of_policies.length; j++) {
                 tmp_cp = cartpoles[j];
-                let this_policy_params = set_of_policies[j].get_params()
-
-
                 tmp_cp.reset(this_state)
+
+                let this_policy_params = set_of_policies[j]
                 let rollout = this.cartpoleSim.simulation_from_policy(tmp_cp, this_policy_params, 200, 0)
+
                 tmp_cp.save_trace(Util.hash(String(this_state)))
                 policy_comparisons_on_this_state.push(rollout)
             }
         }
 
-        console.log("Number of states",  set_of_states.length)
-        console.log("Number of policies", set_of_policies.length)
-
-        let dtw_performance_matrix = Array(set_of_states.length).fill().map(() => Array(cartpoles.length).fill(0))
+        let dtw_performance_matrix = Util.gen_2d_array(set_of_states.length, cartpoles.length)
 
         let cartpole_arrays = []
         for (let state_idx = 0; state_idx < set_of_states.length; state_idx++) {
             let trace_id = Util.hash(String(set_of_states[state_idx]))
+
+            // pick a reference trajectory
             let reference_traj = cartpoles[0].getSimTrace(trace_id)["state_history"]
 
             for (let cartpole_idx = 1; cartpole_idx < cartpoles.length; cartpole_idx++) {
                 let inspect_traj = cartpoles[cartpole_idx].getSimTrace(trace_id)["state_history"]
-                dtw_performance_matrix[state_idx][cartpole_idx] = Util.dtw(reference_traj, inspect_traj)["cost"]
+                dtw_performance_matrix[state_idx][cartpole_idx] = dtw.dtw(reference_traj, inspect_traj)["cost"]
             }
 
             let alphas = []
-            let alpha_ids = Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 5)
+            let alpha_ids = Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 5, "max")
             for (let i = 0; i < alpha_ids.length; i++) {
                 alphas.push(cartpoles[alpha_ids[i]])
             }
@@ -260,7 +254,6 @@ class Main {
             for (let i = 0; i < betas_ids.length; i++) {
                 betas.push(cartpoles[betas_ids[i]])
             }
-
 
             cartpole_arrays.push([alphas, betas])
         }
@@ -317,54 +310,13 @@ class Main {
         //NOTE: assumes tau of 0.02???
         "Undulating" : [-0.28795545, 0.4220686, -0.55905958, 0.79609386],
         "Rigid" : [-0.06410089, 0.18941857, 0.43170927, 0.30863926],
-        "Random" : CartPole.generateRandomPolicy(),
+        "Random" : new Linear_Policy(4, true).get_params(),
       }
 
-
-      this.createRandomGrid("#gridDiv", policies) 
-
-/*
-      //display cartpole title
-      this.cartpole_display_args.showCartpoleTitle = true
-
-      //generate 2 cartpoles from same starting state and run & different policies
-      let starting_state = CartPole.genRandomState(this.cartpole_thresholds)
-      let policyToUse = ["Undulating","Rigid"]
-
-      let cartpoles = []
-      for(let i = 0; i < 2; i++) {
-        let policyName = policyToUse[i]
-        let cp_title = `${policyName[0]}` //set cp title to be first letter of policy name
-
-        //create cartpole and run simulation
-        let cp = new CartPole(this.cartpole_thresholds, starting_state, cp_title)
-        this.cartpoleSim.simulation_from_policy(cp, policies[policyName], this.cartpole_display_args.maxTimesteps)
-        cartpoles.push(cp)
-      }
-
-      //create a single animation in the main gridDiv
-      UI_Blocks.create_animation_in_dom_elem("#gridDiv", "test", cartpoles, this.cartpole_display_args.img_width, this.cartpole_display_args.img_height, this.cartpole_display_args)
-
-*/
-      //timelines - not working
-      //ui_blocks.timeline(viewer,"#animation",window.run_data,1,false)
-      //ui_blocks.timeline(viewer,"#timeline",window.run_data)
-
+      this.createRandomGrid("#gridDiv", policies)
     }
 
 //===========< BEGIN Helper Functions >=============//
-  /***
-  * Generate a random color as a string for use in html "rgb(x,y,z)"
-  *
-  * @returns {string}
-  */
-  getRandColor(){
-      let rgb = [parseInt(Math.random() * 256),
-          parseInt(Math.random() * 256),
-          parseInt(Math.random() * 256)];
-      return "rgb(" + rgb.join(",") + ")";
-  }
-
   /**
   Process the contents of a message received from the python websocket
 
@@ -448,11 +400,11 @@ class Main {
   }
 
   /**
-  Test user knowledge
-
-  @mainObjct : a Main class instance
+  * Test user knowledge - show them a cartpole and ask what will happen next.
+  *
   **/
-  testUserKnowledge(mainObjct) {
+  testUserKnowledge() {
+    let mainObjct = this
     $("#userTestDiv"+" .title").html("User Knowledge Test")
     $("#userTestDiv"+" .user_score").html(correct_user_responses + " (correct responses)" + " / " + all_user_responses + " (total responses)")
 
@@ -499,10 +451,9 @@ class Main {
   Add a single cartpole to the top of the screen
   Add this cartpole to the globally tracked all_cartpoles dict
   Add a "Bad Robot" and a "Good Robot" button
-
-  @mainObjct : a Main class instance
   **/
-  addSingleFeedbackCartAndButtons(mainObjct) {
+  addSingleFeedbackCartAndButtons() {
+    let mainObjct = this
     $("#feedbackDiv"+" .title").html("Give Feedback to the Robot")
 
     // add a toplevel cartpole for gathering feedback
@@ -543,8 +494,7 @@ class Main {
   /**
   Send a message through the websocket to ask for proposed actions for each cartpole
 
-  @num_steps int, the number of policy steps to visualize
-  @mainObjct : a Main class instance
+  @param{number} num_steps : the number of policy steps to visualize
   **/
   update_cartpole_grid(num_steps) {
     let mainObjct = this;
@@ -555,8 +505,8 @@ class Main {
         cartpoles[id] = {"divId": all_cartpoles[id]["divId"],
                          "state": all_cartpoles[id]["cartpole"].getStartingState(),
                          "num_steps": num_steps,
-                        }
-      }
+        }
+    }
 
     let msg = {
       msg_type: "get_actions_cartpole_group",

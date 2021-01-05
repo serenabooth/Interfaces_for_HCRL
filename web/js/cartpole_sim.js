@@ -51,12 +51,8 @@ class CartPoleSim {
 
       // Constants that characterize the system.
       this.gravity = 9.8;
-      //this.cartWidth = 0.2;
-      //this.cartHeight = 0.1;
-
       // Seconds between state updates.
       this.tau = 0.02;
-
       //magnitude of force applied
       this.forceMag = 10.0
 
@@ -70,6 +66,9 @@ class CartPoleSim {
 
     /**
     returns true if the particular variable has exceeded the threshold
+
+    @param{array} state_as_arr
+    @param{string} state_var_name
     **/
     exceedsThreshold(state_as_arr, state_var_name) {
       let state_var_threshold = this.cartpole_thresholds[state_var_name]
@@ -108,22 +107,6 @@ class CartPoleSim {
       return hadToFix ? fixedState : null
     }
 
-
-
-    /**
-    calculate the action given the state & policy
-
-    @policy: an array of floats. If null, the choose random action
-    @state_as_arr: an array of numbers. if null, then get own state
-    **/
-    getAction(state_as_arr, policy = null) {
-
-      var bool = (policy == null) ? (Math.random() < 0.5) : (math.dot(policy,state_as_arr) < 0)
-      if(bool)
-        return this.MOVE_LEFT
-      else
-        return this.MOVE_RIGHT
-    }
 
     /**
     Get the opposite action
@@ -198,7 +181,7 @@ class CartPoleSim {
       for(let i = 0; i < maxTimesteps; i++) {
 
         //get action from policy
-        let action = this.getAction(cartpole.getState(), policy)
+        let action = policy.get_action(cartpole.getState())
 
         //simulate next timestep
         let next_state = this.simulate_single_timestep_private(cartpole, action)
