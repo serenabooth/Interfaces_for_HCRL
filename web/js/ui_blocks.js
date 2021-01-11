@@ -45,27 +45,23 @@ class UI_Blocks {
      Creates a grid of cartpole animations - simulations should have been run before calling this
 
      @gridDivDomSelector: the div that contains the grid
-     @numRows : number of rows in the grid
-     @numCols : number of columns in the grid
-     @cartpole_array: array of cartpoles. Each cartpole should be set to the desired state to display
-     @cartpole_display_args: an object containing arguments that configure animations
-     @traces: array of trace_ids
+     @{integer} numRows : number of rows in the grid
+     @{integer} numCols : number of columns in the grid
+     @{array} cartpole_arrays: array of cartpoles. Each cartpole should be set to the desired state to display
+     @{array} display_args: an object containing arguments that configure animations
+     @{boolean} show_state_values
+     @{array} traces: array of trace_ids
      **/
-    static behavior_grid(gridDivDomSelector, numRows, numCols, cartpole_arrays, display_args, traces) {
-        console.log("Num cartpole arrays", cartpole_arrays.length)
+    static behavior_grid(gridDivDomSelector, numRows, numCols, cartpole_arrays, display_args, show_state_values = false, traces = null) {
         //check to see whether we have enough traces
         if( numRows*numCols > cartpole_arrays[0].length * traces.length) {
             console.log("ui_blocks.state_grid(): Not enough traces for the number of grid cells")
             return
         }
-
         //change CSS in grid to reflect correct # of columns
         let cssVals = Array.from({length:numCols}).map(x => "auto")
         $(gridDivDomSelector).css("grid-template-columns", cssVals.join(" "))
 
-
-        console.log("Num cartpoles", cartpole_arrays.length)
-        console.log("First elem", cartpole_arrays[0].length)
         //create a gridcell for group of cartpoles
         for(let i = 0; i < traces.length; i++) {
 
@@ -73,14 +69,16 @@ class UI_Blocks {
             for (let k = 0; k < cartpole_arrays[i].length; k++) {
                 let cartpole_subset = cartpole_arrays[i][k]
                 //create div for the cart's gridcell
-                let divId = `cart_${i}_${k}`
+                let divId = `cart_` + Util.uuidv4()
                 $(gridDivDomSelector).append(`<div id="${divId}"></div>`)
 
                 // insert table of state values
-                $("#"+divId).append(trace_id)
+                if (show_state_values) {
+                    $("#"+divId).append(trace_id)
+                }
 
                 //insert simulation animation
-                var animation_div_dom_id = "drawing-"+i+"_"+k;
+                var animation_div_dom_id = "drawing-"+ Util.uuidv4()
                 this.create_animation_in_dom_elem("#"+divId,
                     animation_div_dom_id,
                     cartpole_subset,
@@ -148,14 +146,17 @@ class UI_Blocks {
       /**
       Creates an animation svg and places it within a dom object
 
+      Acts on a single cartpole, with a single trace.
       simulation data should have been generated ahead of time
 
-      @containerDomSelect: dom selector for a gridcell
-      @animation_div_dom_id: desired div id for the animation div
-      @cartpole: a cartpole object w/ the state values defined (should contain simRun data)
-      @img_width:
-      @img_height
-      @animation_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
+      @{String} containerDomSelect: dom selector for a gridcell
+      @{String} animation_div_dom_id: desired div id for the animation div
+      @{object} cartpole: a cartpole object w/ the state values defined (should contain simRun data)
+      @{number} img_width:
+      @{number} img_height
+      @{array} animation_args: animation args according to svgjs (https://svgjs.com/docs/3.0/animating/)
+      @{String} trace_id: an id to identify a specific animation trace
+      @{String} display_text
       **/
       static create_animation_in_dom_elem(containerDomSelect, animation_div_dom_id, cartpoleObjOrArray,
                                           img_width, img_height, display_args, trace_id=null, display_text = true) {

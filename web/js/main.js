@@ -188,80 +188,128 @@ class Main {
 
     }
 
-
     /**
      A development playground for exploring the equivalence class idea
      **/
     compare_policies() {
         let NUM_DIMS = 4
-        let NUM_POLICIES = 25
+        let NUM_POLICIES = 50 // assess a lot of policies!
+        let NUM_COLUMNS = 2
 
-        let set_of_policies = []
-        let set_of_states = State.get_cartesian_state_space_cover(NUM_DIMS, this.cartpole_thresholds)
-
+        let starting_states = []
+        let policies = []
         let cartpoles = []
-        let trace_ids = []
+        let state_ids = []
 
-        // generate random policies and cartpoles
+        // create states
+        starting_states = State.get_cartesian_state_space_cover(NUM_DIMS, this.cartpole_thresholds)
+        // create policies
         for (let i = 0; i < NUM_POLICIES; i++) {
-            let tmp_policy = new Linear_Policy(this.cartpole_thresholds, 4, true, true)
-            set_of_policies.push(tmp_policy)
+            policies.push(new Linear_Policy(this.cartpole_thresholds, 4, true, true))
+        }
+        // create cartpoles - one for each policy (for animation)
+        for (let i = 0; i < NUM_POLICIES; i++) {
             cartpoles.push(new CartPole(this.cartpole_thresholds))
         }
 
+        // keep track of the "best" policies on each state
+        let policy_comparisons_on_states = {}
+
         // rollout each policy on each state
-        let tmp_cp, this_state, policy_comparisons_on_this_state;
-        for (let i = 0; i < set_of_states.length; i++) {
-            this_state = set_of_states[i]
-            policy_comparisons_on_this_state = []
+        for (let i = 0; i < starting_states.length; i++) {
+            let this_state = starting_states[i]
+            let state_id = Util.hash(String(this_state))
+            state_ids.push(state_id)
 
-            trace_ids.push(Util.hash(String(this_state)))
+            policy_comparisons_on_states[state_id] = {"max_length": -1,
+                                                      "cartpole_idx": -1,
+                                                      "trace_id": -1}
 
-            for (let j = 0; j < set_of_policies.length; j++) {
-                tmp_cp = cartpoles[j];
+            for (let j = 0; j < policies.length; j++) {
+                let this_policy = policies[j]
+                let tmp_cp = cartpoles[j]
+                let policy_id = Util.hash(String(this_policy))
+
+                // reset to selected starting state
                 tmp_cp.reset(this_state)
 
-                let this_policy_params = set_of_policies[j]
-                let rollout = this.cartpoleSim.simulation_from_policy(tmp_cp, this_policy_params, 200, 0)
+                // rollout & save to trace history
+                let rollout = this.cartpoleSim.simulation_from_policy(tmp_cp,
+                                                                      this_policy,
+                                                                      200,
+                                                                      0)
+                tmp_cp.save_trace(state_id)
 
-                tmp_cp.save_trace(Util.hash(String(this_state)))
-                policy_comparisons_on_this_state.push(rollout)
+                if (rollout["action_history"].length > policy_comparisons_on_states[state_id]["max_length"]) {
+                    policy_comparisons_on_states[state_id] = {"max_length": rollout["action_history"].length,
+                                                              "cartpole_idx": j,
+                                                              "trace_id": state_id}
+                }
             }
         }
 
-        let dtw_performance_matrix = Util.gen_2d_array(set_of_states.length, cartpoles.length)
+        // Dynamic time warping
+        let dtw_performance_matrix = Util.gen_2d_array(starting_states.length, policies.length)
 
-        let cartpole_arrays = []
-        for (let state_idx = 0; state_idx < set_of_states.length; state_idx++) {
-            let trace_id = Util.hash(String(set_of_states[state_idx]))
+        let cartpoles_to_visualize = []
 
-            // pick a reference trajectory
-            let reference_traj = cartpoles[0].getSimTrace(trace_id)["state_history"]
+        for (let state_idx = 0; state_idx < starting_states.length; state_idx++) {
+            let this_state = starting_states[state_idx]
+            let state_id = Util.hash(String(this_state))
+            let cp_idx = policy_comparisons_on_states[state_id]["cartpole_idx"]
 
-            for (let cartpole_idx = 1; cartpole_idx < cartpoles.length; cartpole_idx++) {
-                let inspect_traj = cartpoles[cartpole_idx].getSimTrace(trace_id)["state_history"]
-                dtw_performance_matrix[state_idx][cartpole_idx] = dtw.dtw(reference_traj, inspect_traj)["cost"]
+            // get a reference trajectory to compare all others to with DTW
+            let reference_traj = cartpoles[cp_idx].getSimTrace(state_id)["state_history"]
+
+            // loop over policies/cartpoles to compare
+            for (let policy_idx = 1; policy_idx < policies.length; policy_idx++) {
+                let comparison_traj = cartpoles[policy_idx].getSimTrace(state_id)["state_history"]
+
+                // compute the cost between the reference trajectory and the comparison,
+                // and add this cost to the 2D DTW Cost array
+                dtw_performance_matrix[state_idx][policy_idx] = dtw.dtw(reference_traj, comparison_traj)["cost"]
             }
 
-            let alphas = []
-            let alpha_ids = Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 5, "max")
-            for (let i = 0; i < alpha_ids.length; i++) {
-                alphas.push(cartpoles[alpha_ids[i]])
-            }
+            // for each state, we want to pick <N> policies/cartpoles to group as similar
+            // and <M> policies/cartpoles to group as dissimilar.
+            let similar_cartpole_indeces = Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 5, "min")
+            let dissimilar_cartpole_indeces = Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 5, "max")
 
-            let betas = []
-            let betas_ids = Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 5, "min")
-            for (let i = 0; i < betas_ids.length; i++) {
-                betas.push(cartpoles[betas_ids[i]])
-            }
+            let similar_cps = similar_cartpole_indeces.map(i => cartpoles[i])
+            let dissimilar_cps = dissimilar_cartpole_indeces.map(i => cartpoles[i])
 
-            cartpole_arrays.push([alphas, betas])
+            cartpoles_to_visualize.push([similar_cps, dissimilar_cps])
+
         }
 
-        console.log(dtw_performance_matrix)
-        let domSelect = "#gridDiv"
-        UI_Blocks.behavior_grid(domSelect+" .animation-container", trace_ids.length, 2,cartpole_arrays, this.cartpole_display_args, trace_ids)
 
+        for (let i = 0; i < cartpoles_to_visualize.length; i++) {
+            let title = document.createElement("h4");
+            title.innerText = "State: " + String(starting_states[i])
+
+
+            let domSelect = "gridDiv"+String(i)
+            let node = document.createElement("div");
+            node.id += domSelect
+
+            let node_child = document.createElement("div")
+            node_child.className += "grid-container animation-container"
+
+            node.append(node_child)
+            document.body.appendChild(title)
+            document.body.appendChild(node)
+        }
+
+        for (let i = 0; i < cartpoles_to_visualize.length; i++) {
+            let domSelect = "#gridDiv"+String(i)
+            UI_Blocks.behavior_grid(domSelect+" .animation-container",
+                                      1,
+                                      NUM_COLUMNS,
+                                     [cartpoles_to_visualize[i]],
+                                     this.cartpole_display_args,
+                                     false,
+                                     [state_ids[i]])
+        }
     }
 
 

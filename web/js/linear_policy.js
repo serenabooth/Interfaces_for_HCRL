@@ -57,11 +57,13 @@ class Linear_Policy {
     let cartpoleSim = new CartPoleSim(this.cartpole_thresholds)
     let cp = new CartPole(this.cartpole_thresholds, starting_state)
 
-    cartpoleSim.simulation_from_policy(cp, this, 100)
+    let num_steps = 200
+    cartpoleSim.simulation_from_policy(cp, this, num_steps)
 
-    if (cp.state_history.length < 100) {
+    if (cp.state_history.length < num_steps) {
       return false
     }
+    console.log("acceptable")
     return true
   }
 

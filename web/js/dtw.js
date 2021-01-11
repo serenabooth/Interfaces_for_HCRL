@@ -8,7 +8,7 @@ class dtw {
      * @param{number} window
      * @returns {*[]}
      */
-    static dtw_accumulated_cost_matrix(s_traj, t_traj, window = 3) {
+    static dtw_accumulated_cost_matrix(s_traj, t_traj, window = 2) {
         let n = s_traj.length
         let m = t_traj.length
         let w = Math.max(window, Math.abs(n-m))
