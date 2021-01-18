@@ -15,8 +15,10 @@ class Linear_Policy {
     if (weights_are_random) {
       this.generate_random_weights();
       // ensure the policy has acceptable performance
-      while (!this.has_acceptable_performance()) {
-        this.generate_random_weights()
+      if (good_performance) {
+        while (!this.has_acceptable_performance()) {
+          this.generate_random_weights()
+        }
       }
     }
     else {

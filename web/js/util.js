@@ -193,7 +193,7 @@ class Util {
    *
    * @param {array} inp - an input array
    * @param {number} count - the number of indices to find
-   * @param {string} sort - how to order the array. "max" or "min"
+   * @param {string} sort - how to order the array. "max" (descending) or "min" (ascending)
    * @returns {[]} a list of indices
    */
   static find_indices_of_top_N(inp, count, sort="max") {
@@ -236,25 +236,24 @@ class Util {
    *
    * @param {number} N - the number of starting states to find
    * @param {array} policies - a list of policies
-   * @param {array} cartpole_thresholds
+   * @param {object} tmp_cp
    * @param {object} cartpoleSim
    * @returns {[]} a list of states
    */
-  static get_top_N_divergent_starting_states(N, policies, cartpole_thresholds, cartpoleSim) {
+  static get_top_N_divergent_starting_states(N, policies, tmp_cp, cartpole_thresholds, cartpoleSim) {
     let action_steps_0, action_steps_1, diff_score;
-    let tmp_cp = Util.gen_rand_cartpoles(1, cartpole_thresholds)[0];
 
-    let set_of_states =  Util.get_cartesian_space(8, cartpole_thresholds);
+    let set_of_states = State.get_cartesian_state_space_cover(8, cartpole_thresholds)
     let diff_scores = []
 
 
     for (let state_idx in set_of_states) {
       tmp_cp.reset(set_of_states[state_idx])
-      cartpoleSim.simulation_from_policy(tmp_cp, policies[0].get_params(), 200, 0)
+      cartpoleSim.simulation_from_policy(tmp_cp, policies[0], 200, 0)
       action_steps_0 = [...tmp_cp.action_history]
 
       tmp_cp.reset(set_of_states[state_idx])
-      cartpoleSim.simulation_from_policy(tmp_cp, policies[1].get_params(), 200, 0)
+      cartpoleSim.simulation_from_policy(tmp_cp, policies[1], 200, 0)
       action_steps_1 = [...tmp_cp.action_history]
 
       diff_score = 0

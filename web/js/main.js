@@ -40,8 +40,8 @@ class Main {
     run() {
         // this.sandbox_sc()
         // this.sandbox_equivalence_classes()
-        // this.compare_trajectories()
-        this.compare_policies()
+        this.compare_trajectories()
+        // this.compare_policies()
         // this.sandbox_equivalence_classes()
     }
 
@@ -63,7 +63,7 @@ class Main {
      * @param id
      */
     add_to_workbench(cartpoles, trace_id, color, id) {
-        if (document.getElementById("#workbenchDiv") == null) {
+        if (document.getElementById("workbenchDiv") == null) {
             console.log("You can only call add_to_workbench if you have a workbenchDiv in your DOM")
             return
         }
@@ -95,21 +95,17 @@ class Main {
      * @param num_comps
      */
     comparison_trajectories(existing_cp=null, existing_policy=null, num_comps =4) {
-        let i, state_idx, cp, policy, btn, trace_id, new_cp, new_policy;
+        let i, state_idx, cp, policy, trace_id, new_cp, new_policy;
         let mainObject = this;
         let cartpoles = []
         let policies = []
         let states = []
         let body = document.getElementById("currentPreferenceDiv");
 
-        // add one "normal" starting state
-        // states.push(CartPole.genRandomState(this.cartpole_thresholds, true))
-
         let traces = []
         for (i = 0; i < num_comps; i++) {
             traces.push(String(Date.now()) + String(i))
         }
-        console.log(traces)
 
         // construct any new cartpoles and policies
         for (i = 0; i < 2; i++) {
@@ -118,8 +114,8 @@ class Main {
                 policies.push(existing_policy)
             }
             else {
-                policy = new Linear_Policy(4, true)
-                cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0];
+                policy = new Linear_Policy(this.cartpole_thresholds, 4, true)
+                cp = new CartPole(this.cartpole_thresholds, null, null, false)
                 cp.color= Util.getRandColor()
                 cartpoles.push(cp)
                 policies.push(policy)
@@ -129,7 +125,11 @@ class Main {
         }
 
         // add N starting states which show divergent behaviors
-        let top_N_states = Util.get_top_N_divergent_starting_states(num_comps-states.length, policies, this.cartpole_thresholds, this.cartpoleSim)
+        let top_N_states = Util.get_top_N_divergent_starting_states(num_comps-states.length,
+                                                                       policies,
+                                                                       cartpoles[0],
+                                                                       this.cartpole_thresholds,
+                                                                       this.cartpoleSim)
         for (state_idx in top_N_states) {
             states.push(top_N_states[state_idx])
         }
@@ -143,18 +143,19 @@ class Main {
             trace_id = traces[state_idx]
 
             for (i = 0; i < cartpoles.length; i++) {
-                cp = cartpoles[i]
+                let cp = cartpoles[i]
                 policy = policies[i]
                 cp.reset(states[state_idx])
-                this.cartpoleSim.simulation_from_policy(cp, policy.get_params(), 200, 0)
+                this.cartpoleSim.simulation_from_policy(cp, policy, 200, 0)
                 cp.save_trace(trace_id)
 
                 // add a button to select this preference
-                btn = document.createElement("button")
+                let btn = document.createElement("button")
                 btn.innerHTML = cp.id;
+                console.log ("innerHTML", btn.innerHTML)
                 btn.style.background=cp.color;
                 btn.onclick = function(){
-                    // console.log(btn.innerHTML)
+                    console.log("Clicked", btn.innerHTML)
                     // $("#currentPreferenceDiv").empty()
                     // $("#userTestButtons").empty()
 
@@ -175,16 +176,16 @@ class Main {
                                                                     trace_id)
         }
 
-        btn = document.createElement("button")
-        btn.innerHTML = "Submit";
-        btn.onclick = function(){
+        let submit_btn = document.createElement("button")
+        submit_btn.innerHTML = "Submit";
+        submit_btn.onclick = function(){
             // console.log(btn.innerHTML)
             $("#currentPreferenceDiv").empty()
             // $("#userTestButtons").empty()
             mainObject.comparison_trajectories(new_cp, new_policy)
         };
         body.appendChild(document.createElement("div"));
-        body.appendChild(btn);
+        body.appendChild(submit_btn);
 
     }
 
@@ -193,7 +194,7 @@ class Main {
      **/
     compare_policies() {
         let NUM_DIMS = 4
-        let NUM_POLICIES = 50 // assess a lot of policies!
+        let NUM_POLICIES = 500 // assess a lot of policies!
         let NUM_COLUMNS = 2
 
         let starting_states = []
@@ -221,9 +222,7 @@ class Main {
             let state_id = Util.hash(String(this_state))
             state_ids.push(state_id)
 
-            policy_comparisons_on_states[state_id] = {"max_length": -1,
-                                                      "cartpole_idx": -1,
-                                                      "trace_id": -1}
+            policy_comparisons_on_states[state_id] = []
 
             for (let j = 0; j < policies.length; j++) {
                 let this_policy = policies[j]
@@ -240,11 +239,8 @@ class Main {
                                                                       0)
                 tmp_cp.save_trace(state_id)
 
-                if (rollout["action_history"].length > policy_comparisons_on_states[state_id]["max_length"]) {
-                    policy_comparisons_on_states[state_id] = {"max_length": rollout["action_history"].length,
-                                                              "cartpole_idx": j,
-                                                              "trace_id": state_id}
-                }
+                policy_comparisons_on_states[state_id].push(rollout["action_history"].length)
+
             }
         }
 
@@ -259,22 +255,29 @@ class Main {
             let cp_idx = policy_comparisons_on_states[state_id]["cartpole_idx"]
 
             // get a reference trajectory to compare all others to with DTW
-            let reference_traj = cartpoles[cp_idx].getSimTrace(state_id)["state_history"]
+            let longest_trajectory_indices = Util.find_indices_of_top_N(policy_comparisons_on_states[state_id],
+                                                                       5,
+                                                                       "max")
 
-            // loop over policies/cartpoles to compare
-            for (let policy_idx = 1; policy_idx < policies.length; policy_idx++) {
-                let comparison_traj = cartpoles[policy_idx].getSimTrace(state_id)["state_history"]
+            console.log("Longest trajectories", longest_trajectory_indices)
+
+            let reference_traj = cartpoles[longest_trajectory_indices[0]].getSimTrace(state_id)["state_history"]
+
+            // get top N other longest trajectories
+            for (let policy_idx = 1; policy_idx < longest_trajectory_indices.length; policy_idx++) {
+                let lookup = longest_trajectory_indices[policy_idx]
+                let comparison_traj = cartpoles[lookup].getSimTrace(state_id)["state_history"]
 
                 // compute the cost between the reference trajectory and the comparison,
                 // and add this cost to the 2D DTW Cost array
-                dtw_performance_matrix[state_idx][policy_idx] = dtw.dtw(reference_traj, comparison_traj)["cost"]
+                dtw_performance_matrix[state_idx][lookup] = dtw.dtw(reference_traj, comparison_traj)["cost"]
             }
 
             // for each state, we want to pick <N> policies/cartpoles to group as similar
             // and <M> policies/cartpoles to group as dissimilar.
-            let similar_cartpole_indeces = Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 5, "min")
-            let dissimilar_cartpole_indeces = Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 5, "max")
-
+            let similar_cartpole_indeces = [longest_trajectory_indices[0]] // Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 5, "min")
+            let dissimilar_cartpole_indeces = Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 1, "max")
+            console.log(dissimilar_cartpole_indeces)
             let similar_cps = similar_cartpole_indeces.map(i => cartpoles[i])
             let dissimilar_cps = dissimilar_cartpole_indeces.map(i => cartpoles[i])
 

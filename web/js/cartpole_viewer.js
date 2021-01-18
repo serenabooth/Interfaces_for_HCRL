@@ -99,7 +99,6 @@ class Cartpole_Viewer {
     @isDone if true then blacks out cart to signify dead cart
     **/
     draw_cart(svgObj, svg_positions, isDone, color = null) {
-
       let boxColor = !isDone ? 'rgb(0,0,0)' : 'rgb(0,0,0)'
       let poleColor = !isDone ? 'rgb(204,153,102)' : 'rgb(0,0,0)'
       let axleColor = !isDone ? 'rgb(127,127,204)' : 'rgb(0,0,0)'
@@ -242,8 +241,8 @@ class Cartpole_Viewer {
           let curr_state = simTrace.state_history[timestepToDisplay]
           let action = simTrace.action_history[timestepToDisplay]
           let title = (displayArgs.showCartpoleTitle) ? cartpole.getTitle() : ""
-          // self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, isDone, `${title}(${timestepToDisplay})`, "pull", false, color)
-          self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, isDone, `${title}(${timestepToDisplay})` )
+          self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, isDone, `${title}(${timestepToDisplay})`, "pull", false, color)
+          // self.populate_svg_snapshot(cartpoleSVG, curr_state, action, img_width, img_height, isDone, `${title}(${timestepToDisplay})` )
 
           //display text
           if (display_text) {
