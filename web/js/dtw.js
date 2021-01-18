@@ -1,4 +1,4 @@
-class dtw {
+class DTW {
     /***
      * An implementation of dynamic time warping. Returns the DTW Cost Matrix.
      * Source: https://towardsdatascience.com/dynamic-time-warping-3933f25fcdd

@@ -57,6 +57,7 @@ class CartPole {
 
     //save init state
     this.state_history = [state_as_arr]
+    this.action_history = []
 
   }
 

@@ -40,7 +40,7 @@ class Main {
     run() {
         // this.sandbox_sc()
         // this.sandbox_equivalence_classes()
-        this.compare_trajectories()
+        // this.compare_trajectories()
         // this.compare_policies()
         // this.sandbox_equivalence_classes()
     }
@@ -194,7 +194,7 @@ class Main {
      **/
     compare_policies() {
         let NUM_DIMS = 4
-        let NUM_POLICIES = 500 // assess a lot of policies!
+        let NUM_POLICIES = 50 // assess a lot of policies!
         let NUM_COLUMNS = 2
 
         let starting_states = []
@@ -206,7 +206,10 @@ class Main {
         starting_states = State.get_cartesian_state_space_cover(NUM_DIMS, this.cartpole_thresholds)
         // create policies
         for (let i = 0; i < NUM_POLICIES; i++) {
-            policies.push(new Linear_Policy(this.cartpole_thresholds, 4, true, true))
+            policies.push(new Linear_Policy(this.cartpole_thresholds,
+                                           4,
+                                           true,
+                                           "everywhere"))
         }
         // create cartpoles - one for each policy (for animation)
         for (let i = 0; i < NUM_POLICIES; i++) {
@@ -227,7 +230,6 @@ class Main {
             for (let j = 0; j < policies.length; j++) {
                 let this_policy = policies[j]
                 let tmp_cp = cartpoles[j]
-                let policy_id = Util.hash(String(this_policy))
 
                 // reset to selected starting state
                 tmp_cp.reset(this_state)
@@ -247,37 +249,50 @@ class Main {
         // Dynamic time warping
         let dtw_performance_matrix = Util.gen_2d_array(starting_states.length, policies.length)
 
+        let nwunsch_matrix = Util.gen_2d_array(starting_states.length, policies.length)
+
         let cartpoles_to_visualize = []
+
+
+        // get a reference policy to compare all others to with DTW
+        // choose a random cartpole to be the reference cartpole
+        // choose a random starting state; then choose cp based on healthy (long) trajectory
+        let random_state_id = Util.hash(String(Util.getRandomElemFromArray(starting_states)))
+        let reference_cp_ix =  Util.find_indices_of_top_N(policy_comparisons_on_states[random_state_id],
+                                                         1,
+                                                         "max")[0]
+        console.log(reference_cp_ix)
+
 
         for (let state_idx = 0; state_idx < starting_states.length; state_idx++) {
             let this_state = starting_states[state_idx]
-            let state_id = Util.hash(String(this_state))
+            let state_id = "" + Util.hash(String(this_state))
             let cp_idx = policy_comparisons_on_states[state_id]["cartpole_idx"]
 
-            // get a reference trajectory to compare all others to with DTW
-            let longest_trajectory_indices = Util.find_indices_of_top_N(policy_comparisons_on_states[state_id],
-                                                                       5,
-                                                                       "max")
-
-            console.log("Longest trajectories", longest_trajectory_indices)
-
-            let reference_traj = cartpoles[longest_trajectory_indices[0]].getSimTrace(state_id)["state_history"]
+            let reference_traj = cartpoles[reference_cp_ix].getSimTrace(state_id)["action_history"]
 
             // get top N other longest trajectories
-            for (let policy_idx = 1; policy_idx < longest_trajectory_indices.length; policy_idx++) {
-                let lookup = longest_trajectory_indices[policy_idx]
-                let comparison_traj = cartpoles[lookup].getSimTrace(state_id)["state_history"]
+            for (let policy_idx = 0; policy_idx < policies.length; policy_idx++) {
+                // let lookup = policies[policy_idx]
+                let comparison_traj = cartpoles[policy_idx].getSimTrace(state_id)["action_history"]
 
                 // compute the cost between the reference trajectory and the comparison,
                 // and add this cost to the 2D DTW Cost array
-                dtw_performance_matrix[state_idx][lookup] = dtw.dtw(reference_traj, comparison_traj)["cost"]
+                // dtw_performance_matrix[state_idx][policy_idx] = DTW.dtw(reference_traj, comparison_traj)["cost"]
+                nwunsch_matrix[state_idx][policy_idx] = NWunsch.align(reference_traj, comparison_traj)
+
             }
+
+
+            console.log(nwunsch_matrix)
 
             // for each state, we want to pick <N> policies/cartpoles to group as similar
             // and <M> policies/cartpoles to group as dissimilar.
-            let similar_cartpole_indeces = [longest_trajectory_indices[0]] // Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 5, "min")
-            let dissimilar_cartpole_indeces = Util.find_indices_of_top_N(dtw_performance_matrix[state_idx], 1, "max")
-            console.log(dissimilar_cartpole_indeces)
+            let similar_cartpole_indeces = Util.find_indices_of_top_N(nwunsch_matrix[state_idx], 5, "min")
+            console.log("Min", similar_cartpole_indeces)
+            let dissimilar_cartpole_indeces = Util.find_indices_of_top_N(nwunsch_matrix[state_idx], 5, "max")
+            console.log("Max", dissimilar_cartpole_indeces)
+
             let similar_cps = similar_cartpole_indeces.map(i => cartpoles[i])
             let dissimilar_cps = dissimilar_cartpole_indeces.map(i => cartpoles[i])
 

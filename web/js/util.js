@@ -2,6 +2,11 @@ var all_cartpoles = {}
 var all_user_responses = 0
 var correct_user_responses = 0
 
+
+//actions as consts
+const MOVE_LEFT = -1
+const MOVE_RIGHT = 1
+
 // src: https://stackoverflow.com/questions/12303989/cartesian-product-of-multiple-arrays-in-javascript
 const f = (a, b) => [].concat(...a.map(d => b.map(e => [].concat(d, e))));
 const cartesian = (a, b, ...c) => (b ? cartesian(f(a, b), ...c) : a);

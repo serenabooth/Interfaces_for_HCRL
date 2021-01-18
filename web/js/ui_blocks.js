@@ -163,8 +163,6 @@ class UI_Blocks {
           //if cartpole is an object, then convert to array
           let cartpoleArray = Array.isArray(cartpoleObjOrArray) ? cartpoleObjOrArray : [cartpoleObjOrArray]
 
-          console.log("array", cartpoleArray)
-
           //create upper text div
           let upperTextDivId = animation_div_dom_id+"upper_text"
           $(containerDomSelect).append(`<div id="${upperTextDivId}" class='lightgrey'></div>`)

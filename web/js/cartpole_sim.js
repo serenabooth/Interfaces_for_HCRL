@@ -56,10 +56,6 @@ class CartPoleSim {
       //magnitude of force applied
       this.forceMag = 10.0
 
-      //actions as consts
-      this.MOVE_LEFT = -1
-      this.MOVE_RIGHT = 1
-
       //====< END Cartpole Contants >======//
     }
 
@@ -112,7 +108,7 @@ class CartPoleSim {
     Get the opposite action
     **/
     getCounterFactualAction(curr_action) {
-      let cf_action = (curr_action == this.MOVE_LEFT) ? this.MOVE_RIGHT : this.MOVE_LEFT
+      let cf_action = (curr_action == MOVE_LEFT) ? MOVE_RIGHT : MOVE_LEFT
       return cf_action
     }
 
@@ -174,6 +170,11 @@ class CartPoleSim {
 
   /**
   Given the current state of the cartpole, will simulate for
+
+   @param{object} cartpole
+   @param{object} policy
+   @param{number} maxTimesteps
+   @param{number} numStepsToCoast
   **/
   simulation_from_policy(cartpole, policy, maxTimesteps, numStepsToCoast = 0) {
 
@@ -188,8 +189,9 @@ class CartPoleSim {
         cartpole.addSimTimestep(next_state,action)
 
         //check to see whether cartpole survived
-        if(this.isDone(cartpole))
-          break;
+        if(this.isDone(cartpole)) {
+            break;
+        }
 
       }
 
@@ -213,10 +215,10 @@ class CartPoleSim {
         //get action from policy
         let action = action_sequence[i]
         if (action == 0) {
-          action = this.MOVE_LEFT
+          action = MOVE_LEFT
         }
         else {
-          action = this.MOVE_RIGHT
+          action = MOVE_RIGHT
         }
 
         //simulate next timestep
