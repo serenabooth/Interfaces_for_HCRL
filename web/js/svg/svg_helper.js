@@ -6,7 +6,7 @@ class SVGHelper {
       this.world_height = params.world_height
       this.img_width = params.img_width
       this.img_height = params.img_height
-      this.outline_canvas = params.outline_canvas
+      this.canvas_outline = params.canvas_outline
     }
 
     //==============< BEGIN Methods to calculate SVG positions =================//
@@ -32,28 +32,28 @@ class SVGHelper {
     **/
     createSVGCanvas(dom_select) {
       //create canvas
-      var svg_canvas = Util.gen_empty_svg(dom_select, this.img_width, this.img_height)
+      var svg_container = Util.gen_empty_svg(dom_select, this.img_width, this.img_height)
 
       //create outline
-      if(this.outline_canvas != null)
-        this.addRect(svg_canvas,
+      if(this.canvas_outline != null)
+        this.addRect(svg_container,
                           this.world_width, this.world_height,
                           this.world_width/2, this.world_height/2,
                           0,
-                          this.outline_canvas)
+                          this.canvas_outline)
 
-      return svg_canvas
+      return svg_container
     }
 
     /**
     Add a circle to the SVG
     **/
-    addCircle(svg_canvas, world_r, world_x, world_y, decoration) {
+    addCircle(svg_container, world_r, world_x, world_y, decoration) {
       var svg_x = this.calcSVGXpos(world_x)
       var svg_y = this.calcSVGYpos(world_y)
       var svg_r = this.calcSVGXpos(world_r)
 
-      var circle = svg_canvas.circle(svg_r).fill(fillColor)
+      var circle = svg_container.circle(svg_r)
       circle.center(svg_x, svg_y)
 
       this.decorateSVGElem(circle, decoration)
@@ -64,13 +64,13 @@ class SVGHelper {
     /**
     add a line to the SVG
     **/
-    addLine(svg_canvas, world_x1, world_y1, world_x2, world_y2, svg_positions, decoration) {
+    addLine(svg_container, world_x1, world_y1, world_x2, world_y2, svg_positions, decoration) {
       var svg_x1 =  this.calcSVGXpos(world_x1)
       var svg_y1 =  this.calcSVGXpos(world_y1)
       var svg_x2 =  this.calcSVGXpos(world_x2)
       var svg_y2 =  this.calcSVGXpos(world_y2)
 
-      var line = svg_canvas.line(svg_x1, svg_y1, svg_x2, svg_y2)
+      var line = svg_container.line(svg_x1, svg_y1, svg_x2, svg_y2)
 
       line.decorateSVGElem(decoration)
 
@@ -80,7 +80,7 @@ class SVGHelper {
     /**
     Add a rectangle to the SVG
     **/
-    addRect(svg_canvas, length_w, height_w, world_x, world_y, theta_degrees, decoration) {
+    addRect(svg_container, length_w, height_w, world_x, world_y, theta_degrees, decoration) {
 
       var svg_x = this.calcSVGXpos(world_x)
       var svg_y = this.calcSVGYpos(world_y)
@@ -88,7 +88,7 @@ class SVGHelper {
       var svg_height = this.calcSVGYpos(height_w)
 
       //create rectangle
-      var rect = svg_canvas.rect(svg_length, svg_height)
+      var rect = svg_container.rect(svg_length, svg_height)
       rect.center(svg_x, svg_y)
       rect.rotate(theta_degrees, svg_x, svg_y)
 
@@ -98,24 +98,23 @@ class SVGHelper {
     }
 
 
-    addText(svg_canvas, text, world_x,world_y,font_size = "10", decoration) {
+    addText(svg_container, text, world_x,world_y,decoration,font_size = "10") {
 
       var svg_x = this.calcSVGXpos(world_x)
       var svg_y = this.calcSVGYpos(world_y)
 
-      var text_elem = svg_canvas.text(text)
+      var text_elem = svg_container.text(text)
       text_elem.center(svg_x,svg_y)
 
       this.decorateSVGElem(text_elem, decoration)
       text_elem.font("size",font_size)
-
     }
+
     /**
     Adds a polygon to the canvas
     **/
-    draw_polygon(svg_canvas, world_coords_list, decoration) {
+    draw_polygon(svg_container, world_coords_list, decoration) {
       var polygon = svgObj.polygon(`${svg_positions.arrow.x},${svg_positions.arrow.y_top},${svg_positions.arrow.x},${svg_positions.arrow.y_bottom}, ${svg_positions.arrow.point_x},${svg_positions.arrow.y_mid}`).fill('rgb(255,0,0)')
-
     }
 
 
@@ -140,6 +139,15 @@ class SVGHelper {
       }
     }
 
+    /**
+    place the center of the svg element at the x,y coordinates
+    **/
+    centerSVGElem(svg_elem, world_x,world_y) {
+      var svg_x = this.calcSVGXpos(world_x)
+      var svg_y = this.calcSVGYpos(world_y)
+
+      svg_elem.center(svg_x, svg_y)
+    }
   //==============< END Methods to draw SVG elements =================//
 
   //==============< BEGIN Methods to calculate shapes =================//

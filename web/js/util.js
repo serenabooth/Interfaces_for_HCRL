@@ -49,6 +49,10 @@ class Util {
       return Math.random() * (max - min) + min;
   }
 
+  static genRandomInt(max) {
+    return Math.floor(Math.random() * Math.floor(max));
+  }
+
   /**
   Given an array of carpoles that have simulation tracces, get max sim length
   **/

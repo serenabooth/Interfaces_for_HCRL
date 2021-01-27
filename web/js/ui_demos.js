@@ -9,11 +9,12 @@ class UIDemos {
         this.svg_helper_params =  {
           //height & width of an individual animation
           //NOTE: make sure the ratio of width/height is same for both img & world
-          img_width: 300,
+          img_width: 300,     //in pixels
           img_height: 150,
-          world_width: 600,
+          world_width: 600,   //in world coordinates
           world_height: 300,
-          outline_canvas : {"stroke" : {"color": "#000","width":"1px"}, "fill" : "None"}
+          //decorating the room itself
+          canvas_outline : {"stroke" : {"color": "#EFEFEF","width":"1px"}, "fill" : "#EFEFEF"}
         }
     }
 
@@ -23,53 +24,57 @@ class UIDemos {
     **/
     run() {
 
-      var boxes = [{},{},{}]  //boxes should contain toys
-      var toys = [{},{},{},{}]
+      //initial list of boxes
+      var boxes = [ {   name : "A", toys : {}},
+                    {   name : "B", toys : {}},
+                    {   name : "C", toys : {}}
+                  ]
 
-      var cleanup_world = new CleanupToys("#app", boxes, toys,this.svg_helper_params)
-      cleanup_world.generate_svg()
+      //randomly generate initial list of toys
+      var toys = []
+      for(var i = 0; i < 15; i++) {
+        var curr_toy = {}
+        curr_toy.name = "Toy_"+i
 
-      
+        //toy design
+        //TODO: make star and triangle shape
+        curr_toy.shape = ["circle","square"][Util.genRandomInt(2)]
+        curr_toy.fill = ["#09015F","#AF0069","#55B3B1"][Util.genRandomInt(3)]
+        curr_toy.stroke = {"width":"2px", "color":["#09015F","#AF0069","#55B3B1"][Util.genRandomInt(3)]}
+        //curr_toy.pattern = ["solid","stripes","polka dots"][Util.genRandomInt(2)]
+
+        //box height & width in world coordinates
+        curr_toy.world_width = "20"
+        curr_toy.world_height = "20"
+
+        //place the toy - make sure that it doesn't go off the screen
+        curr_toy.world_x = curr_toy.world_width/2 + Util.genRandomInt(this.svg_helper_params.world_width - curr_toy.world_width)
+        //height of boxes - used to make sure that toys are under boxes
+        var box_height = this.svg_helper_params.world_height/CleanupToys.BOX_FRACTION_OF_WORLD_HEIGHT
+        curr_toy.world_y = box_height + curr_toy.world_height/2 + Util.genRandomInt(this.svg_helper_params.world_height-box_height-curr_toy.world_width)
+
+        toys.push(curr_toy)
+      }
+
+      var robot = {
+        /*
+          "base_effector_world_x" :
+          "base_effector_world_y" :
+
+          "end_effector_world_x" :
+          "end_effector_world_y" :
+
+          "object_in_gripper" :
+        */
+      }
+
+      var cleanup_world = new CleanupToys(boxes, toys, robot)
+      cleanup_world.generate_svg("#app",this.svg_helper_params)
     }
 
 
 //===========< BEGIN Helper Functions >=============//
 
-  /**
-  Creates a grid of randomly generated cartpoles
-  **/
-  createRandomGrid(domSelect, policies, starting_state=false) {
-
-    $(domSelect+" .title").html("Random Grid")
-
-    let numCols = 4
-    let numRows = 3
-
-    //generate & simulate random cartples
-    let cartpoles = Util.gen_rand_cartpoles(numCols * numRows, this.cartpole_thresholds, starting_state);
-    for(let i =0; i < cartpoles.length; i++) {
-
-      // add any cartpoles to the global all_cartpoles list
-      all_cartpoles[cartpoles[i].id] = {"divId": `cart_${cartpoles[i].id}`,
-                                        "cartpole": cartpoles[i]}
-
-      //select random policy
-      if (policies != null) {
-        let policyName = Util.getRandomElemFromArray(Object.keys(policies))
-        //run simulation with policy
-        let cp = cartpoles[i]
-        cp.setTitle(i+"_"+policyName)
-        this.cartpoleSim.simulation_from_policy(cp, policies[policyName], this.cartpole_display_args.maxTimesteps)
-      }
-      else {
-        let cp = cartpoles[i]
-        cp.setTitle(i)
-        this.cartpoleSim.simulation_from_action_sequence(cp, [], 0)
-      }
-    }
-
-    UI_Blocks.state_grid(domSelect+" .animation-container", numRows, numCols, cartpoles, this.cartpole_display_args)
-  }
 
 
 }
