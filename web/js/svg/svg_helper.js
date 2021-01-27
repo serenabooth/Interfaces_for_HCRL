@@ -97,6 +97,24 @@ class SVGHelper {
       return rect
     }
 
+    /**
+    Adds a star to the toy box
+    **/
+    addStar(svg_container, radius_w, world_x, world_y, theta_degrees, decoration) {
+
+      var arms = 5
+      var starPoints_w = this.calculateStarPoints(world_x, world_y, arms, radius_w, radius_w*0.75)
+
+      //convert world coordinates into image coordinates
+      //use: this.calcSVGXpos(world_x) & this.calcSVGYpos(world_y)
+
+      //create polygon string as defined in https://svgjs.com/docs/3.0/shape-elements/#svg-polygon
+      var starPolygonStr = ""
+
+      var star = svg_container.polygon(svg_container, starPolygonStr)
+      this.decorateSVGElem(star, decoration)
+    }
+
 
     addText(svg_container, text, world_x,world_y,decoration,font_size = "10") {
 
@@ -110,11 +128,15 @@ class SVGHelper {
       text_elem.font("size",font_size)
     }
 
-    /**
-    Adds a polygon to the canvas
-    **/
-    draw_polygon(svg_container, world_coords_list, decoration) {
-      var polygon = svgObj.polygon(`${svg_positions.arrow.x},${svg_positions.arrow.y_top},${svg_positions.arrow.x},${svg_positions.arrow.y_bottom}, ${svg_positions.arrow.point_x},${svg_positions.arrow.y_mid}`).fill('rgb(255,0,0)')
+
+    addTriangle(svg_container, length_w, height_w, world_x, world_y, theta_degrees, decoration) {
+      //calculate world positions of the points in the triangle
+
+      //convert world positions to svg positions
+
+      //create polygon string as defined in https://svgjs.com/docs/3.0/shape-elements/#svg-polygon
+
+      //add polygon to string & decorate
     }
 
 
@@ -153,12 +175,6 @@ class SVGHelper {
   //==============< BEGIN Methods to calculate shapes =================//
 
 
-  /**
-  calculate polygon points to form a triangle
-  **/
-  calculateTrianglePoints(world_x, world_y, world_len_of_side) {
-
-  }
 
   /**
   calculates the polygon points to form a star

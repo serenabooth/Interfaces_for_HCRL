@@ -38,7 +38,7 @@ class UIDemos {
 
         //toy design
         //TODO: make star and triangle shape
-        curr_toy.shape = ["circle","square"][Util.genRandomInt(2)]
+        curr_toy.shape = ["circle","square"/*,"star","triangle"*/][Util.genRandomInt(2/*4*/)]
         curr_toy.fill = ["#09015F","#AF0069","#55B3B1"][Util.genRandomInt(3)]
         curr_toy.stroke = {"width":"2px", "color":["#09015F","#AF0069","#55B3B1"][Util.genRandomInt(3)]}
         //curr_toy.pattern = ["solid","stripes","polka dots"][Util.genRandomInt(2)]

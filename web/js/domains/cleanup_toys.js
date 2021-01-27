@@ -102,7 +102,7 @@ class CleanupToys {
                           )
                           break
           case "square" :
-                          var theta = decoration.thetas
+                          var theta = decoration.theta
                           this.svg_helper.addRect(
                             svg_group,
                             curr_toy_data.world_width,
@@ -114,7 +114,29 @@ class CleanupToys {
                           )
                           break
           case "triangle" :
+                        var theta = decoration.theta
+                        this.svg_helper.addTriangle(
+                          svg_group,
+                          curr_toy_data.world_width,
+                          curr_toy_data.world_height,
+                          curr_toy_data.world_x,
+                          curr_toy_data.world_y,
+                          theta,
+                          decoration
+                        )
+                        break
           case "star" :
+                        var theta = decoration.theta
+                        this.svg_helper.addStar(
+                          svg_group,
+                          curr_toy_data.world_height,
+                          curr_toy_data.world_x,
+                          curr_toy_data.world_y,
+                          theta,
+                          decoration
+                        )
+                        break
+
         } //end switch
 
       } //for(let i = 0;
