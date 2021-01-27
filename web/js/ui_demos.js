@@ -1,5 +1,5 @@
 /**
-This class demos different UI featuers
+This class demos different UI features
 **/
 class UIDemos {
 
@@ -14,7 +14,7 @@ class UIDemos {
           world_width: 600,   //in world coordinates
           world_height: 300,
           //decorating the room itself
-          canvas_outline : {"stroke" : {"color": "#EFEFEF","width":"1px"}, "fill" : "#EFEFEF"}
+          canvas_decoration : {"stroke" : {"color": "#EFEFEF","width":"1px"}, "fill" : "#EFEFEF"}
         }
     }
 

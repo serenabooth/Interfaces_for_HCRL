@@ -1,12 +1,22 @@
+/**
+Wrapper function for the SVG library in case we decide to switch
+
+We currently are using SVG.js version 3.0
+https://svgjs.com/docs/3.0/
+**/
 class SVGHelper {
 
     constructor(params) {
-
+      //height & width in world coordinates
       this.world_width = params.world_width
       this.world_height = params.world_height
+
+      //height and width in pixels
       this.img_width = params.img_width
       this.img_height = params.img_height
-      this.canvas_outline = params.canvas_outline
+
+      //the outline & fill of the SVG canvas
+      this.canvas_decoration = params.canvas_decoration
     }
 
     //==============< BEGIN Methods to calculate SVG positions =================//
@@ -35,12 +45,12 @@ class SVGHelper {
       var svg_container = Util.gen_empty_svg(dom_select, this.img_width, this.img_height)
 
       //create outline
-      if(this.canvas_outline != null)
+      if(this.canvas_decoration != null)
         this.addRect(svg_container,
                           this.world_width, this.world_height,
                           this.world_width/2, this.world_height/2,
                           0,
-                          this.canvas_outline)
+                          this.canvas_decoration)
 
       return svg_container
     }
@@ -49,6 +59,8 @@ class SVGHelper {
     Add a circle to the SVG
     **/
     addCircle(svg_container, world_r, world_x, world_y, decoration) {
+
+      //convert world to SVG coordinates
       var svg_x = this.calcSVGXpos(world_x)
       var svg_y = this.calcSVGYpos(world_y)
       var svg_r = this.calcSVGXpos(world_r)
@@ -65,6 +77,7 @@ class SVGHelper {
     add a line to the SVG
     **/
     addLine(svg_container, world_x1, world_y1, world_x2, world_y2, svg_positions, decoration) {
+      //convert world to SVG coordinates
       var svg_x1 =  this.calcSVGXpos(world_x1)
       var svg_y1 =  this.calcSVGXpos(world_y1)
       var svg_x2 =  this.calcSVGXpos(world_x2)
@@ -82,6 +95,7 @@ class SVGHelper {
     **/
     addRect(svg_container, length_w, height_w, world_x, world_y, theta_degrees, decoration) {
 
+      //convert world to SVG coordinates
       var svg_x = this.calcSVGXpos(world_x)
       var svg_y = this.calcSVGYpos(world_y)
       var svg_length = this.calcSVGXpos(length_w)
@@ -106,7 +120,7 @@ class SVGHelper {
       var starPoints_w = this.calculateStarPoints(world_x, world_y, arms, radius_w, radius_w*0.75)
 
       //convert world coordinates into image coordinates
-      //use: this.calcSVGXpos(world_x) & this.calcSVGYpos(world_y)
+
 
       //create polygon string as defined in https://svgjs.com/docs/3.0/shape-elements/#svg-polygon
       var starPolygonStr = ""
@@ -118,6 +132,7 @@ class SVGHelper {
 
     addText(svg_container, text, world_x,world_y,decoration,font_size = "10") {
 
+      //convert world to SVG coordinates
       var svg_x = this.calcSVGXpos(world_x)
       var svg_y = this.calcSVGYpos(world_y)
 
