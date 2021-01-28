@@ -54,20 +54,57 @@ class UI_Blocks {
      **/
     static behavior_grid(gridDivDomSelector, numRows, numCols, cartpole_arrays, display_args, show_state_values = false, traces = null) {
         //check to see whether we have enough traces
-        if( numRows*numCols > cartpole_arrays[0].length * traces.length) {
-            console.log("ui_blocks.state_grid(): Not enough traces for the number of grid cells")
-            return
+        if (traces != null ) {
+            if( numRows*numCols > cartpole_arrays[0].length * traces.length) {
+                console.log("ui_blocks.state_grid(): Not enough cartpoles or traces for the number of grid cells")
+                return
+            }
         }
+        else {
+            if( numRows*numCols > cartpole_arrays.length ) {
+                console.log(numRows * numCols)
+                console.log(cartpole_arrays.length)
+                console.log("ui_blocks.state_grid(): Not enough cartpoles for the number of grid cells")
+                return
+            }
+        }
+
         //change CSS in grid to reflect correct # of columns
         let cssVals = Array.from({length:numCols}).map(x => "auto")
         $(gridDivDomSelector).css("grid-template-columns", cssVals.join(" "))
 
         //create a gridcell for group of cartpoles
-        for(let i = 0; i < traces.length; i++) {
+        if (traces != null)  {
+            for(let i = 0; i < traces.length; i++) {
 
-            let trace_id = traces[i]
-            for (let k = 0; k < cartpole_arrays[i].length; k++) {
-                let cartpole_subset = cartpole_arrays[i][k]
+                let trace_id = traces[i]
+                for (let k = 0; k < cartpole_arrays[i].length; k++) {
+                    let cartpole_subset = cartpole_arrays[i][k]
+                    //create div for the cart's gridcell
+                    let divId = `cart_` + Util.uuidv4()
+                    $(gridDivDomSelector).append(`<div id="${divId}"></div>`)
+
+                    // insert table of state values
+                    if (show_state_values) {
+                        $("#"+divId).append(trace_id)
+                    }
+
+                    //insert simulation animation
+                    var animation_div_dom_id = "drawing-"+ Util.uuidv4()
+                    this.create_animation_in_dom_elem("#"+divId,
+                        animation_div_dom_id,
+                        cartpole_subset,
+                        display_args.img_width,
+                        display_args.img_height,
+                        display_args,
+                        trace_id)
+                }
+
+            }
+        }
+        else {
+            for (let k = 0; k < cartpole_arrays.length; k++) {
+                let cartpole_subset = cartpole_arrays[k]
                 //create div for the cart's gridcell
                 let divId = `cart_` + Util.uuidv4()
                 $(gridDivDomSelector).append(`<div id="${divId}"></div>`)
@@ -84,10 +121,8 @@ class UI_Blocks {
                     cartpole_subset,
                     display_args.img_width,
                     display_args.img_height,
-                    display_args,
-                    trace_id)
+                    display_args)
             }
-
         }
     }
 

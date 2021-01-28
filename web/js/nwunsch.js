@@ -9,14 +9,14 @@ class NWunsch {
      * @param b
      * @return {*}
      */
-    static align(a, b) {
+    static nwunsch_score(a, b) {
         let current = [];
         let lookback = [];
 
         // standard initializations
-        let nw_match = 1;
-        let nw_mismatch = -1;
-        let nw_indel = -1;
+        let nw_match = 1; // a_i == b_j
+        let nw_mismatch = -5; // a_i != b_j
+        let nw_indel = -1; // a skip
 
         for (let j = 0; j < b.length + 1; j++) {
             current[j] = j * nw_indel;

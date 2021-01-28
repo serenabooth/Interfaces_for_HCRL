@@ -190,11 +190,47 @@ class Main {
     }
 
     /**
+     * Look at 200 policies
+     */
+    test_policies() {
+        let NUM_DIMS = 4
+        let NUM_POLICIES = 200 // assess a lot of policies!
+        let NUM_COLUMNS = 1
+
+        let policies = []
+        let cartpoles = []
+        for (let i = 0; i < NUM_POLICIES; i++) {
+            policies.push(new Linear_Policy(this.cartpole_thresholds,
+                4,
+                true,
+                "everywhere"))
+        }
+        // create cartpoles - one for each policy (for animation)
+        for (let i = 0; i < NUM_POLICIES; i++) {
+            let tmp_cp = new CartPole(this.cartpole_thresholds)
+            this.cartpoleSim.simulation_from_policy(tmp_cp,
+                policies[i],
+                200,
+                0)
+            cartpoles.push(tmp_cp)
+        }
+
+        let domSelect = "#gridDiv"
+        UI_Blocks.behavior_grid(domSelect+" .animation-container",
+            NUM_POLICIES,
+            NUM_COLUMNS,
+            cartpoles,
+            this.cartpole_display_args,
+            false)
+
+    }
+
+    /**
      A development playground for exploring the equivalence class idea
      **/
     compare_policies() {
         let NUM_DIMS = 4
-        let NUM_POLICIES = 50 // assess a lot of policies!
+        let NUM_POLICIES = 500 // assess a lot of policies!
         let NUM_COLUMNS = 2
 
         let starting_states = []
@@ -237,7 +273,7 @@ class Main {
                 // rollout & save to trace history
                 let rollout = this.cartpoleSim.simulation_from_policy(tmp_cp,
                                                                       this_policy,
-                                                                      200,
+                                                                      50,
                                                                       0)
                 tmp_cp.save_trace(state_id)
 
@@ -262,15 +298,50 @@ class Main {
                                                          1,
                                                          "max")[0]
         console.log(reference_cp_ix)
-
+        let selected_color = Util.getRandColor()
+        this.addSingleFeedbackCartAndButtons("Current Policy", policies[reference_cp_ix], selected_color)
+        cartpoles[reference_cp_ix].color = selected_color
 
         for (let state_idx = 0; state_idx < starting_states.length; state_idx++) {
             let this_state = starting_states[state_idx]
             let state_id = "" + Util.hash(String(this_state))
             let cp_idx = policy_comparisons_on_states[state_id]["cartpole_idx"]
 
+            // get the MOST similar cartpoles to the reference cartpole
             let reference_traj = cartpoles[reference_cp_ix].getSimTrace(state_id)["action_history"]
+            // get top N other longest trajectories
+            for (let policy_idx = 0; policy_idx < policies.length; policy_idx++) {
+                // let lookup = policies[policy_idx]
+                let comparison_traj = cartpoles[policy_idx].getSimTrace(state_id)["action_history"]
+                // compute the cost between the reference trajectory and the comparison,
+                // and add this cost to the 2D DTW Cost array
+                // dtw_performance_matrix[state_idx][policy_idx] = DTW.dtw(reference_traj, comparison_traj)["cost"]
+                nwunsch_matrix[state_idx][policy_idx] = NWunsch.nwunsch_score(reference_traj, comparison_traj)
+            }
+            // for each state, we want to pick <N> policies/cartpoles to group as similar
+            // and <M> policies/cartpoles to group as dissimilar.
+            let similar_cartpole_indeces = Util.find_indices_of_top_N(nwunsch_matrix[state_idx], 5, "max")
+            console.log("SIMILAR INDECES", similar_cartpole_indeces)
+            console.log("OG INDEX", reference_cp_ix)
+            let similar_cps = similar_cartpole_indeces.map(i => cartpoles[i])
 
+            Array.prototype.move = function (from, to) {
+                this.splice(to, 0, this.splice(from, 1)[0]);
+            };
+
+            similar_cps.move(0, similar_cps.length)
+
+            for (let i = 0; i < similar_cps.length; i++) {
+                if (i == 0)
+                    similar_cps[i].color = selected_color
+            }
+
+
+
+            // get the MOST dissimilar cartpole, and recompute the similarity scores to find the N
+            // most similar to that one.
+            let dissimilar_cartpole_index = Util.find_indices_of_top_N(nwunsch_matrix[state_idx], 1, "min")[0]
+            reference_traj = cartpoles[dissimilar_cartpole_index].getSimTrace(state_id)["action_history"]
             // get top N other longest trajectories
             for (let policy_idx = 0; policy_idx < policies.length; policy_idx++) {
                 // let lookup = policies[policy_idx]
@@ -279,22 +350,13 @@ class Main {
                 // compute the cost between the reference trajectory and the comparison,
                 // and add this cost to the 2D DTW Cost array
                 // dtw_performance_matrix[state_idx][policy_idx] = DTW.dtw(reference_traj, comparison_traj)["cost"]
-                nwunsch_matrix[state_idx][policy_idx] = NWunsch.align(reference_traj, comparison_traj)
-
+                nwunsch_matrix[state_idx][policy_idx] = NWunsch.nwunsch_score(reference_traj, comparison_traj)
             }
-
 
             console.log(nwunsch_matrix)
 
-            // for each state, we want to pick <N> policies/cartpoles to group as similar
-            // and <M> policies/cartpoles to group as dissimilar.
-            let similar_cartpole_indeces = Util.find_indices_of_top_N(nwunsch_matrix[state_idx], 5, "min")
-            console.log("Min", similar_cartpole_indeces)
-            let dissimilar_cartpole_indeces = Util.find_indices_of_top_N(nwunsch_matrix[state_idx], 5, "max")
-            console.log("Max", dissimilar_cartpole_indeces)
-
-            let similar_cps = similar_cartpole_indeces.map(i => cartpoles[i])
-            let dissimilar_cps = dissimilar_cartpole_indeces.map(i => cartpoles[i])
+            let grouped_dissimilar_cartpole_indeces = Util.find_indices_of_top_N(nwunsch_matrix[state_idx], 5, "max")
+            let dissimilar_cps = grouped_dissimilar_cartpole_indeces.map(i => cartpoles[i])
 
             cartpoles_to_visualize.push([similar_cps, dissimilar_cps])
 
@@ -518,13 +580,19 @@ class Main {
   Add this cartpole to the globally tracked all_cartpoles dict
   Add a "Bad Robot" and a "Good Robot" button
   **/
-  addSingleFeedbackCartAndButtons() {
+  addSingleFeedbackCartAndButtons(title="Give Feedback to the Robot", policy=null, color=null) {
     let mainObjct = this
-    $("#feedbackDiv"+" .title").html("Give Feedback to the Robot")
+    $("#feedbackDiv"+" .title").html(title)
 
     // add a toplevel cartpole for gathering feedback
     let cp = Util.gen_rand_cartpoles(1, this.cartpole_thresholds)[0];
-    this.cartpoleSim.simulation_from_action_sequence(cp, [], 0)
+    cp.color = color
+    if (policy != null) {
+        this.cartpoleSim.simulation_from_policy(cp, policy, 200, 0)
+    }
+    else {
+        this.cartpoleSim.simulation_from_action_sequence(cp, [], 0)
+    }
     UI_Blocks.single_cartpole("#feedbackDiv", cp, "cart_feedback", this.cartpole_display_args);
     all_cartpoles[`cart_feedback`] = {"divId": `cart_feedback`,
                                       "cartpole": cp}
@@ -552,8 +620,10 @@ class Main {
       mainObjct.python_ws.send(msg);
     }
     let body = document.getElementById("feedbackButtons");
-    body.appendChild(badBtn);
-    body.appendChild(goodBtn);
+    if (body != undefined) {
+      body.appendChild(badBtn);
+      body.appendChild(goodBtn);
+    }
   }
 
 
