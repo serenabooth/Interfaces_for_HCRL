@@ -65,7 +65,6 @@ class SVGHelper {
     Add a circle to the SVG
     **/
     addCircle(svg_container, world_r, world_x, world_y, decoration) {
-
       //convert world to SVG coordinates
       var svg_x = this.calcSVGXpos(world_x)
       var svg_y = this.calcSVGYpos(world_y)
@@ -121,17 +120,29 @@ class SVGHelper {
     Adds a star to the toy box
     **/
     addStar(svg_container, radius_w, world_x, world_y, theta_degrees, decoration) {
+      console.log("adding a star")
+      let that = this;
+      let arms = 5
+      let starPoints_w = this.calculateStarPoints(world_x, world_y, arms, radius_w, radius_w*0.75)
 
-      var arms = 5
-      var starPoints_w = this.calculateStarPoints(world_x, world_y, arms, radius_w, radius_w*0.75)
+      //convert to image coordinates
+      let starPoints_image = starPoints_w.map( function convertCoords(x_and_y_world_coords) {
+        return [that.calcSVGXpos(x_and_y_world_coords[0]), that.calcSVGYpos(x_and_y_world_coords[1])]
+      })
 
-      //convert world coordinates into image coordinates
-
+      console.log(starPoints_image)
 
       //create polygon string as defined in https://svgjs.com/docs/3.0/shape-elements/#svg-polygon
-      var starPolygonStr = ""
+      let starPolygonStr = ""
+      for (let i in starPoints_image) {
+        starPolygonStr += String(starPoints_image[i][0])
+        starPolygonStr += ","
+        starPolygonStr += String(starPoints_image[i][1])
+        starPolygonStr += " "
+      }
 
-      var star = svg_container.polygon(svg_container, starPolygonStr)
+      console.log(starPolygonStr)
+      let star = svg_container.polygon(starPolygonStr)
       this.decorateSVGElem(star, decoration)
     }
 
@@ -149,15 +160,32 @@ class SVGHelper {
       text_elem.font("size",font_size)
     }
 
-
+    /**
+    Adds a triangle to the toy box
+    **/
     addTriangle(svg_container, length_w, height_w, world_x, world_y, theta_degrees, decoration) {
-      //calculate world positions of the points in the triangle
-
+      let that = this
+        //calculate world positions of the points in the triangle
+      let world_coords = [[world_x, world_y], [(world_x + length_w/2.0), (world_y + height_w/1.0)], [world_x+length_w/1.0, world_y]]
+      let center = [that.calcSVGXpos(world_x + length_w/2.0), that.calcSVGYpos(world_y + height_w/2.0)]
       //convert world positions to svg positions
+      let image_coords = world_coords.map( function convertCoords(x_and_y_world_coords) {
+        return [that.calcSVGXpos(x_and_y_world_coords[0]), that.calcSVGYpos(x_and_y_world_coords[1])]
+      })
 
       //create polygon string as defined in https://svgjs.com/docs/3.0/shape-elements/#svg-polygon
-
+      let triPolygonStr = ""
+      for (let i in image_coords) {
+        triPolygonStr += String(image_coords[i][0])
+        triPolygonStr += ","
+        triPolygonStr += String(image_coords[i][1])
+        triPolygonStr += " "
+      }
       //add polygon to string & decorate
+      let triangle = svg_container.polygon(triPolygonStr)
+      triangle.rotate(theta_degrees, center[0], center[1])
+
+      this.decorateSVGElem(triangle, decoration)
     }
 
     //==============< END Methods to draw SVG elements =================//

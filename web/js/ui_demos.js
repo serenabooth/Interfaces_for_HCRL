@@ -38,8 +38,7 @@ class UIDemos {
 
         //toy design
         //TODO: make star and triangle shape
-        curr_toy.shape = ["circle","square"/*,"star","triangle"*/][Util.genRandomInt(2/*4*/)]
-        //https://colorhunt.co/palette/253046
+        curr_toy.shape = ["circle","square", "star", "triangle"][Util.genRandomInt(4)]
         curr_toy.fill = ["#09015F","#AF0069","#55B3B1"][Util.genRandomInt(3)]
         curr_toy.stroke = {"width":"2px", "color":["#09015F","#AF0069","#55B3B1"][Util.genRandomInt(3)]}
         //curr_toy.pattern = ["solid","stripes","polka dots"][Util.genRandomInt(2)]
@@ -58,44 +57,19 @@ class UIDemos {
       }
 
       var robot = {
+        /*
+          "base_effector_world_x" :
+          "base_effector_world_y" :
 
-          //robot config
-          "base_effector_r" : 40,
-          "base_effector_decoration" : {"stroke" :  { "color":"black", "width" : "2px"}, "fill" : "white"},
+          "end_effector_world_x" :
+          "end_effector_world_y" :
 
-          /*
-          "arm_len" : 5,           //arm is currently rigid
-          "arm_decoration" : {"stroke" : { "color":"black", "width" : "2px"}},
-          */
-
-          "end_effector_r" : 5,    //effector is currently a circle
-          "end_effector_decoration" : {"stroke" : { "color":"black", "width" : "2px"}, "fill" : "black"},
-
-
-          //robot state
-
-          //base position
-          "base_effector_world_x" : 25,
-          "base_effector_world_y" : 25,
-
-          //base
-          "base_effector_theta_degrees" : 0,
-
-          "object_in_gripper" : null
+          "object_in_gripper" :
+        */
       }
 
       var cleanup_world = new CleanupToys(boxes, toys, robot)
       cleanup_world.generate_svg("#app",this.svg_helper_params)
-
-      var animation_args = {
-        duration: 2000,
-        //delay: 1000,
-        when: 'now',
-        //swing: true,
-        //times: 5,
-        //wait: 200
-      }
-
     }
 
 

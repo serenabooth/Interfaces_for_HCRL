@@ -24,8 +24,8 @@
   <component name="ChangeListManager">
     <list default="true" id="2e279474-4fc7-4317-bccc-b21bd9e30a3c" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/js/main.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/main.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/web/js/util.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/util.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/js/svg/svg_helper.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/svg/svg_helper.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/web/js/ui_demos.js" beforeDir="false" afterPath="$PROJECT_DIR$/web/js/ui_demos.js" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -51,6 +51,7 @@
     <property name="DefaultHtmlFileTemplate" value="HTML File" />
     <property name="JSExplicifyFields.moveToInitializer" value="true" />
     <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
     <property name="WebServerToolWindowFactoryState" value="false" />
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="node.js.detected.package.eslint" value="true" />
@@ -82,6 +83,8 @@
       <workItem from="1606758484370" duration="3467000" />
       <workItem from="1606865409238" duration="6272000" />
       <workItem from="1606941805266" duration="2091000" />
+      <workItem from="1611866621304" duration="4904000" />
+      <workItem from="1611930955453" duration="318000" />
     </task>
     <servers />
   </component>
