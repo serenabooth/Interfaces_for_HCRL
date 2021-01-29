@@ -120,17 +120,14 @@ class SVGHelper {
     Adds a star to the toy box
     **/
     addStar(svg_container, radius_w, world_x, world_y, theta_degrees, decoration) {
-      console.log("adding a star")
       let that = this;
       let arms = 5
-      let starPoints_w = this.calculateStarPoints(world_x, world_y, arms, radius_w, radius_w*0.75)
+      let starPoints_w = this.calculateStarPoints(world_x, world_y, arms, radius_w*0.75, radius_w*0.5)
 
       //convert to image coordinates
       let starPoints_image = starPoints_w.map( function convertCoords(x_and_y_world_coords) {
         return [that.calcSVGXpos(x_and_y_world_coords[0]), that.calcSVGYpos(x_and_y_world_coords[1])]
       })
-
-      console.log(starPoints_image)
 
       //create polygon string as defined in https://svgjs.com/docs/3.0/shape-elements/#svg-polygon
       let starPolygonStr = ""
@@ -141,7 +138,6 @@ class SVGHelper {
         starPolygonStr += " "
       }
 
-      console.log(starPolygonStr)
       let star = svg_container.polygon(starPolygonStr)
       this.decorateSVGElem(star, decoration)
     }

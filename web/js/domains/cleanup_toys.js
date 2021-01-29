@@ -119,7 +119,7 @@ class CleanupToys {
         robot.base_effector_r,
         robot.base_effector_world_x,
         robot.base_effector_world_y,
-        0,        
+        0,
         robot.base_effector_decoration
       )
 
@@ -194,7 +194,8 @@ class CleanupToys {
                           curr_toy_data.world_height,
                           curr_toy_data.world_x,
                           curr_toy_data.world_y,
-                          theta,
+                          //make sure that trianges are face up
+                          theta+180,
                           decoration
                         )
                         break
