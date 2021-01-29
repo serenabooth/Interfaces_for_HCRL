@@ -23,12 +23,18 @@ class SVGHelper {
 
     //converts cartpole xPos into the SVG xPos
     calcSVGXpos(world_x) {
+      if(world_x == null)
+        return null
+
       var scale = this.img_width/this.world_width
       return world_x*scale
     }
 
     //converts world yPos into the SVG yPos
     calcSVGYpos(world_y) {
+      if(world_y == null)
+        return null
+
       var scale = this.img_height/this.world_height
       return world_y *scale
     }
@@ -76,16 +82,16 @@ class SVGHelper {
     /**
     add a line to the SVG
     **/
-    addLine(svg_container, world_x1, world_y1, world_x2, world_y2, svg_positions, decoration) {
+    addLine(svg_container, world_x1, world_y1, world_x2, world_y2, decoration) {
       //convert world to SVG coordinates
       var svg_x1 =  this.calcSVGXpos(world_x1)
-      var svg_y1 =  this.calcSVGXpos(world_y1)
+      var svg_y1 =  this.calcSVGYpos(world_y1)
       var svg_x2 =  this.calcSVGXpos(world_x2)
-      var svg_y2 =  this.calcSVGXpos(world_y2)
+      var svg_y2 =  this.calcSVGYpos(world_y2)
 
       var line = svg_container.line(svg_x1, svg_y1, svg_x2, svg_y2)
 
-      line.decorateSVGElem(decoration)
+      this.decorateSVGElem(line,decoration)
 
       return line
     }
@@ -154,6 +160,9 @@ class SVGHelper {
       //add polygon to string & decorate
     }
 
+    //==============< END Methods to draw SVG elements =================//
+
+    //==============< BEGIN Methods to modify SVG elements =================//
 
     /**
     Apply styling elements to the svg elements
@@ -179,13 +188,36 @@ class SVGHelper {
     /**
     place the center of the svg element at the x,y coordinates
     **/
-    centerSVGElem(svg_elem, world_x,world_y) {
+    centerSVGElem(svg_elem, world_x,world_y, animation_args = null) {
       var svg_x = this.calcSVGXpos(world_x)
       var svg_y = this.calcSVGYpos(world_y)
 
-      svg_elem.center(svg_x, svg_y)
+      if(animation_args == null)
+        svg_elem.center(svg_x, svg_y)
+      else
+        svg_elem.animate(animation_args)
+                .center(svg_x, svg_y)
+
     }
-  //==============< END Methods to draw SVG elements =================//
+
+    rotateSVGElem(svg_elem, theta_degrees, world_x = null,world_y=null, animation_args = null) {
+      var svg_x = this.calcSVGXpos(world_x)
+      var svg_y = this.calcSVGYpos(world_y)
+
+      if(animation_args == null)
+        svg_elem.rotate( theta_degrees,
+                          svg_x,
+                          svg_y)
+        else
+          svg_elem.animate(animation_args)
+                  .rotate( theta_degrees,
+                            svg_x,
+                            svg_y)
+
+
+    }
+
+  //==============< END Methods to modify SVG elements =================//
 
   //==============< BEGIN Methods to calculate shapes =================//
 
